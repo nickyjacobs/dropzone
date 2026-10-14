@@ -25,6 +25,7 @@ jobs:
             --max-concurrency 8
             --accept 200,206,429
             --exclude-path assets/
+            --exclude '^https://github.com/nickyjacobs/dropzone/compare/'
             './**/*.md'
           fail: true
           token: ${{ secrets.GITHUB_TOKEN }}

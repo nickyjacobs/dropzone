@@ -25,6 +25,7 @@ All notable changes to dropzone. Format based on [Keep a Changelog](https://keep
 
 ### Fixed
 - The menu's *Change IP* always changes the main host.
+- The link check no longer fails on the CHANGELOG's compare links, which point to a tag that only exists after the release.
 - One test used the real `/etc/hosts` (it asked for sudo and failed); every test now has its own hosts file, and runs with the VPN check off.
 
 ## [1.0.0] - 2026-10-14
