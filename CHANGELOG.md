@@ -4,6 +4,9 @@ All notable changes to dropzone. Format based on [Keep a Changelog](https://keep
 
 ## [Unreleased]
 
+### Changed
+- `scripts/release.sh` prepares a release on `develop`; `scripts/release.sh --tag` tags it on `main` after the merge, because `main` only takes pull requests.
+
 ## [1.0.0] - 2026-10-14
 
 First public release.

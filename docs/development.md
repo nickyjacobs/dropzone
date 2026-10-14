@@ -82,19 +82,26 @@ Not every change needs a release right away; several fixes can go out together.
 - `main`: releases only. Every commit on it is a released version.
 - `develop`: daily work. Feature branches start here, pull requests go here.
 
-From `develop` to `main` through a pull request with green CI, merged with a merge commit (`gh pr merge --merge`).
+From `develop` to `main` through a pull request with green CI, merged with a merge commit (`gh pr merge --merge`). A ruleset on `main` blocks direct pushes, force-pushes and deleting the branch.
 
 ## Release
 
-Put the changes under `## [Unreleased]` in `CHANGELOG.md` on `develop`, merge into `main`, then on `main`:
+`main` only takes pull requests with green CI (`test`, `kali`, `scan`), so a release goes in two steps. Put the changes under `## [Unreleased]` in `CHANGELOG.md` first.
 
 ```bash
-scripts/release.sh 1.1.0          # tests, VERSION, changelog, commit, tag
-git push && git push origin v1.1.0
+# on develop
+scripts/release.sh 1.1.0          # tests, VERSION, changelog, commit "Release: v1.1.0"
+git push
+gh pr create --base main --head develop --title "Release v1.1.0" --fill
+gh pr merge --merge               # when CI is green
+
+# on main
+git checkout main
+scripts/release.sh --tag          # tag v1.1.0 and push it
 git checkout develop && git merge --ff-only main && git push
 ```
 
-Pushing the tag runs `.github/workflows/release.yml`: it checks that `VERSION` matches the tag and creates the GitHub Release with that version's CHANGELOG section as notes. The release badge in the README follows by itself.
+The tag runs `.github/workflows/release.yml`: it checks that `VERSION` matches the tag and creates the GitHub Release with that version's CHANGELOG section as notes. The release badge in the README follows by itself.
 
 ## Workflows
 
