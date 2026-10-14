@@ -68,7 +68,7 @@ Every option: **[docs/commands.md](docs/commands.md)**.
 
 Every box gets a Markdown note from a template. By default it's `~/boxes/<box>/notes.md`; with `notes = vault` it goes into your Obsidian vault instead.
 
-| | `notes = folder` (default) | `notes = vault` |
+| Setting | `notes = folder` (default) | `notes = vault` |
 |---|---|---|
 | Note | `~/boxes/<box>/notes.md` | `<vault>/Boxes/<box>.md` |
 | Template | `~/.config/dropzone/templates/box-note.md` | any file in your vault |
@@ -102,7 +102,7 @@ Pulls the new version and shows what changed. Your config, templates, boxes and 
 
 ## Documentation
 
-| | |
+| Page | What it covers |
 |---|---|
 | [Commands](docs/commands.md) | every option, the menu, the variables |
 | [Notes](docs/notes.md) | note locations, templates, Obsidian |

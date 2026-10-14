@@ -3,52 +3,44 @@
 
 _dz_help() {
   emulate -L zsh
-  local g=$'\e[1;38;5;46m' d=$'\e[38;5;246m' b=$'\e[1m' r=$'\e[0m'
-  _dz_color || g='' d='' b='' r=''
-  print -r -- "${g}dropzone${r} ${d}v$_dz_version · per-box tooling for Kali${r}
-
-${b}Usage${r}
-  dz              open the menu
-  dz [options]    run an action straight away
-
-${b}Options${r}
-  -n <name>       new box (needs -ip)
-  -ip <ip>        target IP; without -n it changes the IP of the loaded box
-  -h <host,...>   hostnames for /etc/hosts; without -n it changes them, none clears
-  -l <name>       load a box
-  -v              view all boxes, --all includes the archive
-  -i              show the loaded box
-  -t [host]       hosts in the box: list, or make <host> the target
-  -t <host> -ip <ip> [-h <host,...>]
-                  add or change a host ($HOST_IP); --drop removes it
-  -x              unload the box
-  -o [name]       open the note (editor, or Obsidian with notes = vault)
-  -d [name]       mark a box done
-  -a <name>       archive a box (done, folder to _archive/)
-  -f [user|root] <flag>
-                  store a flag in the note (root flag = done); -f alone shows them
-  -j <text>       add a line to the note's timeline; -j alone shows it
-  -s [caption]    screenshot to evidence/, embedded in the timeline
-  -c [user[:secret]] [source]
-                  store or list creds (needs creds = yes)
-  -r <name>       remove a box (to the trash)
-  -y              no confirmation, with -r
-  --note          also trash the note, with -r
-  --keep-note     keep the note, with -r
-  --config        edit the config (show: values in use, check: new settings)
-  --update        update dropzone; your config, boxes and notes stay
-  --version       version
-  -h, --help      this help
-
-${b}Examples${r}
-  dz -n jacops -ip 10.129.42.190 -h dc01.jacops.htb,jacops.htb
-  dz -ip 10.129.42.201
-  dz -j found an NFS share with backups
-  dz -s nfs share listing
-  dz -c alex NFS
-  dz -r jacops --note
-
-${d}More: https://github.com/nickyjacobs/dropzone/blob/main/docs/commands.md${r}"
+  _dz_ui
+  print -r -- "${_ug}dropzone${_ur} ${_ud}v$_dz_version · per-box tooling for Kali${_ur}"
+  _dz_rule; _dz_head Usage
+  _dz_row "dz" "open the menu"
+  _dz_row "dz [options]" "run an action straight away"
+  _dz_rule; _dz_head Boxes
+  _dz_row "-n <name> -ip <ip>" "new box"
+  _dz_row "-l <name>" "load a box (an archived one comes back)"
+  _dz_row "-v [--all]" "view all boxes, --all includes the archive"
+  _dz_row "-i" "show the loaded box"
+  _dz_row "-x" "unload the box"
+  _dz_row "-d [name]" "mark a box done"
+  _dz_row "-a <name>" "archive a box (done, folder to _archive/)"
+  _dz_row "-r <name> [-y]" "remove a box (to the trash)"
+  _dz_row "  --note / --keep-note" "also trash the note, or keep it, with -r"
+  _dz_rule; _dz_head Target
+  _dz_row "-ip <ip>" "new IP for the loaded box"
+  _dz_row "-h <host,...>" "hostnames for /etc/hosts, none clears them"
+  _dz_row "-t [host]" "hosts in the box: list, or make <host> the target"
+  _dz_row "-t <host> -ip <ip>" "add or change a host (\$HOST_IP), --drop removes it"
+  _dz_rule; _dz_head Notes
+  _dz_row "-o [name]" "open the note"
+  _dz_row "-j <text>" "line in the timeline, -j alone shows it"
+  _dz_row "-s [caption]" "screenshot to evidence/, into the note"
+  _dz_row "-f [user|root] <flag>" "flag into the note (root = done), -f shows them"
+  _dz_row "-c [user[:secret]]" "store creds (needs creds = yes), -c lists them"
+  _dz_rule; _dz_head Setup
+  _dz_row "--config [show|check]" "edit the config, show it, list new settings"
+  _dz_row "--update" "update dropzone, your config and boxes stay"
+  _dz_row "--version" "version"
+  _dz_row "-h, --help" "this help"
+  _dz_rule; _dz_head Examples
+  print -r -- "    ${_uk}dz -n jacops -ip 10.129.42.190 -h jacops.htb${_ur}"
+  print -r -- "    ${_uk}dz -t dc01 -ip 10.129.42.191 -h dc01.jacops.htb${_ur}"
+  print -r -- "    ${_uk}dz -j found an NFS share with backups${_ur}"
+  print -r -- "    ${_uk}dz -s nfs share listing${_ur}"
+  _dz_rule
+  print -r -- "${_ud}More: https://github.com/nickyjacobs/dropzone/blob/main/docs/commands.md${_ur}"
 }
 
 # dz -v [--all]: boxes with IP, status and hostnames. --all also shows the archive.
@@ -98,21 +90,26 @@ _dz_info() {
   [[ -n $BOX ]] || { print -u2 "no box loaded"; return 1 }
   _dz_box_read $DZ_ROOT/$BOX || { print -u2 "dz: box '$BOX' is gone (removed or archived?), dz -x"; return 1 }
   _dz_attacker_refresh
-  local note=$(_dz_note $BOX)
-  local -a extra=("${_dz_bh[@]}")
-  printf '%-10s %s\n' box $BOX target "$TARGET_IP${DZ_ACTIVE:+ ($DZ_ACTIVE)}" hosts "${reply[3]:--}" \
-    attacker "${ATTACKER_IP:-$DZ_IFACE down}" status "$(_dz_status $BOX)" \
-    folder $DZ_ROOT/$BOX note "$([[ -f $note ]] && print $note || print -)"
+  _dz_ui
+  local note=$(_dz_note $BOX) l
+  local -a extra=("${_dz_bh[@]}") w
+  _dz_rule; _dz_head $BOX "$(_dz_status $BOX)"
+  _dz_row target "$TARGET_IP${DZ_ACTIVE:+ ($DZ_ACTIVE)}" 10
+  _dz_row hosts "${reply[3]:--}" 10
+  _dz_row attacker "${ATTACKER_IP:-$DZ_IFACE down}" 10
+  _dz_row folder "${DZ_ROOT/#$HOME/~}/$BOX" 10
+  _dz_row note "$([[ -f $note ]] && print ${note/#$HOME/~} || print -)" 10
+  [[ -n $TARGET_USER ]] && _dz_row cred "$TARGET_USER (dz -c)" 10
+  [[ -n $DZ_RECORDING ]] && _dz_row recording "${DZ_RECORDING/#$HOME/~}" 10
   if (( $#extra )); then
-    local l; local -a w
-    printf '%-10s %s\n' main "$reply[2]"
+    _dz_rule; _dz_head Hosts "dz -t"
+    _dz_row main "$reply[2]" 10
     for l in $extra; do
       w=(${=l}); _dz_label_var $w[1]
-      printf '%-10s %s\n' "${w[1]}" "$w[2]  \$$REPLY${w[3]:+  ${w[3,-1]}}"
+      _dz_row "${w[1]}" "$w[2]  \$$REPLY${w[3]:+  ${w[3,-1]}}" 10
     done
   fi
-  [[ -n $TARGET_USER ]] && printf '%-10s %s\n' cred "$TARGET_USER (dz -c)"
-  [[ -n $DZ_RECORDING ]] && printf '%-10s %s\n' recording "${DZ_RECORDING/#$HOME/~}"
+  _dz_rule
   return 0
 }
 

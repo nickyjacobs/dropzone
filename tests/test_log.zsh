@@ -39,4 +39,4 @@ else
   pass "recording command (skipped: no util-linux script)"
 fi
 nok "no recording command for a removed box" eval 'BOX=gone _dz_record_cmd'
-has "--config show lists [log]" "[log]" "$(dz --config show)"
+has "--config show lists [log]" "[+] log" "$(dz --config show)"

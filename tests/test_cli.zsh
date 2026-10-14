@@ -38,7 +38,7 @@ has "-v marks the loaded box" "▶ beta" "$(dz -v)"
 dz -l alpha >/dev/null
 eq  "-l loads a box" alpha "$BOX"
 has "-i shows info" "target     10.10.10.9" "$(dz -i)"
-has "-i shows status" "status     active" "$(dz -i)"
+has "-i shows the box and its status" "[+] alpha  active" "$(dz -i)"
 dz -l beta -ip 10.10.10.22 >/dev/null
 eq  "-l <box> -ip changes another box" "ip=10.10.10.22" "$(grep ^ip= $B/beta/.dropzone)"
 dz -x >/dev/null

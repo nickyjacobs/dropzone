@@ -112,7 +112,7 @@ dz -t dc01 -ip 10.10.10.15                                 # new IP, hostnames s
 dz -t dc01 --drop                                          # remove it
 ```
 
-| What | |
+| What | How it works |
 |---|---|
 | Variables | `$DC01_IP`, `$MS01_IP`: the host name in capitals, `-` becomes `_`. `$TARGETS` has every IP of the box, so `nxc smb $TARGETS` hits them all |
 | Target | `$TARGET_IP`, `$TARGET` and `$DOMAIN` follow the active host; the prompt shows it: `[corp dc01 10.10.10.5]-`. New terminals keep it |

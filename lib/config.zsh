@@ -109,10 +109,10 @@ _dz_color() { [[ -t ${1:-1} && -z $NO_COLOR && $TERM != dumb ]] }
 # dz --config show: the values in use now, and whether each comes from your config.
 _dz_config_show() {
   emulate -L zsh
-  local h=$'\e[1;38;5;46m' d=$'\e[38;5;246m' r=$'\e[0m' k v
-  _dz_color || h='' d='' r=''
-  print -r -- "${h}dropzone config${r} ${d}${DZ_CONFIG/#$HOME/~}${r}"
-  [[ -r $DZ_CONFIG ]] || print -r -- "${d}(no config file, everything is default)${r}"
+  local k v
+  _dz_ui
+  print -r -- "${_ug}dropzone config${_ur} ${_ud}${DZ_CONFIG/#$HOME/~}${_ur}"
+  [[ -r $DZ_CONFIG ]] || print -r -- "${_ud}(no config file, everything is default)${_ur}"
   local -a rows=(
     paths boxes "${DZ_ROOT/#$HOME/~}"
     box folders "$DZ_DIRS"  box iface "$DZ_IFACE"
@@ -125,9 +125,11 @@ _dz_config_show() {
     menu art "${DZ_ART:-random}"  menu animate "$DZ_ANIMATE")
   local sec last=''
   for sec k v in $rows; do
-    [[ $sec != $last ]] && { print -r -- $'\n'"[$sec]"; last=$sec }
-    printf "  %-13s %-42s %s\n" $k "$v" "${d}${_dz_cfg_src[$k]:-default}${r}"
+    [[ $sec != $last ]] && { _dz_rule; _dz_head $sec; last=$sec }
+    printf -v v '%-42s' "$v"
+    _dz_row $k "$v ${_ud}${_dz_cfg_src[$k]:-default}${_ur}" 13
   done
+  _dz_rule
 }
 
 # dz --config check: settings from config.example that aren't in your config yet (the
@@ -149,18 +151,25 @@ _dz_config_check() {
       '#'*)   [[ -z $com ]] && com=${line#\#[[:space:]]#} ;;
       [a-z]*=*)
         key=${${line%%=*}%%[[:space:]]#}
-        (( $+have[$key] )) || out+=("  $sec ${(r:34:)line} $com")
+        (( $+have[$key] )) || out+=("$sec ${${line%%=*}%%[[:space:]]#} =${line#*=}"$'\t'"$com")
         com='' ;;
       *) com='' ;;
     esac
   done < $_dz_repo/config.example
+  _dz_ui
   if (( $#out )); then
-    print "Settings that aren't in your config (the default applies, add them to change it):"
-    print -rl -- $out
+    _dz_rule; _dz_head "Not in your config" "the default applies, add a line to change it"
+    for line in $out; do
+      _dz_row "${line%%$'\t'*}" "${_ud}${line#*$'\t'}${_ur}" 46
+    done
   else
     print "• your config has every setting"
   fi
-  (( $#_dz_cfg_old )) && { print "\nOld forms, still working:"; print -rl -- "  "$^_dz_cfg_old }
+  if (( $#_dz_cfg_old )); then
+    _dz_rule; _dz_head "Old forms" "still working"
+    print -rl -- "    "$^_dz_cfg_old
+  fi
+  (( $#out + $#_dz_cfg_old )) && _dz_rule
   return 0
 }
 

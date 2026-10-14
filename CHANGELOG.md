@@ -9,6 +9,8 @@ All notable changes to dropzone. Format based on [Keep a Changelog](https://keep
 - `dz -i` and `dz -v` show the extra hosts.
 
 ### Changed
+- `dz --help`, `dz -i` and `dz --config show/check` in blocks: a rule, `[+] Section`, indented rows. The help is grouped into Boxes, Target, Notes and Setup.
+- Tables in the README and docs have a header row.
 - The bundled template has a `## Hosts` table with Host, IP and Hostnames columns.
 - Archiving a box removes all its `/etc/hosts` lines; restoring it with `dz -l` puts them back.
 

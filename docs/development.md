@@ -16,6 +16,7 @@
 | `lib/log.zsh` | command log (`preexec` hook) and `script(1)` recording |
 | `lib/prompt.zsh` | `_dz_prompt`, the prompt segment |
 | `lib/hosts.zsh` | more hosts in a box (`dz -t`) |
+| `lib/ui.zsh` | the block layout of `--help`, `dz -i` and `dz --config show/check` |
 | `lib/notes.zsh` | flags, timeline and screenshots in the note (`dz -f`, `-j`, `-s`) |
 | `lib/status.zsh` | box status, done, archive, open note in Obsidian |
 | `templates/box-note.md` | the note template that ships with dropzone |
@@ -30,6 +31,7 @@ Conventions:
 - Files dropzone writes are read, never sourced: the config, `.dropzone` and `creds`. Validate what you read.
 - Box names always go through `_dz_valid_name`, IPs through `_dz_valid_ip`, hostnames through `_dz_valid_host`.
 - Errors to stderr, output to stdout. Colour only through `_dz_color`.
+- Overviews you read (help, info, config) use the blocks from `lib/ui.zsh` (`_dz_rule`, `_dz_head`, `_dz_row`); lists you scan or pipe (`dz -v`, `dz -t`, `dz -c`) stay one line per item.
 - All text is English.
 - Nothing personal in defaults: everything about the user's setup comes from their config.
 - User files live outside the repo (`~/.config/dropzone/`, `~/boxes/`, the vault), so an update can never touch them. Never write into `$_dz_repo` at runtime.
