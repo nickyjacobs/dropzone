@@ -14,7 +14,7 @@ Set Framerate 24
 Hide
 Type "source /tmp/dzdemo/.zshrc" Enter
 Sleep 1s
-Type "dz -n lame -ip 10.129.30.12 >/dev/null && dz -d lame >/dev/null && dz -n legacy -ip 10.129.30.14 >/dev/null && cd && clear" Enter
+Type "dz -n lame -ip 10.129.30.12 >/dev/null && dz -d lame >/dev/null && dz -n legacy -ip 10.129.30.14 >/dev/null && dz -x >/dev/null && cd && clear" Enter
 Sleep 1s
 Show
 
