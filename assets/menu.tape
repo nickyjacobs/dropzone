@@ -9,11 +9,11 @@ Set Padding 20
 Set Theme "Dracula"
 Set TypingSpeed 60ms
 
-# Demo shell and a dozen boxes, so the box list has something to scroll.
+# Demo shell (no banner animation, keeps the GIF small) and a dozen boxes to scroll through.
 Hide
-Type "source /tmp/dzdemo/.zshrc" Enter
+Type "source /tmp/dzdemo/.zshrc; DZ_ANIMATE=no" Enter
 Sleep 1s
-Type "for b in lame legacy blue devel optimum bashed nibbles shocker beep sense popcorn active; do dz -n $b -ip 10.129.30.$((RANDOM % 250)) >/dev/null; done; dz -x >/dev/null; cd; clear" Enter
+Type "for b in lame legacy blue devel optimum bashed knife shocker beep sense popcorn active; do dz -n $b -ip 10.129.30.$((RANDOM % 250)) >/dev/null; done; dz -x >/dev/null; cd; clear" Enter
 Sleep 3s
 Show
 
