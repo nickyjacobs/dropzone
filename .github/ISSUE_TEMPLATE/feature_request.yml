@@ -1,0 +1,23 @@
+name: Feature request
+description: An idea for dropzone
+labels: [enhancement]
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: What would it help with
+      description: The situation or workflow, for example "on AD boxes I always ...".
+    validations:
+      required: true
+  - type: textarea
+    id: idea
+    attributes:
+      label: How it could work
+      description: A command, a setting, an example of the output.
+  - type: checkboxes
+    id: scope
+    attributes:
+      label: Scope
+      options:
+        - label: It doesn't scan or attack a target on its own (dropzone stays exam-safe)
+          required: true

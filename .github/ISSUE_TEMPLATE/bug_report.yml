@@ -1,0 +1,41 @@
+name: Bug report
+description: Something in dropzone doesn't work as described
+labels: [bug]
+body:
+  - type: textarea
+    id: what
+    attributes:
+      label: What happened
+      description: What you did, what you expected, and what happened instead.
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce
+      placeholder: |
+        1. dz -n test -ip 10.10.10.10
+        2. ...
+    validations:
+      required: true
+  - type: input
+    id: version
+    attributes:
+      label: dropzone version
+      description: Output of `dz --version`
+      placeholder: dropzone v1.0.0
+    validations:
+      required: true
+  - type: input
+    id: env
+    attributes:
+      label: zsh version and distro
+      placeholder: zsh 5.9, Kali 2026.3
+    validations:
+      required: true
+  - type: textarea
+    id: config
+    attributes:
+      label: Config
+      description: Output of `dz --config show`. Remove anything private, such as paths you don't want to share.
+      render: text

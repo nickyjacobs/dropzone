@@ -1,0 +1,77 @@
+# dropzone config
+#
+# Change a value and save. Edit with `dz --config` and it applies right away;
+# otherwise it applies in new terminals. Remove a line to get the default back.
+
+
+[paths]
+
+# Where box folders are created
+boxes = ~/boxes
+
+
+[box]
+
+# Subfolders in every box, separated by spaces
+folders = scans loot exploits evidence logs
+
+# Network interface for $ATTACKER_IP
+iface = tun0
+
+# Load the last box in new terminals (yes / no)
+autoload = yes
+
+# Ping the target once after creating a box or changing its IP (yes / no)
+ping = yes
+
+# Show the loaded box in your prompt, see docs/config.md (yes / no)
+prompt = yes
+
+
+[log]
+
+# Log every command with date, time and folder to logs/commands.log (yes / no)
+# Start a command with a space to keep it out of the log.
+commands = yes
+
+# Record the full terminal output with script(1) in new terminals (yes / no)
+output = no
+
+
+[notes]
+
+# Where the box note goes:
+#   folder  ~/boxes/<box>/notes.md, plain Markdown (works in any editor, and in Obsidian)
+#   vault   in your Obsidian vault, see vault below and examples/obsidian/
+#   off     no notes
+notes = folder
+
+# Template for new notes. Empty: ~/.config/dropzone/templates/box-note.md
+# A relative path is inside the vault (notes = vault) or inside ~/.config/dropzone
+template =
+
+# notes = vault: your vault, the note folder inside it, and where screenshot copies go
+vault =
+vault_folder = Boxes
+attachments = Boxes/attachments
+
+# Heading of the timeline section, filled by dz -j, dz -f and dz -s
+timeline = Timeline
+
+# Screenshot tool for dz -s: auto, xfce4-screenshooter, flameshot, gnome-screenshot or import
+screenshot = auto
+
+
+[creds]
+
+# Store credentials per box with dz -c, off by default (yes / no)
+creds = no
+
+
+[menu]
+
+# Banner art: 1 to 10, or random
+art = random
+
+# Animated banner (yes / no)
+animate = yes

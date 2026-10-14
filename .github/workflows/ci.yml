@@ -1,0 +1,34 @@
+name: ci
+
+on:
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - name: Install zsh
+        run: sudo apt-get update -qq && sudo apt-get install -y -qq zsh
+      - name: Syntax
+        run: |
+          for f in dropzone.plugin.zsh lib/*.zsh tests/*.zsh; do zsh -n "$f"; done
+          for f in install.sh uninstall.sh scripts/*.sh; do bash -n "$f"; done
+      - name: Shellcheck
+        run: shellcheck --severity=warning install.sh uninstall.sh scripts/*.sh
+      - name: Tests
+        run: zsh tests/run.zsh
+
+  kali:
+    runs-on: ubuntu-latest
+    container: kalilinux/kali-rolling
+    steps:
+      - name: Install zsh, perl and util-linux
+        run: apt-get update -qq && apt-get install -y -qq zsh perl util-linux
+      - uses: actions/checkout@v7
+      - name: Tests
+        run: zsh tests/run.zsh

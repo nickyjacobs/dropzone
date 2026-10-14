@@ -1,0 +1,28 @@
+name: demo
+
+# Renders assets/demo.tape with VHS into demo.gif, as a downloadable artifact.
+# Run it by hand after changing the tape; commit the GIF yourself.
+on:
+  push:
+    paths: ['assets/demo.tape', 'assets/demo-env.sh']
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  render:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - name: Install zsh
+        run: sudo apt-get update -qq && sudo apt-get install -y -qq zsh
+      - name: Demo shell
+        run: assets/demo-env.sh
+      - uses: charmbracelet/vhs-action@v2
+        with:
+          path: assets/demo.tape
+      - uses: actions/upload-artifact@v7
+        with:
+          name: demo
+          path: assets/demo.gif
