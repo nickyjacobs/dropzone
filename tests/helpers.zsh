@@ -7,6 +7,9 @@ _t_setup() {
   unset XDG_CONFIG_HOME XDG_CACHE_HOME DZ_CONFIG DZ_STATE BOX TARGET_IP DOMAIN NO_COLOR
   export HOME=$(mktemp -d) TMPHOME
   TMPHOME=$HOME
+  # Never the real /etc/hosts: every test gets its own, writable hosts file.
+  export DZ_HOSTS=$HOME/hosts
+  print -r -- $'127.0.0.1\tlocalhost' > $DZ_HOSTS
   mkdir -p $HOME/vault/Templates $HOME/.config/dropzone
   print -r -- $'---\ntitle: "{{title}}"\nupdated: {{date}}\nstatus: active\nip: \n---\n| $TARGET_IP | | | |\nnmap $TARGET_IP\n' \
     > $HOME/vault/Templates/Box-note.md

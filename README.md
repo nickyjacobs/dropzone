@@ -25,6 +25,7 @@
 - **Box in one command**: `dz -n jacops -ip 10.129.42.190 -h jacops.htb` makes the folder, the note, the `/etc/hosts` line and loads `$TARGET_IP`, `$DOMAIN` and `$ATTACKER_IP` in your shell.
 - **Your note writes itself**: a timeline with `dz -j`, screenshots with `dz -s`, flags with `dz -f`, creds with `dz -c`, and a new IP changes everywhere in the note.
 - **Notes your way**: plain Markdown in the box folder, or in your Obsidian vault.
+- **More hosts per box** for AD sets and pivots: `dz -t dc01 -ip ...` gives `$DC01_IP`, `$TARGETS` and a hosts line, `dz -t dc01` makes it the target.
 - **Every terminal knows the box**: new shells load the last box, your prompt shows it, and each command is logged per box.
 - **Interactive menu** with `dz`, short options for everything else, tab completion.
 - **Safe**: files are read, never run, `/etc/hosts` is backed up, removed boxes go to the trash.
@@ -52,6 +53,7 @@ dz                                       # interactive menu
 dz -n jacops -ip 10.129.42.190           # new box
 dz -ip 10.129.42.201                     # box was reset: new IP everywhere
 dz -h dc01.jacops.htb,jacops.htb         # hostnames for an AD box
+dz -t dc01 -ip 10.129.42.191             # another host in the box: $DC01_IP
 dz -j found an NFS share with backups    # line in the note's timeline
 dz -s showmount output                   # screenshot, embedded in the note
 dz -f 3f9a...e1                          # flag into the note

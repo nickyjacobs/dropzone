@@ -4,6 +4,17 @@ All notable changes to dropzone. Format based on [Keep a Changelog](https://keep
 
 ## [Unreleased]
 
+### Added
+- **More hosts per box** (`dz -t`): `dz -t dc01 -ip <ip> [-h <host,...>]` adds a host with `$DC01_IP`, a tagged `/etc/hosts` line, a row in the note's Hosts table and a timeline line. `dz -t dc01` makes it the target (`$TARGET_IP`, `$TARGET`, `$DOMAIN` and the prompt follow), `dz -t` lists them, `--drop` removes one. `$TARGETS` has every IP of the box.
+- `dz -i` and `dz -v` show the extra hosts.
+
+### Changed
+- The bundled template has a `## Hosts` table with Host, IP and Hostnames columns.
+- Archiving a box removes all its `/etc/hosts` lines; restoring it with `dz -l` puts them back.
+
+### Fixed
+- The menu's *Change IP* always changes the main host.
+
 ### Changed
 - The demo GIF starts without a loaded box; a second GIF shows the menu in `docs/commands.md`.
 - `scripts/release.sh` prepares a release on `develop`; `scripts/release.sh --tag` tags it on `main` after the merge, because `main` only takes pull requests.

@@ -18,6 +18,9 @@ ${b}Options${r}
   -l <name>       load a box
   -v              view all boxes, --all includes the archive
   -i              show the loaded box
+  -t [host]       hosts in the box: list, or make <host> the target
+  -t <host> -ip <ip> [-h <host,...>]
+                  add or change a host ($HOST_IP); --drop removes it
   -x              unload the box
   -o [name]       open the note (editor, or Obsidian with notes = vault)
   -d [name]       mark a box done
@@ -64,7 +67,7 @@ _dz_list() {
       [[ ${d:t} == $BOX ]] && mark='▶' || mark=' '
       st=$(_dz_status ${d:t})
     fi
-    printf '%s %-20s %-16s %-10s %s\n' $mark ${d:t} $reply[2] $st "$reply[3]"
+    printf '%s %-20s %-16s %-10s %s\n' $mark ${d:t} $reply[2] $st "$reply[3]${_dz_bh:+ (+$#_dz_bh hosts)}"
   done
   [[ -z $all ]] && (( narch )) && print "  + $narch archived (dz -v --all)"
   return 0
@@ -96,9 +99,18 @@ _dz_info() {
   _dz_box_read $DZ_ROOT/$BOX || { print -u2 "dz: box '$BOX' is gone (removed or archived?), dz -x"; return 1 }
   _dz_attacker_refresh
   local note=$(_dz_note $BOX)
-  printf '%-10s %s\n' box $BOX target $TARGET_IP hosts "${reply[3]:--}" \
+  local -a extra=("${_dz_bh[@]}")
+  printf '%-10s %s\n' box $BOX target "$TARGET_IP${DZ_ACTIVE:+ ($DZ_ACTIVE)}" hosts "${reply[3]:--}" \
     attacker "${ATTACKER_IP:-$DZ_IFACE down}" status "$(_dz_status $BOX)" \
     folder $DZ_ROOT/$BOX note "$([[ -f $note ]] && print $note || print -)"
+  if (( $#extra )); then
+    local l; local -a w
+    printf '%-10s %s\n' main "$reply[2]"
+    for l in $extra; do
+      w=(${=l}); _dz_label_var $w[1]
+      printf '%-10s %s\n' "${w[1]}" "$w[2]  \$$REPLY${w[3]:+  ${w[3,-1]}}"
+    done
+  fi
   [[ -n $TARGET_USER ]] && printf '%-10s %s\n' cred "$TARGET_USER (dz -c)"
   [[ -n $DZ_RECORDING ]] && printf '%-10s %s\n' recording "${DZ_RECORDING/#$HOME/~}"
   return 0
@@ -107,7 +119,7 @@ _dz_info() {
 # Parser helpers for dz: one action per call, and options that take a value.
 # They work on the locals of dz (dynamic scope).
 _dz_act() {
-  [[ -z $act || $act == $1 ]] || { print -u2 "dz: pick one action (-n, -l, -v, -i, -x, -o, -d, -a, -f, -j, -s, -c, -r)"; return 1 }
+  [[ -z $act || $act == $1 ]] || { print -u2 "dz: pick one action (-n, -l, -v, -i, -x, -t, -o, -d, -a, -f, -j, -s, -c, -r)"; return 1 }
   act=$1
 }
 _dz_val() {
@@ -122,7 +134,7 @@ dz() {
   local -i stop=${@[(i)(-j|--journal|-s|--shot)]}
   (( ${${@[1,stop-1]}[(I)--help]} )) && { _dz_help; return 0 }
 
-  local act='' name='' ip='' host='' yes=0 note=ask all='' cred='' credsrc='' fkind='' text=''
+  local act='' name='' ip='' host='' yes=0 note=ask all='' cred='' credsrc='' fkind='' text='' label='' drop=''
   while (( $# )); do
     case $1 in
       -n|--new)    _dz_val $1 "$2" && _dz_act new || return 1; name=$2; shift ;;
@@ -132,6 +144,8 @@ dz() {
       -h|--host)   [[ -n $2 && $2 != -* ]] || { _dz_help; return 0 }   # -h alone = help
                    host=$2; shift ;;
       -v|--view)   _dz_act list || return 1 ;;
+      -t|--target) _dz_act target || return 1; [[ -n $2 && $2 != -* ]] && { label=$2; shift } ;;
+      --drop)      drop=1 ;;
       -i|--info)   _dz_act info || return 1 ;;
       -x|--off)    _dz_act off || return 1 ;;
       -o|--open)   _dz_act open || return 1; [[ -n $2 && $2 != -* ]] && { name=$2; shift } ;;
@@ -163,7 +177,7 @@ dz() {
   done
 
   # -ip or -h without -n changes that box: the one from -l <name>, otherwise the loaded one.
-  if [[ ( -n $ip || -n $host ) && $act != new ]]; then
+  if [[ ( -n $ip || -n $host ) && $act != (new|target) ]]; then
     [[ -z $act || $act == load ]] || { print -u2 "dz: -ip and -h go with -n or -l"; return 1 }
     name=${name:-$BOX}
     [[ -n $name ]] || { print -u2 "dz: no box loaded, use -l <name> -ip <ip>"; return 1 }
@@ -186,6 +200,7 @@ dz() {
     journal) _dz_journal "$text" ;;
     shot) _dz_shot "$text" ;;
     info) _dz_info ;;
+    target) _dz_target "$label" "$ip" "$host" "$drop" ;;
     off)  _dz_off && print "• box unloaded" ;;
     *)    print -u2 "dz: no action given (dz --help)"; return 1 ;;
   esac
@@ -195,6 +210,11 @@ dz() {
 _dz_comp_boxes() {
   local -a b=($DZ_ROOT/*/.dropzone(Nn:h:t))
   _describe -t boxes box b
+}
+_dz_comp_hosts() {
+  local -a h=() l
+  [[ -n $BOX ]] && _dz_box_read $DZ_ROOT/$BOX 2>/dev/null && h=($BOX ${_dz_bh%% *})
+  _describe -t hosts host h
 }
 _dz_comp_all() {
   local -a b=($DZ_ROOT/*/.dropzone(Nn:h:t)) a=($DZ_ROOT/_archive/*/.dropzone(Nn:h:t))
@@ -209,6 +229,7 @@ _dz_complete() {
     '-l[load a box]:box:_dz_comp_all' \
     '(-n -l -v -i -x -o -d -a -c)-r[remove a box]:box:_dz_comp_boxes' \
     '-v[view boxes]' '--all[include the archive, with -v]' '-i[show the loaded box]' '-x[unload the box]' \
+    '-t[hosts in the box]::host:_dz_comp_hosts' '--drop[remove the host, with -t]' \
     '-c[store or list creds]::user\:secret:' \
     '-f[store or show a flag]::kind:(user root)' '-j[add to the timeline]:*::text:' '-s[take a screenshot]:*::caption:' \
     '-o[open the note]::box:_dz_comp_all' '-d[mark done]::box:_dz_comp_all' '-a[archive a box]:box:_dz_comp_boxes' \

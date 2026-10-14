@@ -1,6 +1,7 @@
 # dz from the command line: create, change IP, load, view, remove.
 
 B=~/boxes
+eq  "tests use their own hosts file" $HOME/hosts "$DZ_HOSTS"
 eq  "--version" "dropzone v$(cat $_dz_repo/VERSION)" "$(dz --version)"
 has "--help shows Usage" "Usage" "$(dz --help)"
 has "-h alone shows help" "Usage" "$(dz -h)"

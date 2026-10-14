@@ -1,0 +1,138 @@
+# hosts: more than one host in a box (dz -t), for AD sets, pivots and labs.
+#
+#   dz -t dc01 -ip 10.10.10.5 [-h dc01.corp.local,corp.local]   add or change a host
+#   dz -t                                                       list (▶ = active)
+#   dz -t dc01                                                  make dc01 the target
+#   dz -t <box>                                                 back to the main host
+#   dz -t dc01 --drop                                           remove the host
+#
+# Every host gets $DC01_IP, all IPs are in $TARGETS, and $TARGET_IP / $TARGET / $DOMAIN
+# follow the active host. The main host is the box itself (dz -n / dz -ip).
+
+# The line of host $1 in _dz_bh (after _dz_box_read), in $REPLY. Fails when it's not there.
+_dz_host_line() {
+  local l
+  for l in $_dz_bh; do [[ ${l%% *} == $1 ]] && { REPLY=$l; return 0 }; done
+  return 1
+}
+
+# Write the box file with _dz_bh / _dz_ba changed, keep the main host as it is.
+_dz_host_save() {
+  _dz_box_write $DZ_ROOT/$BOX $BOX $1 "$2" "$_dz_ba" "${_dz_bh[@]}"
+}
+
+# Add a row for a new host to the first table under '## Hosts' (or '### Hosts') in the
+# note. Fills the columns called Host, IP and Hostname(s); an empty example row goes.
+_dz_host_note() {
+  local note
+  note=$(_dz_note $BOX) && [[ -f $note ]] || return 0
+  L=$1 IP=$2 HN=$3 perl -0777 -pi -e '
+    s{(^\#{2,3} Hosts[^\n]*\n(?:(?!\#{1,3} ).*\n)*?)(\|[^\n]*\|)[ \t]*\n(\|[ :-]*-[ |:-]*\|?[ \t]*\n)((?:\|[^\n]*\n)*)}{
+      my ($pre, $head, $sep, $rows) = ($1, $2, $3, $4);
+      my @c = map { s/^\s+|\s+$//gr } grep { length } split /\|/, $head;
+      my @v = map {
+        /^hosts?$/i ? $ENV{L} : /^ip$/i ? $ENV{IP} : /^hostnames?$/i ? $ENV{HN} : ""
+      } @c;
+      $rows =~ s/^\|(?:\s*\|)+\s*\n//mg;
+      "$pre$head\n$sep$rows|" . join("|", map { length ? " $_ " : " " } @v) . "|\n"
+    }me' $note
+}
+
+# dz -t [host] [-ip <ip>] [-h <hosts>] [--drop]
+_dz_target() {
+  emulate -L zsh
+  local label=$1 ip=$2 hostarg=$3 drop=$4 l v
+  [[ -n $BOX ]] || { print -u2 "dz: no box loaded"; return 1 }
+  _dz_box_read $DZ_ROOT/$BOX || { print -u2 "dz: box '$BOX' is gone (removed or archived?)"; return 1 }
+  local main_ip=$reply[2] main_hosts=$reply[3] note
+  note=$(_dz_note $BOX 2>/dev/null) || note=''
+  local -a w
+
+  # List
+  if [[ -z $label ]]; then
+    local mark
+    [[ -z $_dz_ba ]] && mark='▶' || mark=' '
+    printf '%s %-12s %-16s %-14s %s\n' $mark $BOX $main_ip "(main)" "$main_hosts"
+    for l in $_dz_bh; do
+      w=(${=l}); _dz_label_var $w[1]
+      [[ $w[1] == $_dz_ba ]] && mark='▶' || mark=' '
+      printf '%s %-12s %-16s %-14s %s\n' $mark $w[1] $w[2] "\$$REPLY" "$w[3,-1]"
+    done
+    (( $#_dz_bh )) || print "  no extra hosts yet: dz -t <host> -ip <ip>"
+    return 0
+  fi
+
+  # The main host: only switching back to it, changes go through dz -ip / dz -h.
+  if [[ $label == $BOX ]]; then
+    [[ -z $ip && -z $hostarg && -z $drop ]] ||
+      { print -u2 "dz: $BOX is the main host, change it with dz -ip / dz -h"; return 1 }
+    _dz_ba=''; _dz_host_save $main_ip "$main_hosts"
+    _dz_load $BOX && print "• target: $BOX ($TARGET_IP)"
+    return
+  fi
+  _dz_valid_label $label || { print -u2 "dz: host names are lowercase letters, digits and '-', like dc01"; return 1 }
+
+  # Remove
+  if [[ -n $drop ]]; then
+    _dz_host_line $label || { print -u2 "dz: no host '$label' in $BOX"; return 1 }
+    _dz_bh=("${(@)_dz_bh:#$label *}")
+    [[ $_dz_ba == $label ]] && _dz_ba=''
+    _dz_host_save $main_ip "$main_hosts"
+    local re; _dz_hosts_re $BOX/$label; re=$REPLY
+    _dz_hosts_has $re && _dz_hosts_del $re
+    [[ -f $note ]] && _dz_timeline_add $note "host $label removed"
+    _dz_load $BOX && print "• host $label removed${DZ_ACTIVE:+, target is $DZ_ACTIVE}"
+    return
+  fi
+
+  # Make active
+  if [[ -z $ip && -z $hostarg ]]; then
+    _dz_host_line $label || { print -u2 "dz: no host '$label' in $BOX, add it with dz -t $label -ip <ip>"; return 1 }
+    _dz_ba=$label; _dz_host_save $main_ip "$main_hosts"
+    _dz_load $BOX && print "• target: $label ($TARGET_IP)"
+    return
+  fi
+
+  # Add or change
+  local old_ip='' old_hn='' new=1
+  if _dz_host_line $label; then
+    w=(${=REPLY}); old_ip=$w[2] old_hn="$w[3,-1]" new=0
+  fi
+  [[ -n $ip ]] || ip=$old_ip
+  [[ -n $ip ]] || { print -u2 "dz: a new host needs -ip <ip>"; return 1 }
+  _dz_valid_ip $ip || { print -u2 "dz: '$ip' is not an IPv4 address"; return 1 }
+  local -a hn=(${(s:,:)${hostarg// /,}})
+  if [[ $hn == none ]]; then hn=()
+  elif (( ! $#hn )); then hn=(${=old_hn})
+  else
+    for l in $hn; do _dz_valid_host $l || { print -u2 "dz: invalid hostname '$l'"; return 1 }; done
+  fi
+  _dz_bh=("${(@)_dz_bh:#$label *}" "$label $ip${hn:+ $hn}")
+  _dz_host_save $main_ip "$main_hosts"
+
+  if [[ "$hn" != "$old_hn" || ( -n $old_hn && $ip != $old_ip ) ]]; then
+    for l in $hn; do
+      grep -vE "# dz:[^ ]+\$" $DZ_HOSTS 2>/dev/null | grep -qiE "[[:space:]]${l//./\\.}([[:space:]]|\$)" &&
+        print -u2 "• note: $l is already in $DZ_HOSTS outside dropzone"
+    done
+    _dz_hosts_set $BOX/$label $ip "$hn" &&
+      if (( $#hn )); then print "• $DZ_HOSTS: $ip $hn"
+      elif [[ -n $old_hn ]]; then print "• $DZ_HOSTS: line of $label removed"
+      fi
+  fi
+  if [[ -f $note ]]; then
+    if (( new )); then
+      _dz_host_note $label $ip "${(j:, :)hn}"
+      _dz_timeline_add $note "host $label added: $ip${hn:+ (${(j:, :)hn})}"
+    elif [[ $ip != $old_ip ]]; then
+      _dz_note_ip $note $old_ip $ip >/dev/null
+      _dz_timeline_add $note "host $label: new IP $ip"
+    fi
+  fi
+  [[ $ip != $old_ip ]] && _dz_on DZ_PING && _dz_ping $ip
+  _dz_load $BOX
+  _dz_label_var $label
+  if (( new )); then print "• host $label added: \$$REPLY=$ip  (dz -t $label makes it the target)"
+  else print "• host $label: \$$REPLY=$ip${hn:+  $hn}"
+  fi
+}

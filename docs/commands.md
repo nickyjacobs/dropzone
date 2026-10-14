@@ -8,6 +8,7 @@ Everything runs through `dz`. Without options it opens the menu; with options it
 - [New box](#new-box)
 - [Change IP](#change-ip)
 - [Load, view, info, unload](#load-view-info-unload)
+- [More hosts in a box](#more-hosts-in-a-box)
 - [Done, archive, open note](#done-archive-open-note)
 - [Flags, timeline, screenshots](#flags-timeline-screenshots)
 - [Creds](#creds)
@@ -27,6 +28,8 @@ Everything runs through `dz`. Without options it opens the menu; with options it
 | `-v` | view all boxes, `--all` includes the archive |
 | `-i` | show the loaded box |
 | `-x` | unload the box |
+| `-t [host]` | hosts in the box: list them, or make `<host>` the target |
+| `-t <host> -ip <ip> [-h ...]` | add or change a host; `--drop` removes it |
 | `-o [name]` | open the note (editor, or Obsidian with `notes = vault`) |
 | `-d [name]` | mark a box done |
 | `-a <name>` | archive a box |
@@ -45,7 +48,7 @@ Everything runs through `dz`. Without options it opens the menu; with options it
 | `--version` | version |
 | `-h`, `--help` | help (`-h` without a value, `--help` anywhere) |
 
-One action per call: `-n`, `-l`, `-v`, `-i`, `-x`, `-o`, `-d`, `-a`, `-f`, `-j`, `-s`, `-c` or `-r`. Tab completion knows every option and fills in box names after `-l`, `-r`, `-o`, `-d` and `-a` (archived ones too after `-l`, `-o` and `-d`).
+One action per call: `-n`, `-l`, `-v`, `-i`, `-x`, `-t`, `-o`, `-d`, `-a`, `-f`, `-j`, `-s`, `-c` or `-r`. Tab completion knows every option and fills in box names after `-l`, `-r`, `-o`, `-d` and `-a` (archived ones too after `-l`, `-o` and `-d`).
 
 ## New box
 
@@ -94,6 +97,30 @@ dz -h none                # remove its /etc/hosts line
 | `dz -x` | unload the box |
 
 New terminals load the last box automatically. `$ATTACKER_IP` is read again before the prompt (at most every 10 seconds), so it follows a VPN reconnect.
+
+## More hosts in a box
+
+For an AD set, a pivot or a lab with several machines: the box keeps its own IP (the main host), and you add the others by name.
+
+```bash
+dz -t dc01 -ip 10.10.10.5 -h dc01.corp.local,corp.local   # add a host
+dz -t ms01 -ip 10.10.10.6
+dz -t                                                      # list them, ▶ = target
+dz -t dc01                                                 # dc01 becomes the target
+dz -t corp                                                 # back to the main host (the box name)
+dz -t dc01 -ip 10.10.10.15                                 # new IP, hostnames stay
+dz -t dc01 --drop                                          # remove it
+```
+
+| What | |
+|---|---|
+| Variables | `$DC01_IP`, `$MS01_IP`: the host name in capitals, `-` becomes `_`. `$TARGETS` has every IP of the box, so `nxc smb $TARGETS` hits them all |
+| Target | `$TARGET_IP`, `$TARGET` and `$DOMAIN` follow the active host; the prompt shows it: `[corp dc01 10.10.10.5]-`. New terminals keep it |
+| `/etc/hosts` | a line per host with hostnames, tagged `# dz:<box>/<host>`. `dz -a` and `dz -r` remove every line of the box, `dz -l` on an archived box puts them back |
+| Note | a row in the first table under `## Hosts` (columns called Host, IP and Hostnames are filled) and a timeline line. A new IP is replaced in the note, exact match |
+| Names | lowercase letters, digits and `-`, like `dc01` or `ms-02` |
+
+`dz -ip` and `dz -h` without `-t` always change the main host. `dz -i` and `dz -v` show the extra hosts.
 
 ## Done, archive, open note
 
@@ -203,9 +230,12 @@ Set when a box is loaded:
 | Variable | Value |
 |---|---|
 | `$BOX` | box name |
-| `$TARGET_IP` | target IP |
+| `$TARGET_IP` | target IP: the main host, or the active host with `dz -t` |
 | `$DOMAIN` | first hostname, if given |
 | `$TARGET` | same as `$TARGET_IP` |
+| `$DC01_IP`, ... | every extra host (`dz -t`) |
+| `$TARGETS` | the IPs of all hosts in the box, space separated |
+| `$DZ_ACTIVE` | the active extra host, empty for the main host |
 | `$ATTACKER_IP` | current IP of `iface` from the config (default `tun0`) |
 | `$INTERFACE` | `iface` from the config |
 | `$TARGET_USER` | active cred, with `creds = yes` |
