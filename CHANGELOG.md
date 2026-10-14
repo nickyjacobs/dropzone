@@ -14,6 +14,7 @@ All notable changes to dropzone. Format based on [Keep a Changelog](https://keep
 
 ### Fixed
 - The menu's *Change IP* always changes the main host.
+- One test used the real `/etc/hosts` (it asked for sudo and failed); every test now has its own hosts file.
 
 ### Changed
 - The demo GIF starts without a loaded box; a second GIF shows the menu in `docs/commands.md`.

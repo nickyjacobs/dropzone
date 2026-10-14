@@ -117,7 +117,7 @@ dz -t dc01 --drop                                          # remove it
 | Variables | `$DC01_IP`, `$MS01_IP`: the host name in capitals, `-` becomes `_`. `$TARGETS` has every IP of the box, so `nxc smb $TARGETS` hits them all |
 | Target | `$TARGET_IP`, `$TARGET` and `$DOMAIN` follow the active host; the prompt shows it: `[corp dc01 10.10.10.5]-`. New terminals keep it |
 | `/etc/hosts` | a line per host with hostnames, tagged `# dz:<box>/<host>`. `dz -a` and `dz -r` remove every line of the box, `dz -l` on an archived box puts them back |
-| Note | a row in the first table under `## Hosts` (columns called Host, IP and Hostnames are filled) and a timeline line. A new IP is replaced in the note, exact match |
+| Note | a row in the first table under `## Hosts`: the columns Host (or Name), IP and Hostname / FQDN are filled, without a Host column the name goes into a Role or Notes column. Plus a timeline line. A new IP is replaced in the note, exact match |
 | Names | lowercase letters, digits and `-`, like `dc01` or `ms-02` |
 
 `dz -ip` and `dz -h` without `-t` always change the main host. `dz -i` and `dz -v` show the extra hosts.

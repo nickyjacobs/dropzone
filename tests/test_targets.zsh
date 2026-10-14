@@ -98,3 +98,9 @@ dz -n tidy -ip 10.10.30.1 >/dev/null
 print 'host=dc01 $(touch ~/pwned)' >> ~/boxes/tidy/.dropzone
 nok "broken host line is refused" dz -l tidy
 ok  "and nothing ran" test ! -e ~/pwned
+
+# Another table layout: Hostname / FQDN and a notes column, no Host column.
+print -r -- $'---\nupdated: x\n---\n### Hosts\n\n| IP | Hostname / FQDN | OS | Role / notes |\n|---|---|---|---|\n| $TARGET_IP | | | |\n\n## Next' > ~/vault/Templates/Box-note.md
+dz -n lab -ip 10.10.40.1 >/dev/null
+dz -t web01 -ip 10.10.40.2 -h web01.lab.local >/dev/null
+has "other layout: IP, FQDN and name in the notes column" "| 10.10.40.2 | web01.lab.local | | web01 |" "$(cat ~/vault/Boxes/lab.md)"

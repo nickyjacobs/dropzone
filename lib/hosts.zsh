@@ -22,7 +22,8 @@ _dz_host_save() {
 }
 
 # Add a row for a new host to the first table under '## Hosts' (or '### Hosts') in the
-# note. Fills the columns called Host, IP and Hostname(s); an empty example row goes.
+# note. Fills the columns called Host (or Name), IP and Hostname(s) / FQDN; without a Host
+# column the name goes into a Role / Notes column. An empty example row goes.
 _dz_host_note() {
   local note
   note=$(_dz_note $BOX) && [[ -f $note ]] || return 0
@@ -31,8 +32,12 @@ _dz_host_note() {
       my ($pre, $head, $sep, $rows) = ($1, $2, $3, $4);
       my @c = map { s/^\s+|\s+$//gr } grep { length } split /\|/, $head;
       my @v = map {
-        /^hosts?$/i ? $ENV{L} : /^ip$/i ? $ENV{IP} : /^hostnames?$/i ? $ENV{HN} : ""
+        /^(hosts?|name|machine)$/i ? $ENV{L} : /^ip\b/i ? $ENV{IP} : /hostname|fqdn/i ? $ENV{HN} : ""
       } @c;
+      # No Host column: the name goes into a role / notes column, if there is one.
+      unless (grep { /^(hosts?|name|machine)$/i } @c) {
+        for my $i (0 .. $#c) { if ($c[$i] =~ /\b(role|rol|notes?|notities|opmerking)/i) { $v[$i] = $ENV{L}; last } }
+      }
       $rows =~ s/^\|(?:\s*\|)+\s*\n//mg;
       "$pre$head\n$sep$rows|" . join("|", map { length ? " $_ " : " " } @v) . "|\n"
     }me' $note
