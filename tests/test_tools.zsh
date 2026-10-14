@@ -86,7 +86,8 @@ has "-cp: a secret isn't printed" "copied the password of alex" "$out"
 nok "-cp: and not shown" grep -q 'S3cret' <<< "$out"
 has "-cp: a normal value is shown" "copied the IP of dc01: 10.10.10.5" "$(dz -cp dc01)"
 
-# --- VPN check (ip is stubbed)
+# --- VPN check (ip is stubbed; the other tests run with vpncheck = no)
+DZ_VPNCHECK=yes
 ip() {
   case "$*" in
     "link show tun0") return 0 ;;

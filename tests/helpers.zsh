@@ -18,6 +18,7 @@ vault = $HOME/vault
 template = Templates/Box-note.md
 [box]
 ping = no
+vpncheck = no
 [menu]
 animate = no" > $HOME/.config/dropzone/config
   source $1/dropzone.plugin.zsh
