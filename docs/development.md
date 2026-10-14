@@ -15,6 +15,8 @@
 | `lib/creds.zsh` | creds per box (`dz -c`), opt-in |
 | `lib/log.zsh` | command log (`preexec` hook) and `script(1)` recording |
 | `lib/prompt.zsh` | `_dz_prompt`, the prompt segment |
+| `lib/ports.zsh` | open ports from nmap output into the note (`dz -p`) |
+| `lib/tools.zsh` | `dz serve` and `dz -cp` |
 | `lib/hosts.zsh` | more hosts in a box (`dz -t`) |
 | `lib/ui.zsh` | the block layout of `--help`, `dz -i` and `dz --config show/check` |
 | `lib/notes.zsh` | flags, timeline and screenshots in the note (`dz -f`, `-j`, `-s`) |

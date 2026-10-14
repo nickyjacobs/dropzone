@@ -29,6 +29,11 @@ _dz_help() {
   _dz_row "-s [caption]" "screenshot to evidence/, into the note"
   _dz_row "-f [user|root] <flag>" "flag into the note (root = done), -f shows them"
   _dz_row "-c [user[:secret]]" "store creds (needs creds = yes), -c lists them"
+  _dz_row "-p [file]" "open ports from your nmap output into the note"
+  _dz_rule; _dz_head Tools
+  _dz_row "serve [dir] [port]" "HTTP server + download commands with your IP"
+  _dz_row "serve smb [dir]" "SMB share + copy commands"
+  _dz_row "-cp [what]" "copy to the clipboard: target, <host>, me, user, pass"
   _dz_rule; _dz_head Setup
   _dz_row "--config [show|check]" "edit the config, show it, list new settings"
   _dz_row "--update" "update dropzone, your config and boxes stay"
@@ -116,7 +121,7 @@ _dz_info() {
 # Parser helpers for dz: one action per call, and options that take a value.
 # They work on the locals of dz (dynamic scope).
 _dz_act() {
-  [[ -z $act || $act == $1 ]] || { print -u2 "dz: pick one action (-n, -l, -v, -i, -x, -t, -o, -d, -a, -f, -j, -s, -c, -r)"; return 1 }
+  [[ -z $act || $act == $1 ]] || { print -u2 "dz: pick one action (-n, -l, -v, -i, -x, -t, -p, -cp, -o, -d, -a, -f, -j, -s, -c, -r)"; return 1 }
   act=$1
 }
 _dz_val() {
@@ -127,11 +132,13 @@ _dz_val() {
 dz() {
   emulate -L zsh
   (( $# )) || { _dz_menu; return }
+  # Tools are words: dz serve.
+  [[ $1 == serve ]] && { shift; _dz_serve "$@"; return }
   # --help anywhere wins, so you can add it to any command (not inside the text of -j / -s).
   local -i stop=${@[(i)(-j|--journal|-s|--shot)]}
   (( ${${@[1,stop-1]}[(I)--help]} )) && { _dz_help; return 0 }
 
-  local act='' name='' ip='' host='' yes=0 note=ask all='' cred='' credsrc='' fkind='' text='' label='' drop=''
+  local act='' name='' ip='' host='' yes=0 note=ask all='' cred='' credsrc='' fkind='' text='' label='' drop='' file='' what=''
   while (( $# )); do
     case $1 in
       -n|--new)    _dz_val $1 "$2" && _dz_act new || return 1; name=$2; shift ;;
@@ -143,6 +150,8 @@ dz() {
       -v|--view)   _dz_act list || return 1 ;;
       -t|--target) _dz_act target || return 1; [[ -n $2 && $2 != -* ]] && { label=$2; shift } ;;
       --drop)      drop=1 ;;
+      -p|--ports)  _dz_act ports || return 1; [[ -n $2 && $2 != -* ]] && { file=$2; shift } ;;
+      -cp|--copy)  _dz_act copy || return 1; [[ -n $2 && $2 != -* ]] && { what=$2; shift } ;;
       -i|--info)   _dz_act info || return 1 ;;
       -x|--off)    _dz_act off || return 1 ;;
       -o|--open)   _dz_act open || return 1; [[ -n $2 && $2 != -* ]] && { name=$2; shift } ;;
@@ -198,6 +207,8 @@ dz() {
     shot) _dz_shot "$text" ;;
     info) _dz_info ;;
     target) _dz_target "$label" "$ip" "$host" "$drop" ;;
+    ports) _dz_ports "$file" ;;
+    copy)  _dz_copy "$what" ;;
     off)  _dz_off && print "• box unloaded" ;;
     *)    print -u2 "dz: no action given (dz --help)"; return 1 ;;
   esac
@@ -207,6 +218,11 @@ dz() {
 _dz_comp_boxes() {
   local -a b=($DZ_ROOT/*/.dropzone(Nn:h:t))
   _describe -t boxes box b
+}
+_dz_comp_copy() {
+  local -a w=(target me domain targets user pass hash)
+  [[ -n $BOX ]] && _dz_box_read $DZ_ROOT/$BOX 2>/dev/null && w+=($BOX ${_dz_bh%% *})
+  _describe -t what what w
 }
 _dz_comp_hosts() {
   local -a h=() l
@@ -227,6 +243,8 @@ _dz_complete() {
     '(-n -l -v -i -x -o -d -a -c)-r[remove a box]:box:_dz_comp_boxes' \
     '-v[view boxes]' '--all[include the archive, with -v]' '-i[show the loaded box]' '-x[unload the box]' \
     '-t[hosts in the box]::host:_dz_comp_hosts' '--drop[remove the host, with -t]' \
+    '-p[nmap output into the note]::nmap output:_files -g "*.(xml|gnmap)"' \
+    '-cp[copy to the clipboard]::what:_dz_comp_copy' \
     '-c[store or list creds]::user\:secret:' \
     '-f[store or show a flag]::kind:(user root)' '-j[add to the timeline]:*::text:' '-s[take a screenshot]:*::caption:' \
     '-o[open the note]::box:_dz_comp_all' '-d[mark done]::box:_dz_comp_all' '-a[archive a box]:box:_dz_comp_boxes' \

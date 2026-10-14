@@ -5,6 +5,10 @@ All notable changes to dropzone. Format based on [Keep a Changelog](https://keep
 ## [Unreleased]
 
 ### Added
+- **Ports from nmap** (`dz -p [file]`): open ports from your own `-oX` / `-oA` / `-oG` output into the note's ports table, matched to the hosts of the box, without touching rows you already have. dropzone never scans.
+- **`dz serve [smb] [dir] [port]`**: an HTTP server or SMB share, with download commands that have your IP in them.
+- **`dz -cp [what]`**: copy the target IP, a host, your IP, a cred or all IPs to the clipboard.
+- **VPN check** (`vpncheck = yes`): a warning when the VPN interface is down or the route to the target doesn't go through it.
 - **More hosts per box** (`dz -t`): `dz -t dc01 -ip <ip> [-h <host,...>]` adds a host with `$DC01_IP`, a tagged `/etc/hosts` line, a row in the note's Hosts table and a timeline line. `dz -t dc01` makes it the target (`$TARGET_IP`, `$TARGET`, `$DOMAIN` and the prompt follow), `dz -t` lists them, `--drop` removes one. `$TARGETS` has every IP of the box.
 - `dz -i` and `dz -v` show the extra hosts.
 

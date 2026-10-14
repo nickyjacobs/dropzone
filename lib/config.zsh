@@ -14,6 +14,7 @@ _dz_config_defaults() {
   DZ_IFACE=tun0
   DZ_AUTOLOAD=yes
   DZ_PING=yes
+  DZ_VPNCHECK=yes
   DZ_PROMPT=yes
   DZ_CREDS=no
   DZ_LOG_COMMANDS=yes
@@ -72,7 +73,7 @@ _dz_config_load() {
         [[ $val == (auto|xfce4-screenshooter|flameshot|gnome-screenshot|import) ]] ||
           { _dz_cfg_err "screenshot must be auto, xfce4-screenshooter, flameshot, gnome-screenshot or import, not '$val'"; continue }
         DZ_SHOT=$val ;;
-      autoload|animate|ping|prompt|commands|output|creds)
+      autoload|animate|ping|prompt|commands|output|creds|vpncheck)
         [[ ${(L)val} == (yes|no|true|false|on|off) ]] ||
           { _dz_cfg_err "$key must be yes or no, not '$val'"; continue }
         case $key in
@@ -116,7 +117,7 @@ _dz_config_show() {
   local -a rows=(
     paths boxes "${DZ_ROOT/#$HOME/~}"
     box folders "$DZ_DIRS"  box iface "$DZ_IFACE"
-    box autoload "$DZ_AUTOLOAD"  box ping "$DZ_PING"  box prompt "$DZ_PROMPT"
+    box autoload "$DZ_AUTOLOAD"  box ping "$DZ_PING"  box vpncheck "$DZ_VPNCHECK"  box prompt "$DZ_PROMPT"
     log commands "$DZ_LOG_COMMANDS"  log output "$DZ_LOG_OUTPUT"
     notes notes "$DZ_NOTE_MODE"  notes template "${${DZ_TEMPLATE:-$(_dz_template 2>/dev/null)}/#$HOME/~}"
     notes vault "${DZ_VAULT:--}"  notes vault_folder "$DZ_NOTES"  notes attachments "$DZ_ATTACH"

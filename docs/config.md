@@ -42,6 +42,7 @@ folders = scans loot exploits evidence
 | `iface` | `tun0` | interface for `$ATTACKER_IP` and `$INTERFACE`, shown in the menu |
 | `autoload` | `yes` | load the last box in new terminals |
 | `ping` | `yes` | ping the target once after `-n` or `-ip` (info only) |
+| `vpncheck` | `yes` | warn when the VPN interface is down or the route to the target doesn't go through it; never blocks |
 | `prompt` | `yes` | show `[box ip]-` in your prompt, see [Prompt](#prompt) |
 
 ### [log]

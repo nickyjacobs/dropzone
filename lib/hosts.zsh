@@ -134,7 +134,7 @@ _dz_target() {
       _dz_timeline_add $note "host $label: new IP $ip"
     fi
   fi
-  [[ $ip != $old_ip ]] && _dz_on DZ_PING && _dz_ping $ip
+  [[ $ip != $old_ip ]] && { _dz_vpn_check $ip; _dz_on DZ_PING && _dz_ping $ip }
   _dz_load $BOX
   _dz_label_var $label
   if (( new )); then print "• host $label added: \$$REPLY=$ip  (dz -t $label makes it the target)"

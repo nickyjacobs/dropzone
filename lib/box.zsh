@@ -162,6 +162,20 @@ _dz_hosts_all() {
   return 0
 }
 
+# Is the VPN up, and does the route to $1 go through it? Only a warning, never blocks.
+_dz_vpn_check() {
+  _dz_on DZ_VPNCHECK && (( $+commands[ip] )) || return 0
+  if ! ip link show $DZ_IFACE >/dev/null 2>&1; then
+    print -u2 "• warning: $DZ_IFACE doesn't exist, is your VPN connected? (iface in the config)"
+    return 0
+  fi
+  local -a w=(${(z)"$(ip route get $1 2>/dev/null)"})
+  local dev=${w[${w[(i)dev]}+1]}
+  [[ -z $dev || $dev == $DZ_IFACE ]] ||
+    print -u2 "• warning: the route to $1 goes through $dev, not $DZ_IFACE"
+  return 0
+}
+
 # One ping, for info only.
 _dz_ping() {
   if ping -c 1 -W 1 $1 >/dev/null 2>&1; then
@@ -257,7 +271,7 @@ _dz_new() {
       fi
   fi
 
-  [[ $ip != $old_ip ]] && _dz_on DZ_PING && _dz_ping $ip
+  [[ $ip != $old_ip ]] && { _dz_vpn_check $ip; _dz_on DZ_PING && _dz_ping $ip }
   _dz_load $name && cd $dir
   print "• BOX=$BOX  TARGET_IP=$TARGET_IP  ATTACKER_IP=${ATTACKER_IP:-<$DZ_IFACE down>}${DOMAIN:+  DOMAIN=$DOMAIN}"
 }
@@ -268,7 +282,7 @@ _dz_workon() {
   if [[ ! -f $DZ_ROOT/$1/.dropzone && -f $DZ_ROOT/_archive/$1/.dropzone ]]; then
     _dz_unarchive $1 || return 1
   fi
-  _dz_load $1 && cd $DZ_ROOT/$1
+  _dz_load $1 && cd $DZ_ROOT/$1 && _dz_vpn_check $TARGET_IP
 }
 
 # The $<HOST>_IP variables of the previous box.

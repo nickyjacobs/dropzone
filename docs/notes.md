@@ -51,6 +51,7 @@ Edit your copy as much as you like: add sections, translate headings, drop what 
 | `dz -s [caption]` | a timeline line with the screenshot embedded under it |
 | `dz -f <flag>` | `- **User flag:** <flag>` / `- **Root flag:** <flag>`, or an Obsidian callout (see below); a `## Flags` section is added when it's missing |
 | `dz -c user:secret` | a row in the first table under `## Credentials` |
+| `dz -p` | rows in the first table under `## Ports` (or `### Poorten`), and a timeline line |
 | `dz -t <host> -ip <ip>` | a row in the first table under `## Hosts` (columns Host, IP, Hostnames) and a timeline line |
 | `dz -d` / `dz -a` / root flag | `status: done` and `updated:` in the frontmatter |
 
