@@ -4,6 +4,8 @@ All notable changes to dropzone. Format based on [Keep a Changelog](https://keep
 
 ## [Unreleased]
 
+## [1.1.0] - 2026-10-14
+
 ### Added
 - **Ports from nmap** (`dz -p [file]`): open ports from your own `-oX` / `-oA` / `-oG` output into the note's ports table, matched to the hosts of the box, without touching rows you already have. dropzone never scans.
 - **`dz serve [smb] [dir] [port]`**: an HTTP server or SMB share, with download commands that have your IP in them. It listens on your VPN IP only, and refuses a folder with box files in it.
@@ -46,5 +48,6 @@ First public release.
 - `examples/obsidian/`: a callout template, a Dataview dashboard and setup notes.
 - Tests, CI on Ubuntu and Kali, secret scan, link check, releases from this changelog.
 
-[Unreleased]: https://github.com/nickyjacobs/dropzone/compare/v1.0.0...HEAD
+[Unreleased]: https://github.com/nickyjacobs/dropzone/compare/v1.1.0...HEAD
+[1.1.0]: https://github.com/nickyjacobs/dropzone/compare/v1.0.0...v1.1.0
 [1.0.0]: https://github.com/nickyjacobs/dropzone/releases/tag/v1.0.0
