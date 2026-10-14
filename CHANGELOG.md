@@ -5,6 +5,7 @@ All notable changes to dropzone. Format based on [Keep a Changelog](https://keep
 ## [Unreleased]
 
 ### Changed
+- The demo GIF starts without a loaded box; a second GIF shows the menu in `docs/commands.md`.
 - `scripts/release.sh` prepares a release on `develop`; `scripts/release.sh --tag` tags it on `main` after the merge, because `main` only takes pull requests.
 
 ## [1.0.0] - 2026-10-14

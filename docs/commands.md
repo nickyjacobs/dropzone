@@ -170,6 +170,8 @@ dz             # open the menu
 DZ_ART=7 dz    # with a fixed banner art (1-10), just this once
 ```
 
+<p align="center"><img src="../assets/menu.gif" alt="dropzone menu: new box form, box list, yes/no choice" width="85%"></p>
+
 | Item | Does |
 |---|---|
 | New box | form for name, IP and hostnames |
