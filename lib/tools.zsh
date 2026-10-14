@@ -21,8 +21,15 @@ _dz_serve() {
     if [[ $a == <1-65535> ]]; then port=$a; else dir=$a; fi
   done
   dir=${dir:-$PWD}
+  # 'dz serve exploits' = the exploits folder of the loaded box.
+  [[ ! -d $dir && -n $BOX && -d $DZ_ROOT/$BOX/$dir ]] && dir=$DZ_ROOT/$BOX/$dir
   [[ -d $dir ]] || { print -u2 "dz: no folder $dir"; return 1 }
   dir=${dir:A}
+  # Never share a folder with box files (creds, .dropzone, notes) or your whole home.
+  if [[ $dir == ${HOME:A} || -e $dir/.dropzone || -e $dir/creds || -e $dir/notes.md ]]; then
+    print -u2 "dz: ${dir/#$HOME/~} holds your box files, serve a subfolder (dz serve exploits)"
+    return 1
+  fi
   _dz_my_ip || return 1; ip=$REPLY
   local -a files=($dir/*(N.:t))
   _dz_ui
@@ -37,7 +44,7 @@ _dz_serve() {
     (( port != 445 )) && _dz_row "note" "Windows only talks SMB on 445; other ports need a tunnel" 8
     for f in $files[1,8]; do _dz_row "" "copy \\\\$ip\\share\\$f ." 8; done
     _dz_rule
-    impacket-smbserver -smb2support -port $port share $dir
+    impacket-smbserver -smb2support -ip $ip -port $port share $dir
     return
   fi
 
@@ -54,8 +61,8 @@ _dz_serve() {
   done
   (( $#files > 12 )) && _dz_row "" "... and $(( $#files - 12 )) more" 8
   _dz_rule
-  print -r -- "${_ud}Ctrl-C stops the server${_ur}"
-  python3 -m http.server $port --directory $dir
+  print -r -- "${_ud}Listens on $ip only. Ctrl-C stops the server${_ur}"
+  python3 -m http.server $port --bind $ip --directory $dir
 }
 
 # dz -cp [what]: the value of what, in $REPLY, and a label for the message in reply.

