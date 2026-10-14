@@ -20,7 +20,7 @@
 | `lib/hosts.zsh` | more hosts in a box (`dz -t`) |
 | `lib/ui.zsh` | the block layout of `--help`, `dz -i` and `dz --config show/check` |
 | `lib/notes.zsh` | flags, timeline and screenshots in the note (`dz -f`, `-j`, `-s`) |
-| `lib/status.zsh` | box status, done, archive, open note in Obsidian |
+| `lib/status.zsh` | box status, done, archive, open the note |
 | `templates/box-note.md` | the note template that ships with dropzone |
 | `examples/obsidian/` | Obsidian template, dashboard and setup notes |
 | `tests/` | `run.zsh`, `helpers.zsh` and one `test_*.zsh` per area |
@@ -116,6 +116,6 @@ The tag runs `.github/workflows/release.yml`: it checks that `VERSION` matches t
 | `gitleaks.yml` | every push and PR | secret scan over the full history |
 | `lychee.yml` | Markdown changes, weekly | checks every link in the docs |
 | `release.yml` | tag `v*.*.*` | GitHub Release from the CHANGELOG |
-| `demo.yml` | change to `assets/demo.tape` | renders `demo.gif` with [VHS](https://github.com/charmbracelet/vhs) as an artifact; download it, check it, commit it |
+| `demo.yml` | change to `assets/*.tape` | renders `demo.gif` and `menu.gif` with [VHS](https://github.com/charmbracelet/vhs) as an artifact; download them, check them, commit them |
 
 Dependabot keeps the actions up to date, with pull requests against `develop`.

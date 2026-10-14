@@ -54,7 +54,7 @@ Everything runs through `dz`. Without options it opens the menu; with options it
 | `--version` | version |
 | `-h`, `--help` | help (`-h` without a value, `--help` anywhere) |
 
-One action per call: `-n`, `-l`, `-v`, `-i`, `-x`, `-t`, `-p`, `-cp`, `-o`, `-d`, `-a`, `-f`, `-j`, `-s`, `-c` or `-r`. Tab completion knows every option and fills in box names after `-l`, `-r`, `-o`, `-d` and `-a` (archived ones too after `-l`, `-o` and `-d`).
+One action per call: `-n`, `-l`, `-v`, `-i`, `-x`, `-t`, `-p`, `-cp`, `-o`, `-d`, `-a`, `-f`, `-j`, `-s`, `-c` or `-r`. Tab completion knows every option and fills in box names after `-l`, `-r`, `-o`, `-d` and `-a` (archived ones too after `-l`, `-o` and `-d`), host names after `-t`, the choices after `-cp` and nmap files after `-p`.
 
 ## New box
 
@@ -74,7 +74,7 @@ What it sets up:
 - `~/boxes/<name>/.dropzone` with name, IP and hostnames. dz reads it line by line and never runs it, so files from a target (a dumped `.env`, unpacked loot) can't run code on your Kali
 - a note from your template: `~/boxes/<name>/notes.md`, or `<vault>/Boxes/<name>.md` with `notes = vault`, see [notes.md](notes.md)
 - an `/etc/hosts` line tagged `# dz:<name>`, after a backup to `/etc/hosts.dz.bak`
-- one ping to the target, info only (`ping = no` in the config turns it off)
+- one ping to the target, info only (`ping = no` in the config turns it off), and a warning when your VPN is down or the route to the target doesn't go through it (`vpncheck = no` turns that off)
 
 `dz -n` on a box that already exists updates its IP and keeps its hostnames, unless you give new ones.
 
@@ -96,7 +96,7 @@ dz -h none                # remove its /etc/hosts line
 
 | Command | Does |
 |---|---|
-| `dz -l jacops` | load a box and `cd` into its folder |
+| `dz -l jacops` | load a box and `cd` into its folder (with a warning when the VPN is down) |
 | `dz -v` | view all boxes with IP, status and hostnames, `▶` marks the loaded one |
 | `dz -v --all` | also the archived boxes |
 | `dz -i` | box, target, hostnames, attacker IP, status, folder and note of the loaded box |
@@ -176,7 +176,7 @@ Also `domain`, `targets`, `user` and `hash`. It uses `wl-copy`, `xclip` or `xsel
 | Command | Does |
 |---|---|
 | `dz -d` / `dz -d jacops` | mark the loaded box (or `jacops`) done: `status: done` and `updated:` in the note |
-| `dz -a jacops` | done, plus the folder moves to `~/boxes/_archive/jacops` and its `/etc/hosts` line goes; the note stays |
+| `dz -a jacops` | done, plus the folder moves to `~/boxes/_archive/jacops` and its `/etc/hosts` lines go; the note stays |
 | `dz -l jacops` | on an archived box: moves it back and sets `status: active` |
 | `dz -o` / `dz -o jacops` | open the note: in `$VISUAL` / `$EDITOR` or the desktop's default app; with `notes = vault` in Obsidian (`obsidian://` link). Without either it prints the path or link |
 
@@ -234,7 +234,7 @@ dz -r <name> [-y] [--note | --keep-note]
 |---|---|
 | `~/boxes/<name>/` | system trash (`gio trash`), deleted if there is no trash |
 | the note | `notes = folder`: along with the folder · `notes = vault`: `.trash/` in the vault, only if you choose so |
-| `/etc/hosts` line | removed |
+| `/etc/hosts` lines | removed, every host of the box |
 | loaded box | unloaded |
 
 Only folders made by dropzone can be removed. Names must start with a letter or digit, so `.` and `..` are never a box.
@@ -252,8 +252,8 @@ DZ_ART=7 dz    # with a fixed banner art (1-10), just this once
 |---|---|
 | New box | form for name, IP and hostnames |
 | Load box | pick a box from the list, archived ones included |
-| Change IP | new IP for the loaded box, old IP prefilled |
-| Open note | open the note of the loaded box in Obsidian |
+| Change IP | new IP for the main host of the loaded box, old IP prefilled |
+| Open note | open the note of the loaded box (your editor, or Obsidian with `notes = vault`) |
 | Mark done | mark the loaded box done, optionally archive it |
 | Remove box | pick a box, confirm, choose whether the note goes too |
 | Unload box | unload the box |
@@ -270,7 +270,7 @@ DZ_ART=7 dz    # with a fixed banner art (1-10), just this once
 | `←` `→` / `Tab` | switch Yes / No |
 | `y` / `n` | yes / no straight away |
 
-Yes/no questions default to *No*. An empty name or IP field cancels the form.
+Yes/no questions default to *No*. An empty name or IP field cancels the form. The menu covers the everyday box tasks; hosts, ports, notes and the tools are options (`dz --help`).
 
 ## Variables
 

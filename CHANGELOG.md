@@ -14,17 +14,16 @@ All notable changes to dropzone. Format based on [Keep a Changelog](https://keep
 
 ### Changed
 - `dz --help`, `dz -i` and `dz --config show/check` in blocks: a rule, `[+] Section`, indented rows. The help is grouped into Boxes, Target, Notes and Setup.
-- Tables in the README and docs have a header row.
+- Tables in the README and docs have a header row; every doc page has the same navigation line.
+- The prompt shows the active host when it isn't the main one: `[corp dc01 10.10.10.5]-`.
+- The demo GIF starts without a loaded box; a second GIF shows the menu in `docs/commands.md`.
+- `scripts/release.sh` prepares a release on `develop`; `scripts/release.sh --tag` tags it on `main` after the merge, because `main` only takes pull requests.
 - The bundled template has a `## Hosts` table with Host, IP and Hostnames columns.
 - Archiving a box removes all its `/etc/hosts` lines; restoring it with `dz -l` puts them back.
 
 ### Fixed
 - The menu's *Change IP* always changes the main host.
-- One test used the real `/etc/hosts` (it asked for sudo and failed); every test now has its own hosts file.
-
-### Changed
-- The demo GIF starts without a loaded box; a second GIF shows the menu in `docs/commands.md`.
-- `scripts/release.sh` prepares a release on `develop`; `scripts/release.sh --tag` tags it on `main` after the merge, because `main` only takes pull requests.
+- One test used the real `/etc/hosts` (it asked for sudo and failed); every test now has its own hosts file, and runs with the VPN check off.
 
 ## [1.0.0] - 2026-10-14
 

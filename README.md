@@ -34,7 +34,7 @@
 
 ## Quick start
 
-Needs zsh 5.8+ and perl (both on Kali by default).
+Needs zsh 5.8+, perl and `ip` (iproute2), all on Kali by default. A few commands use optional tools, and tell you when one is missing: `xclip`, `xsel` or `wl-copy` for `dz -cp`, a screenshot tool for `dz -s` (`xfce4-screenshooter`, `flameshot`, `gnome-screenshot` or ImageMagick), `python3` and `impacket-smbserver` for `dz serve`, `sudo` for `/etc/hosts`.
 
 ```bash
 git clone https://github.com/nickyjacobs/dropzone.git ~/dropzone
