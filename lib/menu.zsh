@@ -290,8 +290,9 @@ _dz_menu() {
             3)
               _dz_mode=form _dz_title="New IP for $BOX"
               _dz_draw $f
-              ip=$TARGET_IP
-              _dz_ask ip 'ip' && [[ -n $ip && $ip != $TARGET_IP ]] &&
+              _dz_box_read $DZ_ROOT/$BOX && ip=$reply[2]       # the main host, not the active one
+              local cur_ip=$ip
+              _dz_ask ip 'ip' && [[ -n $ip && $ip != $cur_ip ]] &&
                 { action=ip; break }
               _dz_set_main ;;
             4) action=open; break ;;

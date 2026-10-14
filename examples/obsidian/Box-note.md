@@ -17,9 +17,9 @@ tags: [box]
 
 ## Hosts
 
-| IP | Hostname | OS | Notes |
-|---|---|---|---|
-| $TARGET_IP | | | |
+| Host | IP | Hostnames | OS | Notes |
+|---|---|---|---|---|
+| {{name}} | $TARGET_IP | {{hosts}} | | |
 
 ## Ports & services
 

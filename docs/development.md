@@ -15,8 +15,12 @@
 | `lib/creds.zsh` | creds per box (`dz -c`), opt-in |
 | `lib/log.zsh` | command log (`preexec` hook) and `script(1)` recording |
 | `lib/prompt.zsh` | `_dz_prompt`, the prompt segment |
+| `lib/ports.zsh` | open ports from nmap output into the note (`dz -p`) |
+| `lib/tools.zsh` | `dz serve` and `dz -cp` |
+| `lib/hosts.zsh` | more hosts in a box (`dz -t`) |
+| `lib/ui.zsh` | the block layout of `--help`, `dz -i` and `dz --config show/check` |
 | `lib/notes.zsh` | flags, timeline and screenshots in the note (`dz -f`, `-j`, `-s`) |
-| `lib/status.zsh` | box status, done, archive, open note in Obsidian |
+| `lib/status.zsh` | box status, done, archive, open the note |
 | `templates/box-note.md` | the note template that ships with dropzone |
 | `examples/obsidian/` | Obsidian template, dashboard and setup notes |
 | `tests/` | `run.zsh`, `helpers.zsh` and one `test_*.zsh` per area |
@@ -29,6 +33,7 @@ Conventions:
 - Files dropzone writes are read, never sourced: the config, `.dropzone` and `creds`. Validate what you read.
 - Box names always go through `_dz_valid_name`, IPs through `_dz_valid_ip`, hostnames through `_dz_valid_host`.
 - Errors to stderr, output to stdout. Colour only through `_dz_color`.
+- Overviews you read (help, info, config) use the blocks from `lib/ui.zsh` (`_dz_rule`, `_dz_head`, `_dz_row`); lists you scan or pipe (`dz -v`, `dz -t`, `dz -c`) stay one line per item.
 - All text is English.
 - Nothing personal in defaults: everything about the user's setup comes from their config.
 - User files live outside the repo (`~/.config/dropzone/`, `~/boxes/`, the vault), so an update can never touch them. Never write into `$_dz_repo` at runtime.
@@ -82,19 +87,26 @@ Not every change needs a release right away; several fixes can go out together.
 - `main`: releases only. Every commit on it is a released version.
 - `develop`: daily work. Feature branches start here, pull requests go here.
 
-From `develop` to `main` through a pull request with green CI, merged with a merge commit (`gh pr merge --merge`).
+From `develop` to `main` through a pull request with green CI, merged with a merge commit (`gh pr merge --merge`). A ruleset on `main` blocks direct pushes, force-pushes and deleting the branch.
 
 ## Release
 
-Put the changes under `## [Unreleased]` in `CHANGELOG.md` on `develop`, merge into `main`, then on `main`:
+`main` only takes pull requests with green CI (`test`, `kali`, `scan`), so a release goes in two steps. Put the changes under `## [Unreleased]` in `CHANGELOG.md` first.
 
 ```bash
-scripts/release.sh 1.1.0          # tests, VERSION, changelog, commit, tag
-git push && git push origin v1.1.0
+# on develop
+scripts/release.sh 1.1.0          # tests, VERSION, changelog, commit "Release: v1.1.0"
+git push
+gh pr create --base main --head develop --title "Release v1.1.0" --fill
+gh pr merge --merge               # when CI is green
+
+# on main
+git checkout main
+scripts/release.sh --tag          # tag v1.1.0 and push it
 git checkout develop && git merge --ff-only main && git push
 ```
 
-Pushing the tag runs `.github/workflows/release.yml`: it checks that `VERSION` matches the tag and creates the GitHub Release with that version's CHANGELOG section as notes. The release badge in the README follows by itself.
+The tag runs `.github/workflows/release.yml`: it checks that `VERSION` matches the tag and creates the GitHub Release with that version's CHANGELOG section as notes. The release badge in the README follows by itself.
 
 ## Workflows
 
@@ -104,6 +116,6 @@ Pushing the tag runs `.github/workflows/release.yml`: it checks that `VERSION` m
 | `gitleaks.yml` | every push and PR | secret scan over the full history |
 | `lychee.yml` | Markdown changes, weekly | checks every link in the docs |
 | `release.yml` | tag `v*.*.*` | GitHub Release from the CHANGELOG |
-| `demo.yml` | change to `assets/demo.tape` | renders `demo.gif` with [VHS](https://github.com/charmbracelet/vhs) as an artifact; download it, check it, commit it |
+| `demo.yml` | change to `assets/*.tape` | renders `demo.gif` and `menu.gif` with [VHS](https://github.com/charmbracelet/vhs) as an artifact; download them, check them, commit them |
 
 Dependabot keeps the actions up to date, with pull requests against `develop`.

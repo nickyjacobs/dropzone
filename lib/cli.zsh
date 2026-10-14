@@ -3,49 +3,49 @@
 
 _dz_help() {
   emulate -L zsh
-  local g=$'\e[1;38;5;46m' d=$'\e[38;5;246m' b=$'\e[1m' r=$'\e[0m'
-  _dz_color || g='' d='' b='' r=''
-  print -r -- "${g}dropzone${r} ${d}v$_dz_version · per-box tooling for Kali${r}
-
-${b}Usage${r}
-  dz              open the menu
-  dz [options]    run an action straight away
-
-${b}Options${r}
-  -n <name>       new box (needs -ip)
-  -ip <ip>        target IP; without -n it changes the IP of the loaded box
-  -h <host,...>   hostnames for /etc/hosts; without -n it changes them, none clears
-  -l <name>       load a box
-  -v              view all boxes, --all includes the archive
-  -i              show the loaded box
-  -x              unload the box
-  -o [name]       open the note (editor, or Obsidian with notes = vault)
-  -d [name]       mark a box done
-  -a <name>       archive a box (done, folder to _archive/)
-  -f [user|root] <flag>
-                  store a flag in the note (root flag = done); -f alone shows them
-  -j <text>       add a line to the note's timeline; -j alone shows it
-  -s [caption]    screenshot to evidence/, embedded in the timeline
-  -c [user[:secret]] [source]
-                  store or list creds (needs creds = yes)
-  -r <name>       remove a box (to the trash)
-  -y              no confirmation, with -r
-  --note          also trash the note, with -r
-  --keep-note     keep the note, with -r
-  --config        edit the config (show: values in use, check: new settings)
-  --update        update dropzone; your config, boxes and notes stay
-  --version       version
-  -h, --help      this help
-
-${b}Examples${r}
-  dz -n jacops -ip 10.129.42.190 -h dc01.jacops.htb,jacops.htb
-  dz -ip 10.129.42.201
-  dz -j found an NFS share with backups
-  dz -s nfs share listing
-  dz -c alex NFS
-  dz -r jacops --note
-
-${d}More: https://github.com/nickyjacobs/dropzone/blob/main/docs/commands.md${r}"
+  _dz_ui
+  print -r -- "${_ug}dropzone${_ur} ${_ud}v$_dz_version · per-box tooling for Kali${_ur}"
+  _dz_rule; _dz_head Usage
+  _dz_row "dz" "open the menu"
+  _dz_row "dz [options]" "run an action straight away"
+  _dz_rule; _dz_head Boxes
+  _dz_row "-n <name> -ip <ip>" "new box"
+  _dz_row "-l <name>" "load a box (an archived one comes back)"
+  _dz_row "-v [--all]" "view all boxes, --all includes the archive"
+  _dz_row "-i" "show the loaded box"
+  _dz_row "-x" "unload the box"
+  _dz_row "-d [name]" "mark a box done"
+  _dz_row "-a <name>" "archive a box (done, folder to _archive/)"
+  _dz_row "-r <name> [-y]" "remove a box (to the trash)"
+  _dz_row "  --note / --keep-note" "also trash the note, or keep it, with -r"
+  _dz_rule; _dz_head Target
+  _dz_row "-ip <ip>" "new IP for the loaded box"
+  _dz_row "-h <host,...>" "hostnames for /etc/hosts, none clears them"
+  _dz_row "-t [host]" "hosts in the box: list, or make <host> the target"
+  _dz_row "-t <host> -ip <ip>" "add or change a host (\$HOST_IP), --drop removes it"
+  _dz_rule; _dz_head Notes
+  _dz_row "-o [name]" "open the note"
+  _dz_row "-j <text>" "line in the timeline, -j alone shows it"
+  _dz_row "-s [caption]" "screenshot to evidence/, into the note"
+  _dz_row "-f [user|root] <flag>" "flag into the note (root = done), -f shows them"
+  _dz_row "-c [user[:secret]]" "store creds (needs creds = yes), -c lists them"
+  _dz_row "-p [file]" "open ports from your nmap output into the note"
+  _dz_rule; _dz_head Tools
+  _dz_row "serve [dir] [port]" "HTTP server + download commands with your IP"
+  _dz_row "serve smb [dir]" "SMB share + copy commands"
+  _dz_row "-cp [what]" "copy to the clipboard: target, <host>, me, user, pass"
+  _dz_rule; _dz_head Setup
+  _dz_row "--config [show|check]" "edit the config, show it, list new settings"
+  _dz_row "--update" "update dropzone, your config and boxes stay"
+  _dz_row "--version" "version"
+  _dz_row "-h, --help" "this help"
+  _dz_rule; _dz_head Examples
+  print -r -- "    ${_uk}dz -n jacops -ip 10.129.42.190 -h jacops.htb${_ur}"
+  print -r -- "    ${_uk}dz -t dc01 -ip 10.129.42.191 -h dc01.jacops.htb${_ur}"
+  print -r -- "    ${_uk}dz -j found an NFS share with backups${_ur}"
+  print -r -- "    ${_uk}dz -s nfs share listing${_ur}"
+  _dz_rule
+  print -r -- "${_ud}More: https://github.com/nickyjacobs/dropzone/blob/main/docs/commands.md${_ur}"
 }
 
 # dz -v [--all]: boxes with IP, status and hostnames. --all also shows the archive.
@@ -64,7 +64,7 @@ _dz_list() {
       [[ ${d:t} == $BOX ]] && mark='▶' || mark=' '
       st=$(_dz_status ${d:t})
     fi
-    printf '%s %-20s %-16s %-10s %s\n' $mark ${d:t} $reply[2] $st "$reply[3]"
+    printf '%s %-20s %-16s %-10s %s\n' $mark ${d:t} $reply[2] $st "$reply[3]${_dz_bh:+ (+$#_dz_bh hosts)}"
   done
   [[ -z $all ]] && (( narch )) && print "  + $narch archived (dz -v --all)"
   return 0
@@ -95,19 +95,33 @@ _dz_info() {
   [[ -n $BOX ]] || { print -u2 "no box loaded"; return 1 }
   _dz_box_read $DZ_ROOT/$BOX || { print -u2 "dz: box '$BOX' is gone (removed or archived?), dz -x"; return 1 }
   _dz_attacker_refresh
-  local note=$(_dz_note $BOX)
-  printf '%-10s %s\n' box $BOX target $TARGET_IP hosts "${reply[3]:--}" \
-    attacker "${ATTACKER_IP:-$DZ_IFACE down}" status "$(_dz_status $BOX)" \
-    folder $DZ_ROOT/$BOX note "$([[ -f $note ]] && print $note || print -)"
-  [[ -n $TARGET_USER ]] && printf '%-10s %s\n' cred "$TARGET_USER (dz -c)"
-  [[ -n $DZ_RECORDING ]] && printf '%-10s %s\n' recording "${DZ_RECORDING/#$HOME/~}"
+  _dz_ui
+  local note=$(_dz_note $BOX) l
+  local -a extra=("${_dz_bh[@]}") w
+  _dz_rule; _dz_head $BOX "$(_dz_status $BOX)"
+  _dz_row target "$TARGET_IP${DZ_ACTIVE:+ ($DZ_ACTIVE)}" 10
+  _dz_row hosts "${reply[3]:--}" 10
+  _dz_row attacker "${ATTACKER_IP:-$DZ_IFACE down}" 10
+  _dz_row folder "${DZ_ROOT/#$HOME/~}/$BOX" 10
+  _dz_row note "$([[ -f $note ]] && print ${note/#$HOME/~} || print -)" 10
+  [[ -n $TARGET_USER ]] && _dz_row cred "$TARGET_USER (dz -c)" 10
+  [[ -n $DZ_RECORDING ]] && _dz_row recording "${DZ_RECORDING/#$HOME/~}" 10
+  if (( $#extra )); then
+    _dz_rule; _dz_head Hosts "dz -t"
+    _dz_row main "$reply[2]" 10
+    for l in $extra; do
+      w=(${=l}); _dz_label_var $w[1]
+      _dz_row "${w[1]}" "$w[2]  \$$REPLY${w[3]:+  ${w[3,-1]}}" 10
+    done
+  fi
+  _dz_rule
   return 0
 }
 
 # Parser helpers for dz: one action per call, and options that take a value.
 # They work on the locals of dz (dynamic scope).
 _dz_act() {
-  [[ -z $act || $act == $1 ]] || { print -u2 "dz: pick one action (-n, -l, -v, -i, -x, -o, -d, -a, -f, -j, -s, -c, -r)"; return 1 }
+  [[ -z $act || $act == $1 ]] || { print -u2 "dz: pick one action (-n, -l, -v, -i, -x, -t, -p, -cp, -o, -d, -a, -f, -j, -s, -c, -r)"; return 1 }
   act=$1
 }
 _dz_val() {
@@ -118,11 +132,13 @@ _dz_val() {
 dz() {
   emulate -L zsh
   (( $# )) || { _dz_menu; return }
+  # Tools are words: dz serve.
+  [[ $1 == serve ]] && { shift; _dz_serve "$@"; return }
   # --help anywhere wins, so you can add it to any command (not inside the text of -j / -s).
   local -i stop=${@[(i)(-j|--journal|-s|--shot)]}
   (( ${${@[1,stop-1]}[(I)--help]} )) && { _dz_help; return 0 }
 
-  local act='' name='' ip='' host='' yes=0 note=ask all='' cred='' credsrc='' fkind='' text=''
+  local act='' name='' ip='' host='' yes=0 note=ask all='' cred='' credsrc='' fkind='' text='' label='' drop='' file='' what=''
   while (( $# )); do
     case $1 in
       -n|--new)    _dz_val $1 "$2" && _dz_act new || return 1; name=$2; shift ;;
@@ -132,6 +148,10 @@ dz() {
       -h|--host)   [[ -n $2 && $2 != -* ]] || { _dz_help; return 0 }   # -h alone = help
                    host=$2; shift ;;
       -v|--view)   _dz_act list || return 1 ;;
+      -t|--target) _dz_act target || return 1; [[ -n $2 && $2 != -* ]] && { label=$2; shift } ;;
+      --drop)      drop=1 ;;
+      -p|--ports)  _dz_act ports || return 1; [[ -n $2 && $2 != -* ]] && { file=$2; shift } ;;
+      -cp|--copy)  _dz_act copy || return 1; [[ -n $2 && $2 != -* ]] && { what=$2; shift } ;;
       -i|--info)   _dz_act info || return 1 ;;
       -x|--off)    _dz_act off || return 1 ;;
       -o|--open)   _dz_act open || return 1; [[ -n $2 && $2 != -* ]] && { name=$2; shift } ;;
@@ -163,7 +183,7 @@ dz() {
   done
 
   # -ip or -h without -n changes that box: the one from -l <name>, otherwise the loaded one.
-  if [[ ( -n $ip || -n $host ) && $act != new ]]; then
+  if [[ ( -n $ip || -n $host ) && $act != (new|target) ]]; then
     [[ -z $act || $act == load ]] || { print -u2 "dz: -ip and -h go with -n or -l"; return 1 }
     name=${name:-$BOX}
     [[ -n $name ]] || { print -u2 "dz: no box loaded, use -l <name> -ip <ip>"; return 1 }
@@ -186,6 +206,9 @@ dz() {
     journal) _dz_journal "$text" ;;
     shot) _dz_shot "$text" ;;
     info) _dz_info ;;
+    target) _dz_target "$label" "$ip" "$host" "$drop" ;;
+    ports) _dz_ports "$file" ;;
+    copy)  _dz_copy "$what" ;;
     off)  _dz_off && print "• box unloaded" ;;
     *)    print -u2 "dz: no action given (dz --help)"; return 1 ;;
   esac
@@ -195,6 +218,16 @@ dz() {
 _dz_comp_boxes() {
   local -a b=($DZ_ROOT/*/.dropzone(Nn:h:t))
   _describe -t boxes box b
+}
+_dz_comp_copy() {
+  local -a w=(target me domain targets user pass hash)
+  [[ -n $BOX ]] && _dz_box_read $DZ_ROOT/$BOX 2>/dev/null && w+=($BOX ${_dz_bh%% *})
+  _describe -t what what w
+}
+_dz_comp_hosts() {
+  local -a h=() l
+  [[ -n $BOX ]] && _dz_box_read $DZ_ROOT/$BOX 2>/dev/null && h=($BOX ${_dz_bh%% *})
+  _describe -t hosts host h
 }
 _dz_comp_all() {
   local -a b=($DZ_ROOT/*/.dropzone(Nn:h:t)) a=($DZ_ROOT/_archive/*/.dropzone(Nn:h:t))
@@ -209,6 +242,9 @@ _dz_complete() {
     '-l[load a box]:box:_dz_comp_all' \
     '(-n -l -v -i -x -o -d -a -c)-r[remove a box]:box:_dz_comp_boxes' \
     '-v[view boxes]' '--all[include the archive, with -v]' '-i[show the loaded box]' '-x[unload the box]' \
+    '-t[hosts in the box]::host:_dz_comp_hosts' '--drop[remove the host, with -t]' \
+    '-p[nmap output into the note]::nmap output:_files -g "*.(xml|gnmap)"' \
+    '-cp[copy to the clipboard]::what:_dz_comp_copy' \
     '-c[store or list creds]::user\:secret:' \
     '-f[store or show a flag]::kind:(user root)' '-j[add to the timeline]:*::text:' '-s[take a screenshot]:*::caption:' \
     '-o[open the note]::box:_dz_comp_all' '-d[mark done]::box:_dz_comp_all' '-a[archive a box]:box:_dz_comp_boxes' \

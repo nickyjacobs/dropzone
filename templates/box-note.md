@@ -9,9 +9,11 @@ tags: [box]
 
 # {{name}}
 
-| Target | Hostnames | OS | Difficulty |
-|---|---|---|---|
-| {{ip}} | {{hosts}} | | |
+## Hosts
+
+| Host | IP | Hostnames | OS | Notes |
+|---|---|---|---|---|
+| {{name}} | {{ip}} | {{hosts}} | | |
 
 ## Ports & services
 

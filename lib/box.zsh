@@ -10,6 +10,10 @@ _dz_name_re='^[A-Za-z0-9][A-Za-z0-9._-]*$'
 
 _dz_valid_name() { [[ $1 =~ $_dz_name_re ]] }
 _dz_valid_host() { [[ $1 =~ '^[A-Za-z0-9][A-Za-z0-9.-]*$' ]] }
+# Extra hosts in a box (dz -t): lowercase, digits and '-', like dc01 or ms-02.
+_dz_valid_label() { [[ $1 =~ '^[a-z0-9][a-z0-9-]*$' ]] }
+# Variable for a host: dc01 -> DC01_IP, ms-02 -> MS_02_IP.
+_dz_label_var() { REPLY=${(U)1//-/_}_IP }
 _dz_valid_ip() {
   [[ $1 =~ '^[0-9]{1,3}(\.[0-9]{1,3}){3}$' ]] || return 1
   local o; for o in ${(s:.:)1}; do (( 10#$o <= 255 )) || return 1; done
@@ -25,29 +29,48 @@ _dz_attacker_refresh() { typeset -gx ATTACKER_IP=$(_dz_attacker_ip); typeset -gi
 _dz_precmd() { [[ -n $BOX ]] && (( EPOCHSECONDS - ${_dz_ip_ts:-0} >= 10 )) && _dz_attacker_refresh; return 0 }
 add-zsh-hook precmd _dz_precmd
 
-# _dz_box_read <folder>: reply=(name ip hosts). Fails on a missing or invalid file.
+# _dz_box_read <folder>: reply=(name ip hosts) for the main host. Extra hosts (dz -t) go
+# to _dz_bh ("label ip hostname..." per host) and the active one to _dz_ba (empty = main).
+# Fails on a missing or invalid file.
 _dz_box_read() {
   emulate -L zsh
-  local f=$1/.dropzone line name='' ip='' hosts='' h
+  local f=$1/.dropzone line name='' ip='' hosts='' active='' h
+  local -a extra=() w
+  typeset -ga _dz_bh=(); typeset -g _dz_ba=''
   [[ -f $f ]] || return 1
   while IFS= read -r line || [[ -n $line ]]; do
     case $line in
-      name=*)  name=${line#*=} ;;
-      ip=*)    ip=${line#*=} ;;
-      hosts=*) hosts=${line#*=} ;;
+      name=*)   name=${line#*=} ;;
+      ip=*)     ip=${line#*=} ;;
+      hosts=*)  hosts=${line#*=} ;;
+      active=*) active=${line#*=} ;;
+      host=*)   extra+=("${line#*=}") ;;
     esac
   done < $f
   [[ $name == ${1:t} ]] && _dz_valid_name $name && _dz_valid_ip $ip || return 1
   for h in ${=hosts}; do _dz_valid_host $h || return 1; done
+  for line in $extra; do
+    w=(${=line})
+    _dz_valid_label $w[1] && _dz_valid_ip $w[2] || return 1
+    for h in $w[3,-1]; do _dz_valid_host $h || return 1; done
+  done
+  _dz_bh=("${extra[@]}")
+  [[ -n ${(M)extra:#$active *} ]] && _dz_ba=$active
   reply=($name $ip "$hosts")
 }
 
-# _dz_box_write <folder> <name> <ip> <hosts>
+# _dz_box_write <folder> <name> <ip> <hosts> [active [host-line...]]
 _dz_box_write() {
-  print -r -- "# dropzone box. Read by dz, never run. Change it with dz, not by hand.
-name=$2
-ip=$3
-hosts=$4" > $1/.dropzone
+  local d=$1 name=$2 ip=$3 hosts=$4 active=$5 l
+  shift 5 2>/dev/null || shift $#
+  {
+    print -r -- "# dropzone box. Read by dz, never run. Change it with dz, not by hand."
+    print -r -- "name=$name"
+    print -r -- "ip=$ip"
+    print -r -- "hosts=$hosts"
+    [[ -n $active ]] && print -r -- "active=$active"
+    for l in "$@"; do print -r -- "host=$l"; done
+  } > $d/.dropzone
 }
 
 # Boxes from older versions have a .env (BOX=, TARGET_IP=, DOMAIN=). Convert it, but only
@@ -92,20 +115,65 @@ _dz_note_ip() {
 # Change /etc/hosts. sudo only when the file isn't writable.
 _dz_hosts_run() { if [[ -w $DZ_HOSTS ]]; then "$@"; else sudo "$@"; fi }
 
-# The tag on a box's /etc/hosts line, as a regex ('.' in a name is literal).
-_dz_hosts_re() { REPLY="# dz:${1//./\\.}\$" }
+# The tag on /etc/hosts lines, as a regex without the end anchor ('.' in a name is literal):
+#   _dz_hosts_re jacops        the main host        # dz:jacops
+#   _dz_hosts_re jacops/dc01   an extra host        # dz:jacops/dc01
+#   _dz_hosts_re jacops all    every line of the box
+_dz_hosts_re() {
+  REPLY="# dz:${1//./\\.}"
+  [[ $2 == all ]] && REPLY+='(/[a-z0-9-]+)?'
+  return 0
+}
+_dz_hosts_has() { grep -qE "$1\$" $DZ_HOSTS 2>/dev/null }
 
-# _dz_hosts_set <box> [ip] [hosts]: backup first ($DZ_HOSTS.dz.bak), then remove this
-# box's line and, with hosts, add the new one.
+# Remove lines matching regex $1 from $DZ_HOSTS, after a backup ($DZ_HOSTS.dz.bak).
+_dz_hosts_del() {
+  _dz_hosts_has $1 || return 0
+  _dz_hosts_run cp $DZ_HOSTS $DZ_HOSTS.dz.bak || return 1
+  _dz_hosts_run perl -ni -e "print unless m{$1\\n?\\z}" $DZ_HOSTS
+}
+
+# _dz_hosts_set <tag> [ip] [hosts]: backup first ($DZ_HOSTS.dz.bak), then remove the line
+# with this tag (box or box/host) and, with hosts, add the new one.
 _dz_hosts_set() {
   emulate -L zsh
-  local box=$1 ip=$2 hosts=$3 re
-  _dz_hosts_re $box; re=$REPLY
-  grep -qE "$re" $DZ_HOSTS 2>/dev/null || [[ -n $hosts ]] || return 0
+  local tag=$1 ip=$2 hosts=$3 re
+  _dz_hosts_re $tag; re=$REPLY
+  _dz_hosts_has $re || [[ -n $hosts ]] || return 0
   _dz_hosts_run cp $DZ_HOSTS $DZ_HOSTS.dz.bak || return 1
-  _dz_hosts_run sed -i.dztmp "/$re/d" $DZ_HOSTS && _dz_hosts_run rm -f $DZ_HOSTS.dztmp || return 1
+  if _dz_hosts_has $re; then
+    _dz_hosts_run perl -ni -e "print unless m{$re\\n?\\z}" $DZ_HOSTS || return 1
+  fi
   [[ -z $hosts ]] && return 0
-  printf '%s\t%s\t# dz:%s\n' $ip "$hosts" $box | _dz_hosts_run tee -a $DZ_HOSTS >/dev/null
+  printf '%s\t%s\t# dz:%s\n' $ip "$hosts" $tag | _dz_hosts_run tee -a $DZ_HOSTS >/dev/null
+}
+
+# All /etc/hosts lines of a box: from the box file (main host and every extra host).
+_dz_hosts_all() {
+  local box=$1 l
+  local -a w
+  _dz_box_read $DZ_ROOT/$box || _dz_box_read $DZ_ROOT/_archive/$box || return 1
+  local ip=$reply[2] hosts=$reply[3]
+  [[ -n $hosts ]] && _dz_hosts_set $box $ip "$hosts"
+  for l in $_dz_bh; do
+    w=(${=l})
+    (( $#w > 2 )) && _dz_hosts_set $box/$w[1] $w[2] "$w[3,-1]"
+  done
+  return 0
+}
+
+# Is the VPN up, and does the route to $1 go through it? Only a warning, never blocks.
+_dz_vpn_check() {
+  _dz_on DZ_VPNCHECK && (( $+commands[ip] )) || return 0
+  if ! ip link show $DZ_IFACE >/dev/null 2>&1; then
+    print -u2 "• warning: $DZ_IFACE doesn't exist, is your VPN connected? (iface in the config)"
+    return 0
+  fi
+  local -a w=(${(z)"$(ip route get $1 2>/dev/null)"})
+  local dev=${w[${w[(i)dev]}+1]}
+  [[ -z $dev || $dev == $DZ_IFACE ]] ||
+    print -u2 "• warning: the route to $1 goes through $dev, not $DZ_IFACE"
+  return 0
 }
 
 # One ping, for info only.
@@ -122,8 +190,21 @@ _dz_load() {
   local name=$1
   _dz_valid_name $name && _dz_box_read $DZ_ROOT/$name ||
     { print -u2 "dz: no box '$name' in $DZ_ROOT"; return 1 }
-  local -a hosts=(${=reply[3]})
-  typeset -gx BOX=$reply[1] TARGET_IP=$reply[2] TARGET=$reply[2] INTERFACE=$DZ_IFACE
+  local -a hosts=(${=reply[3]}) w targets=($reply[2])
+  local ip=$reply[2] l v
+  _dz_unset_hostvars
+  typeset -gx BOX=$reply[1] INTERFACE=$DZ_IFACE
+  # Extra hosts: $DC01_IP and so on, all IPs in $TARGETS; the active one is the target.
+  for l in $_dz_bh; do
+    w=(${=l})
+    _dz_label_var $w[1]; v=$REPLY
+    typeset -gx $v=$w[2]; _dz_hvars+=($v); targets+=($w[2])
+    if [[ $w[1] == $_dz_ba ]]; then
+      ip=$w[2]
+      (( $#w > 2 )) && hosts=($w[3,-1])
+    fi
+  done
+  typeset -gx TARGET_IP=$ip TARGET=$ip TARGETS="$targets" DZ_ACTIVE=$_dz_ba
   # $DOMAIN (The Hacker Recipes / Exegol) is the first hostname.
   if (( $#hosts )); then typeset -gx DOMAIN=$hosts[1]; else unset DOMAIN; fi
   _dz_attacker_refresh
@@ -147,10 +228,11 @@ _dz_new() {
 
   local dir=$DZ_ROOT/$name old_ip='' old_hosts=''
   _dz_box_read $dir && old_ip=$reply[2] old_hosts=$reply[3]
+  local keep_active=$_dz_ba; local -a keep_hosts=("${_dz_bh[@]}")   # extra hosts stay
   if [[ $hosts == none ]]; then hosts=()
   elif (( ! $#hosts )); then hosts=(${=old_hosts})
   fi
-  mkdir -p $dir/$^DZ_DIRS && _dz_box_write $dir $name $ip "$hosts" ||
+  mkdir -p $dir/$^DZ_DIRS && _dz_box_write $dir $name $ip "$hosts" "$keep_active" "${keep_hosts[@]}" ||
     { print -u2 "dz: can't write $dir"; return 1 }
 
   # Note from the template (see _dz_note and _dz_template in status.zsh). An existing
@@ -178,9 +260,9 @@ _dz_new() {
 
   # /etc/hosts: a box's line is tagged, so a new IP replaces the old line.
   if [[ "$hosts" != "$old_hosts" || ( -n $old_hosts && $ip != $old_ip ) ]]; then
-    local re; _dz_hosts_re $name; re=$REPLY
+    local re; _dz_hosts_re $name all; re=$REPLY
     for h in $hosts; do
-      grep -vE "$re" $DZ_HOSTS 2>/dev/null | grep -qiE "[[:space:]]${h//./\\.}([[:space:]]|\$)" &&
+      grep -vE "$re\$" $DZ_HOSTS 2>/dev/null | grep -qiE "[[:space:]]${h//./\\.}([[:space:]]|\$)" &&
         print -u2 "• note: $h is already in $DZ_HOSTS outside dropzone"
     done
     _dz_hosts_set $name $ip "$hosts" &&
@@ -189,7 +271,7 @@ _dz_new() {
       fi
   fi
 
-  [[ $ip != $old_ip ]] && _dz_on DZ_PING && _dz_ping $ip
+  [[ $ip != $old_ip ]] && { _dz_vpn_check $ip; _dz_on DZ_PING && _dz_ping $ip }
   _dz_load $name && cd $dir
   print "• BOX=$BOX  TARGET_IP=$TARGET_IP  ATTACKER_IP=${ATTACKER_IP:-<$DZ_IFACE down>}${DOMAIN:+  DOMAIN=$DOMAIN}"
 }
@@ -200,11 +282,18 @@ _dz_workon() {
   if [[ ! -f $DZ_ROOT/$1/.dropzone && -f $DZ_ROOT/_archive/$1/.dropzone ]]; then
     _dz_unarchive $1 || return 1
   fi
-  _dz_load $1 && cd $DZ_ROOT/$1
+  _dz_load $1 && cd $DZ_ROOT/$1 && _dz_vpn_check $TARGET_IP
+}
+
+# The $<HOST>_IP variables of the previous box.
+_dz_unset_hostvars() {
+  (( ${#_dz_hvars} )) && unset $_dz_hvars
+  typeset -ga _dz_hvars=()
 }
 
 _dz_off() {
-  unset BOX TARGET_IP DOMAIN TARGET INTERFACE ATTACKER_IP TARGET_USER PASSWORD NT_HASH
+  _dz_unset_hostvars
+  unset BOX TARGET_IP DOMAIN TARGET TARGETS DZ_ACTIVE INTERFACE ATTACKER_IP TARGET_USER PASSWORD NT_HASH
   rm -f $DZ_STATE
 }
 
@@ -252,9 +341,9 @@ _dz_rm() {
     print "• note kept: $notefile"
   fi
 
-  local re; _dz_hosts_re $name; re=$REPLY
-  if grep -qE "$re" $DZ_HOSTS 2>/dev/null; then
-    _dz_hosts_set $name && print "• $DZ_HOSTS line removed (backup: $DZ_HOSTS.dz.bak)"
+  local re; _dz_hosts_re $name all; re=$REPLY
+  if _dz_hosts_has $re; then
+    _dz_hosts_del $re && print "• $DZ_HOSTS lines of $name removed (backup: $DZ_HOSTS.dz.bak)"
   fi
 
   if [[ $BOX == $name ]]; then

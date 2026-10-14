@@ -24,6 +24,9 @@ autoload = yes
 # Ping the target once after creating a box or changing its IP (yes / no)
 ping = yes
 
+# Warn when the VPN interface is down or the target isn't routed through it (yes / no)
+vpncheck = yes
+
 # Show the loaded box in your prompt, see docs/config.md (yes / no)
 prompt = yes
 

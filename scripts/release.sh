@@ -1,18 +1,35 @@
 #!/usr/bin/env bash
-# Release a new version: VERSION, CHANGELOG, commit and tag in one go. Pushing the tag
-# makes the GitHub Release (.github/workflows/release.yml); the README badge follows it.
-#   scripts/release.sh 1.1.0
+# Release in two steps, because main only takes pull requests:
+#
+#   scripts/release.sh 1.1.0   on develop: VERSION + CHANGELOG, commit "Release: v1.1.0"
+#                              then push develop and merge it into main with a pull request
+#   scripts/release.sh --tag   on main, after the merge: tag v<VERSION> and push the tag
+#
+# The tag makes the GitHub Release (.github/workflows/release.yml); the README badge follows.
 # Put your changes under "## [Unreleased]" in CHANGELOG.md first.
 set -euo pipefail
-
-new=${1:?usage: scripts/release.sh <version>}
-[[ $new =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]] || { echo "not a valid version: $new"; exit 1; }
 cd "$(dirname "${BASH_SOURCE[0]}")/.."
-old=$(<VERSION)
-today=$(date +%F)
 
 [[ -z $(git status --porcelain) ]] || { echo "working tree not clean, commit first"; exit 1; }
-[[ $(git branch --show-current) == main ]] || { echo "release from main (merge develop first)"; exit 1; }
+branch=$(git branch --show-current)
+
+if [[ ${1:-} == --tag ]]; then
+  [[ $branch == main ]] || { echo "--tag runs on main, after the release pull request is merged"; exit 1; }
+  git pull -q --ff-only
+  ver=$(<VERSION)
+  git rev-parse -q --verify "refs/tags/v$ver" >/dev/null && { echo "tag v$ver already exists"; exit 1; }
+  grep -q "^## \[$ver\]" CHANGELOG.md || { echo "no '## [$ver]' in CHANGELOG.md"; exit 1; }
+  git tag -a "v$ver" -m "dropzone $ver"
+  git push -q origin "v$ver"
+  echo "• v$ver tagged and pushed, the release workflow makes the GitHub Release"
+  exit 0
+fi
+
+new=${1:?usage: scripts/release.sh <version> | --tag}
+[[ $new =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]] || { echo "not a valid version: $new"; exit 1; }
+[[ $branch == develop ]] || { echo "prepare a release on develop"; exit 1; }
+old=$(<VERSION)
+today=$(date +%F)
 git rev-parse -q --verify "refs/tags/v$new" >/dev/null && { echo "tag v$new already exists"; exit 1; }
 zsh tests/run.zsh >/dev/null || { echo "tests fail, no release"; exit 1; }
 
@@ -23,5 +40,9 @@ rm -f CHANGELOG.md.bak
 
 git add VERSION CHANGELOG.md
 git commit -qm "Release: v$new"
-git tag -a "v$new" -m "dropzone $new"
-echo "• v$new done. Push: git push && git push origin v$new"
+echo "• v$new prepared on develop. Next:"
+echo "    git push"
+echo "    gh pr create --base main --head develop --title 'Release v$new' --fill"
+echo "    gh pr merge --merge          (when CI is green)"
+echo "    git checkout main && scripts/release.sh --tag"
+echo "    git checkout develop && git merge --ff-only main && git push"

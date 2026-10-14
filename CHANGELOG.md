@@ -4,6 +4,30 @@ All notable changes to dropzone. Format based on [Keep a Changelog](https://keep
 
 ## [Unreleased]
 
+## [1.1.0] - 2026-10-14
+
+### Added
+- **Ports from nmap** (`dz -p [file]`): open ports from your own `-oX` / `-oA` / `-oG` output into the note's ports table, matched to the hosts of the box, without touching rows you already have. dropzone never scans.
+- **`dz serve [smb] [dir] [port]`**: an HTTP server or SMB share, with download commands that have your IP in them. It listens on your VPN IP only, and refuses a folder with box files in it.
+- **`dz -cp [what]`**: copy the target IP, a host, your IP, a cred or all IPs to the clipboard.
+- **VPN check** (`vpncheck = yes`): a warning when the VPN interface is down or the route to the target doesn't go through it.
+- **More hosts per box** (`dz -t`): `dz -t dc01 -ip <ip> [-h <host,...>]` adds a host with `$DC01_IP`, a tagged `/etc/hosts` line, a row in the note's Hosts table and a timeline line. `dz -t dc01` makes it the target (`$TARGET_IP`, `$TARGET`, `$DOMAIN` and the prompt follow), `dz -t` lists them, `--drop` removes one. `$TARGETS` has every IP of the box.
+- `dz -i` and `dz -v` show the extra hosts.
+
+### Changed
+- `dz --help`, `dz -i` and `dz --config show/check` in blocks: a rule, `[+] Section`, indented rows. The help is grouped into Boxes, Target, Notes and Setup.
+- Tables in the README and docs have a header row; every doc page has the same navigation line.
+- The prompt shows the active host when it isn't the main one: `[corp dc01 10.10.10.5]-`.
+- The demo GIF starts without a loaded box; a second GIF shows the menu in `docs/commands.md`.
+- `scripts/release.sh` prepares a release on `develop`; `scripts/release.sh --tag` tags it on `main` after the merge, because `main` only takes pull requests.
+- The bundled template has a `## Hosts` table with Host, IP and Hostnames columns.
+- Archiving a box removes all its `/etc/hosts` lines; restoring it with `dz -l` puts them back.
+
+### Fixed
+- The menu's *Change IP* always changes the main host.
+- The link check no longer fails on the CHANGELOG's compare links, which point to a tag that only exists after the release.
+- One test used the real `/etc/hosts` (it asked for sudo and failed); every test now has its own hosts file, and runs with the VPN check off.
+
 ## [1.0.0] - 2026-10-14
 
 First public release.
@@ -25,5 +49,6 @@ First public release.
 - `examples/obsidian/`: a callout template, a Dataview dashboard and setup notes.
 - Tests, CI on Ubuntu and Kali, secret scan, link check, releases from this changelog.
 
-[Unreleased]: https://github.com/nickyjacobs/dropzone/compare/v1.0.0...HEAD
+[Unreleased]: https://github.com/nickyjacobs/dropzone/compare/v1.1.0...HEAD
+[1.1.0]: https://github.com/nickyjacobs/dropzone/compare/v1.0.0...v1.1.0
 [1.0.0]: https://github.com/nickyjacobs/dropzone/releases/tag/v1.0.0

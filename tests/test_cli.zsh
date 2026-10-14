@@ -1,6 +1,7 @@
 # dz from the command line: create, change IP, load, view, remove.
 
 B=~/boxes
+eq  "tests use their own hosts file" $HOME/hosts "$DZ_HOSTS"
 eq  "--version" "dropzone v$(cat $_dz_repo/VERSION)" "$(dz --version)"
 has "--help shows Usage" "Usage" "$(dz --help)"
 has "-h alone shows help" "Usage" "$(dz -h)"
@@ -37,7 +38,7 @@ has "-v marks the loaded box" "▶ beta" "$(dz -v)"
 dz -l alpha >/dev/null
 eq  "-l loads a box" alpha "$BOX"
 has "-i shows info" "target     10.10.10.9" "$(dz -i)"
-has "-i shows status" "status     active" "$(dz -i)"
+has "-i shows the box and its status" "[+] alpha  active" "$(dz -i)"
 dz -l beta -ip 10.10.10.22 >/dev/null
 eq  "-l <box> -ip changes another box" "ip=10.10.10.22" "$(grep ^ip= $B/beta/.dropzone)"
 dz -x >/dev/null

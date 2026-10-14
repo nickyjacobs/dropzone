@@ -88,8 +88,8 @@ _dz_archive() {
   [[ $PWD == $src || $PWD == $src/* ]] && cd $DZ_ROOT
   mkdir -p ${dst:h} && mv $src $dst || return 1
   print "• $name archived: ${dst/#$HOME/~}"
-  _dz_hosts_re $name; re=$REPLY
-  grep -qE "$re" $DZ_HOSTS 2>/dev/null && _dz_hosts_set $name && print "• $DZ_HOSTS line removed"
+  _dz_hosts_re $name all; re=$REPLY
+  _dz_hosts_has $re && _dz_hosts_del $re && print "• $DZ_HOSTS lines of $name removed"
   if [[ $BOX == $name ]]; then _dz_off; print "• was the loaded box, unloaded"; fi
   return 0
 }
@@ -102,7 +102,9 @@ _dz_unarchive() {
     print -u2 "dz: $1 is archived, but ${dst/#$HOME/~} exists and is not a box. Move it away, then dz -l $1 again."
     return 1
   fi
-  mv $src $dst && _dz_set_status $1 active && print "• $1 restored from the archive (status: active)"
+  mv $src $dst && _dz_set_status $1 active && print "• $1 restored from the archive (status: active)" || return 1
+  # Its /etc/hosts lines went with the archive; put them back.
+  _dz_hosts_all $1
 }
 
 # URL encoding for the obsidian:// link.
