@@ -355,7 +355,7 @@ For an exam with a time limit (the CPTS exam has 10 days for the lab and the rep
 
 ## SysReptor
 
-Off by default. With `sysreptor = yes` in the config, `dz -s` screenshots and `dz -e` output also go to your [SysReptor](https://docs.sysreptor.com/) project, as notes under a note named after the box. It uses the [reptor](https://docs.sysreptor.com/cli/getting-started/) CLI:
+Off by default. With `sysreptor = yes` in the config, `dz -s` screenshots and `dz -e` output also go to your [SysReptor](https://docs.sysreptor.com/) project, as notes under a note named after the box. It uses the [reptor](https://github.com/Syslifters/reptor) CLI:
 
 ```bash
 pip install reptor
