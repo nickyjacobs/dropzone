@@ -47,3 +47,28 @@ eq  "masked lines" "4" "$(grep -c '<hidden>' $L)"
 has "-c masked" 'dz -c <hidden>' "$(cat $L)"
 has "--creds masked" 'dz --creds <hidden>' "$(cat $L)"
 has "rest of the line before dz stays" 'id; dz -c <hidden>' "$(cat $L)"
+
+# Domain users and where a cred works.
+dz -t dc01 -ip 10.10.10.5 >/dev/null
+dz -c 'corp\svc_sql:Summer2026!' MSSQL >/dev/null
+eq  "domain\\\\user: domain and user split" "corp|svc_sql" "$CRED_DOMAIN|$TARGET_USER"
+dz -c 'jdoe@corp.local:Welcome1' >/dev/null
+eq  "user@domain: domain and user split" "corp.local|jdoe" "$CRED_DOMAIN|$TARGET_USER"
+dz -c 1 >/dev/null
+eq  "plain user: no domain" "|alex" "${CRED_DOMAIN-}|$TARGET_USER"
+dz -c 1 --valid alpha,dc01 >/dev/null
+has "--valid with a number: in the list" "→ alpha, dc01" "$(dz -c | grep alex)"
+eq  "--valid: the Valid on column of that row" '| NFS | alex | lol123!mD | alpha, dc01 | |' "$(grep '| alex |' $N)"
+dz -c 1 --valid dc01,ms01 >/dev/null 2>&1
+has "--valid adds, no doubles" "→ alpha, dc01, ms01" "$(dz -c | grep alex)"
+has "--valid: unknown host is a note, not an error" "ms01 is not a host" "$(dz -c 1 --valid ms01 2>&1)"
+nok "--valid: a bad name fails" dz -c 1 --valid 'a;b'
+dz -c 3 >/dev/null; dz -c --valid dc01 >/dev/null
+has "--valid without a number: the active cred" "→ dc01" "$(dz -c | grep 'svc ')"
+ok  "--valid: row with an escaped | in the secret" grep -qF '| SMB | svc | pa:ss\|wd | dc01 | |' $N
+has "domain user stored as typed" 'corp\svc_sql' "$(dz -c)"
+dz -c 'web:S3cr3t' HTTP --valid alpha >/dev/null
+eq  "--valid while storing" '| HTTP | web | S3cr3t | alpha | |' "$(grep '| web |' $N)"
+ok  "an old 4-field creds file still loads" eval 'dz -c 2 >/dev/null && [[ $TARGET_USER == admin ]]'
+dz -x >/dev/null
+eq  "-x clears CRED_DOMAIN" "" "${CRED_DOMAIN-}"

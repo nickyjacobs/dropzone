@@ -4,6 +4,18 @@ All notable changes to dropzone. Format based on [Keep a Changelog](https://keep
 
 ## [Unreleased]
 
+### Added
+- **Flags per host** (`dz -f <host> <flag>`): on a box with more hosts every flag is a line in `## Flags` with the host and the time, `dz -f <flag>` uses the active host. `dz -f` lists them with a count; `flag_goal = 14` in the config shows `9/14 flags`.
+- **Where a cred works** (`dz -c [nr] --valid <host,...>`): `dz -c` shows the hosts and the *Valid on* column of the note is filled. Also while storing a cred.
+- **Domain users**: a cred like `corp\svc_sql` or `jdoe@corp.local` sets `$CRED_DOMAIN`, and `$TARGET_USER` without the domain.
+- **`dz serve --via <host|ip>`** for hosts behind a pivot: prints the ligolo-ng `listener_add` line and download commands with the pivot's IP. Port 8000 unless you give one.
+- `pivot` setting (default `ligolo*`): interfaces of a pivot tunnel.
+- Docs: sections for `dz --update` and the VPN check in `docs/commands.md`.
+
+### Fixed
+- The VPN check warned for every host behind a ligolo-ng pivot, because its route goes through `ligolo` instead of `tun0`. A route through a `pivot` interface is fine now.
+- A root flag no longer marks a box with more hosts done: one host's root isn't the end of an exam or AD set.
+
 ## [1.1.0] - 2026-10-14
 
 ### Added
