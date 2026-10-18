@@ -4,6 +4,9 @@ All notable changes to dropzone. Format based on [Keep a Changelog](https://keep
 
 ## [Unreleased]
 
+### Changed
+- Docs: README explains why dropzone exists and asks for feedback; ideas and questions go to Discussions.
+
 ## [1.2.0] - 2026-10-18
 
 ### Added
