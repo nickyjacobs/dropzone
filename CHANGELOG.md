@@ -4,6 +4,8 @@ All notable changes to dropzone. Format based on [Keep a Changelog](https://keep
 
 ## [Unreleased]
 
+## [1.2.0] - 2026-10-18
+
 ### Added
 - **Command output as evidence** (`<cmd> | dz -e [caption]`): the output to `evidence/`, colours stripped, with the command from `commands.log`, and the first 30 lines as a code block in the timeline.
 - **Exam template** (`dz -n ... --template exam`): Scope, Hosts with a *Via* column, Ports with a Host column, Credentials, Findings, Host notes, flags per host. `--template <name>` also finds your own templates.
@@ -82,7 +84,8 @@ First public release.
 - `examples/obsidian/`: a callout template, a Dataview dashboard and setup notes.
 - Tests, CI on Ubuntu and Kali, secret scan, link check, releases from this changelog.
 
-[Unreleased]: https://github.com/nickyjacobs/dropzone/compare/v1.1.5...HEAD
+[Unreleased]: https://github.com/nickyjacobs/dropzone/compare/v1.2.0...HEAD
+[1.2.0]: https://github.com/nickyjacobs/dropzone/compare/v1.1.5...v1.2.0
 [1.1.5]: https://github.com/nickyjacobs/dropzone/compare/v1.1.0...v1.1.5
 [1.1.0]: https://github.com/nickyjacobs/dropzone/compare/v1.0.0...v1.1.0
 [1.0.0]: https://github.com/nickyjacobs/dropzone/releases/tag/v1.0.0
