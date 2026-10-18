@@ -23,18 +23,20 @@
 ## Features
 
 - **Box in one command**: `dz -n jacops -ip 10.129.42.190 -h jacops.htb` makes the folder, the note, the `/etc/hosts` line and loads `$TARGET_IP`, `$DOMAIN` and `$ATTACKER_IP` in your shell.
-- **Your note writes itself**: a timeline with `dz -j`, screenshots with `dz -s`, flags with `dz -f`, creds with `dz -c`, and a new IP changes everywhere in the note.
+- **Your note writes itself**: a timeline with `dz -j`, screenshots with `dz -s`, command output with `cmd | dz -e`, flags with `dz -f`, creds with `dz -c`, and a new IP changes everywhere in the note.
 - **Notes your way**: plain Markdown in the box folder, or in your Obsidian vault.
 - **More hosts per box** for AD sets and pivots: `dz -t dc01 -ip ...` gives `$DC01_IP`, `$TARGETS` and a hosts line, `dz -t dc01` makes it the target.
+- **Exam-ready**: `--template exam`, flags per host with a count, hosts behind a pivot (`--via`), a `--deadline` in your prompt, creds per host with an export for spraying, and evidence to SysReptor if you want.
 - **Your nmap output in the note**: `dz -p` fills the ports table from your own scan; dropzone never scans.
 - **Less typing**: `dz serve` prints download commands with your IP, `dz -cp` copies an IP or a cred, and a warning appears when your VPN is down.
 - **Every terminal knows the box**: new shells load the last box, your prompt shows it, and each command is logged per box.
 - **Interactive menu** with `dz`, short options for everything else, tab completion.
+- **Clear errors**: every error has a code, like `dz [E201] no box loaded`, and `dz --explain E201` tells you why and what to do.
 - **Safe**: files are read, never run, `/etc/hosts` is backed up, removed boxes go to the trash.
 
 ## Quick start
 
-Needs zsh 5.8+, perl and `ip` (iproute2), all on Kali by default. A few commands use optional tools, and tell you when one is missing: `xclip`, `xsel` or `wl-copy` for `dz -cp`, a screenshot tool for `dz -s` (`xfce4-screenshooter`, `flameshot`, `gnome-screenshot` or ImageMagick), `python3` and `impacket-smbserver` for `dz serve`, `sudo` for `/etc/hosts`.
+Needs zsh 5.8+, perl and `ip` (iproute2), all on Kali by default. A few commands use optional tools, and tell you when one is missing: `xclip`, `xsel` or `wl-copy` for `dz -cp`, a screenshot tool for `dz -s` (`xfce4-screenshooter`, `flameshot`, `gnome-screenshot` or ImageMagick), `python3` and `impacket-smbserver` for `dz serve`, `sudo` for `/etc/hosts`, `reptor` for the opt-in SysReptor upload.
 
 ```bash
 git clone https://github.com/nickyjacobs/dropzone.git ~/dropzone
@@ -61,13 +63,35 @@ dz serve ~/tools 8000                    # HTTP server + download commands with 
 dz -cp dc01                              # copy a host's IP to the clipboard
 dz -j found an NFS share with backups    # line in the note's timeline
 dz -s showmount output                   # screenshot, embedded in the note
+nxc smb $TARGETS 2>&1 | dz -e smb hosts  # command output as evidence in the note
 dz -f 3f9a...e1                          # flag into the note
 dz -v                                    # all boxes with status
 dz -a jacops                             # done: archive it
 dz --help                                # everything else
 ```
 
-Every option: **[docs/commands.md](docs/commands.md)**.
+An exam with one entry point and hosts behind a pivot:
+
+```bash
+dz -n cpts -ip 10.129.5.10 --template exam --deadline 10d
+dz -t web01 -ip 172.16.5.15                    # the pivot
+dz -t ms01 -ip 172.16.5.10 --via web01         # a host behind it
+dz serve ~/tools --via web01                   # ligolo-ng listener + download commands
+dz -f ms01 3f9a...e1                           # flag 3/14
+```
+
+Every option: **[docs/commands.md](docs/commands.md)**. What you really need to know, and the gotchas: **[docs/guide.md](docs/guide.md)**.
+
+## When something goes wrong
+
+dz says what went wrong in one line with a code:
+
+```
+dz [E201] no box loaded
+• [W202] the route to 10.10.10.77 goes through eth0, not tun0
+```
+
+An **E**rror stops the command, a **W**arning only tells you. `dz --explain E201` shows why it happens and how to fix it; **[docs/errors.md](docs/errors.md)** lists every code.
 
 ## Notes
 
@@ -109,15 +133,18 @@ Pulls the new version and shows what changed. Your config, templates, boxes and 
 
 | Page | What it covers |
 |---|---|
+| [Guide](docs/guide.md) | how dz behaves, what trips people up, an exam run-through |
 | [Commands](docs/commands.md) | every option, the menu, the variables |
-| [Notes](docs/notes.md) | note locations, templates, Obsidian |
+| [Notes](docs/notes.md) | note locations, templates (also the exam template), Obsidian |
 | [Config](docs/config.md) | every setting with its default |
-| [Development](docs/development.md) | layout, tests, conventions, releases |
+| [Errors](docs/errors.md) | every error and warning code: why it happens, what to do |
+| [Testing](docs/testing.md) | what the tests cover, and what still needs a check by hand |
+| [Development](docs/development.md) | layout, tests, error codes, conventions, releases |
 | [Changelog](CHANGELOG.md) | what changed per version |
 
 ## Exam use
 
-OSCP bans tools that exploit or scan on their own. dropzone only does admin: folders, notes, screenshots, variables and hosts entries. It never touches the target.
+OSCP bans tools that exploit or scan on their own. dropzone only does admin: folders, notes, screenshots, variables and hosts entries. It never scans, exploits or connects to a target; the only packet it sends is one ping after `-n` or `-ip` (`ping = no` turns it off). `dz serve` starts a file server for you and prints the commands, you run them. The SysReptor upload is off by default; check your exam's rules before you turn it on.
 
 ## Contributing
 

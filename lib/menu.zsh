@@ -209,7 +209,7 @@ _dz_choose() {
 # The interactive menu (dz without arguments).
 _dz_menu() {
   emulate -L zsh
-  [[ -t 0 && -t 1 ]] || { print -u2 "dz: not an interactive terminal"; return 1 }
+  [[ -t 0 && -t 1 ]] || { _dz_err E107 "not an interactive terminal"; return 1 }
 
   local -i f=0 tick=0
   local key rest action='' name ip host

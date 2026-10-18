@@ -4,19 +4,20 @@
 #   dz -f <host> <flag>        flag of a host, as a line in the Flags section (exams, AD sets)
 #   dz -j <text>               timestamped line in the timeline section
 #   dz -s [caption]            screenshot to evidence/, embedded in the timeline
+#   <cmd> | dz -e [caption]    command output to evidence/, with the command, in the timeline
 #
 # The timeline section is '## <timeline>' (config, default Timeline); dz adds it before
 # '## Flags' when the note doesn't have one yet. Flags work in two layouts:
 #   - **User flag:** <flag>                    (the template that ships with dropzone)
 #   **User flag** + '> [!success]- Flag' + '> <flag>'   (Obsidian callout, see examples/)
-# A box with more hosts (dz -t) keeps a list instead: '- <date> <time> · <host> · <flag>',
+# A box with more hosts (dz -t), or a note without those slots, keeps a list instead: '- <date> <time> · <host> · <flag>',
 # with a count against 'flag_goal' from the config. It is never marked done by a flag.
 
 # Note of the loaded box in $REPLY, or fail with a message.
 _dz_note_need() {
-  [[ -n $BOX ]] || { print -u2 "dz: no box loaded"; return 1 }
-  REPLY=$(_dz_note $BOX) || { print -u2 "dz: notes are off (notes = off in the config)"; return 1 }
-  [[ -f $REPLY ]] || { print -u2 "dz: no note for $BOX ($REPLY)"; return 1 }
+  [[ -n $BOX ]] || { _dz_err E201 "no box loaded"; return 1 }
+  REPLY=$(_dz_note $BOX) || { _dz_err E401 "notes are off (notes = off in the config)"; return 1 }
+  [[ -f $REPLY ]] || { _dz_err E402 "no note for $BOX ($REPLY)"; return 1 }
 }
 
 # _dz_timeline_add <note> <text>: '- <date> <time> · <text>' at the end of the timeline
@@ -123,20 +124,21 @@ _dz_flag() {
     fi
     return 0
   fi
-  [[ $flag == *[[:space:]]* ]] && { print -u2 "dz: a flag has no spaces"; return 1 }
+  [[ $flag == *[[:space:]]* ]] && { _dz_err E403 "a flag has no spaces"; return 1 }
   [[ -z $kind && ( $flag == $BOX || -n ${(M)extra:#${(b)flag} *} ) ]] &&
-    { print -u2 "dz: $flag is a host, give the flag too: dz -f $flag <flag>"; return 1 }
+    { _dz_err E404 "$flag is a host, give the flag too: dz -f $flag <flag>"; return 1 }
   [[ $flag == "$user" || $flag == "$root" || -n ${(M)list:#* ${(b)flag}} ]] &&
-    { print -u2 "dz: that flag is already in the note"; return 1 }
-  # A box with more hosts: flags per host, the active one when you don't name it.
-  [[ -z $kind && $#extra -gt 0 ]] && kind=${DZ_ACTIVE:-$BOX}
+    { _dz_err E405 "that flag is already in the note"; return 1 }
+  # A box with more hosts, or a note without user/root slots (the exam template): flags
+  # per host, the active one when you don't name it.
+  [[ -z $kind ]] && { (( $#extra )) || ! grep -qE '^(- )?\*\*User flag' $note } && kind=${DZ_ACTIVE:-$BOX}
   if [[ -n $kind && $kind != (user|root) ]]; then
     [[ $kind == $BOX || -n ${(M)extra:#$kind *} ]] ||
-      { print -u2 "dz: no host '$kind' in $BOX (dz -t lists them), or use user / root"; return 1 }
-    [[ $flag =~ '^[0-9a-f]{32}$' ]] || print -u2 "• note: '$flag' is not the usual HTB flag (32 hex), stored anyway"
+      { _dz_err E407 "no host '$kind' in $BOX (dz -t lists them), or use user / root"; return 1 }
+    [[ $flag =~ '^[0-9a-f]{32}$' ]] || _dz_warn W401 "'$flag' is not the usual HTB flag (32 hex), stored anyway"
     _dz_flags_add $note $kind $flag
     _dz_flags_list $note
-    [[ -n ${(M)reply:#$kind ${(b)flag}} ]] || { print -u2 "dz: couldn't place the flag in $note"; return 1 }
+    [[ -n ${(M)reply:#$kind ${(b)flag}} ]] || { _dz_err E408 "couldn't place the flag in $note"; return 1 }
     (( have++ ))
     local count=$have
     (( DZ_FLAG_GOAL )) && count=$have/$DZ_FLAG_GOAL
@@ -148,18 +150,18 @@ _dz_flag() {
   if [[ -z $kind ]]; then
     if [[ -z $user ]]; then kind=user
     elif [[ -z $root ]]; then kind=root
-    else print -u2 "dz: $BOX already has both flags, see dz -f"; return 1
+    else _dz_err E406 "$BOX already has both flags, see dz -f"; return 1
     fi
   fi
   local -i idx; [[ $kind == user ]] && idx=1 || idx=2
   local cur; (( idx == 1 )) && cur=$user || cur=$root
-  [[ -n $cur ]] && { print -u2 "dz: $BOX already has a $kind flag ($cur). Change it in the note."; return 1 }
-  [[ $flag =~ '^[0-9a-f]{32}$' ]] || print -u2 "• note: '$flag' is not the usual HTB flag (32 hex), stored anyway"
+  [[ -n $cur ]] && { _dz_err E406 "$BOX already has a $kind flag ($cur). Change it in the note."; return 1 }
+  [[ $flag =~ '^[0-9a-f]{32}$' ]] || _dz_warn W401 "'$flag' is not the usual HTB flag (32 hex), stored anyway"
 
   _dz_flags_set $note ${(C)kind} $flag
   _dz_flags_get $note
   [[ $reply[idx] == $flag ]] ||
-    { print -u2 "dz: couldn't place the flag in $note (Flags section changed?)"; return 1 }
+    { _dz_err E408 "couldn't place the flag in $note (Flags section changed?)"; return 1 }
   _dz_timeline_add $note "$kind flag"
   print "• $kind flag stored in the note"
   # One root flag finishes a single box, not a set of hosts.
@@ -186,12 +188,12 @@ _dz_shot_tool() {
   local t
   if [[ $DZ_SHOT != auto ]]; then
     (( $+commands[$DZ_SHOT] )) && { REPLY=$DZ_SHOT; return 0 }
-    print -u2 "dz: screenshot tool '$DZ_SHOT' not found"; return 1
+    _dz_err E409 "screenshot tool '$DZ_SHOT' not found"; return 1
   fi
   for t in xfce4-screenshooter flameshot gnome-screenshot import; do
     (( $+commands[$t] )) && { REPLY=$t; return 0 }
   done
-  print -u2 "dz: no screenshot tool found (xfce4-screenshooter, flameshot, gnome-screenshot or import)"
+  _dz_err E409 "no screenshot tool found (xfce4-screenshooter, flameshot, gnome-screenshot or import)"
   return 1
 }
 
@@ -210,11 +212,11 @@ _dz_shot() {
   emulate -L zsh -o extended_glob
   local caption=${1//$'\n'/ } note='' tool
   if [[ $DZ_NOTE_MODE == off ]]; then
-    [[ -n $BOX ]] || { print -u2 "dz: no box loaded"; return 1 }
+    [[ -n $BOX ]] || { _dz_err E201 "no box loaded"; return 1 }
   else
     _dz_note_need || return 1; note=$REPLY
   fi
-  [[ -n $DISPLAY || -n $WAYLAND_DISPLAY ]] || { print -u2 "dz: no desktop session for a screenshot"; return 1 }
+  [[ -n $DISPLAY || -n $WAYLAND_DISPLAY ]] || { _dz_err E410 "no desktop session for a screenshot"; return 1 }
   _dz_shot_tool || return 1; tool=$REPLY
 
   local ts slug name
@@ -242,4 +244,58 @@ _dz_shot() {
   fi
   _dz_timeline_add $note "screenshot${caption:+: $caption}"$'\n'"  $embed"
   print "• screenshot: ${ev/#$HOME/~}/$name (in the note too)"
+  _dz_reptor file $ev/$name
+}
+
+# The command that is piping into dz -e, from commands.log (logged just before it ran),
+# without the '| dz -e ...' part. Empty when logging is off or the line doesn't match.
+_dz_evidence_cmd() {
+  emulate -L zsh -o extended_glob
+  REPLY=''
+  local log=$DZ_ROOT/$BOX/logs/commands.log line
+  [[ -s $log ]] || return 0
+  line=$(tail -n 1 $log)
+  line=${line#*  \$ }
+  [[ $line == *\|[[:space:]]#dz[[:space:]]##(-e|--evidence)* ]] || return 0
+  REPLY=${line%%[[:space:]]#\|[[:space:]]#dz[[:space:]]##(-e|--evidence)*}
+}
+
+# <cmd> | dz -e [caption]: the output (colours stripped) to evidence/<box>_<date>_<time>_<caption>.txt
+# with the command on top, and the first lines as a code block in the timeline.
+_dz_evidence() {
+  emulate -L zsh -o extended_glob
+  local caption=${1//$'\n'/ } note='' out cmd
+  if [[ $DZ_NOTE_MODE == off ]]; then
+    [[ -n $BOX ]] || { _dz_err E201 "no box loaded"; return 1 }
+  else
+    _dz_note_need || return 1; note=$REPLY
+  fi
+  [[ -t 0 ]] && { _dz_err E411 "pipe a command into it: nxc smb \$TARGET | dz -e smb signing"; return 1 }
+  out=$(perl -pe 's/\e\[[0-9;?]*[ -\/]*[@-~]//g; s/\e\][^\a]*\a//g; s/\r//g')
+  [[ -n ${out//[[:space:]]/} ]] || { _dz_err E412 "no output to save"; return 1 }
+  _dz_evidence_cmd; cmd=$REPLY
+
+  local ts slug name ev=$DZ_ROOT/$BOX/evidence
+  strftime -s ts '%F_%H%M%S' $EPOCHSECONDS
+  slug=${${${(L)caption}//[^a-z0-9]##/-}##-}; slug=${${slug[1,40]}%%-}
+  name=${BOX}_$ts${slug:+_$slug}.txt
+  mkdir -p $ev || return 1
+  { [[ -n $cmd ]] && print -r -- "\$ $cmd"$'\n'; print -r -- $out } > $ev/$name
+
+  local -a lines=("${(@f)out}")
+  local -i max=30
+  local block="\`\`\`\`text"
+  [[ -n $cmd ]] && block+=$'\n'"\$ $cmd"
+  block+=$'\n'"${(pj:\n:)lines[1,max]}"
+  (( $#lines > max )) && block+=$'\n'"... $(( $#lines - max )) more lines in evidence/$name"
+  block+=$'\n'"\`\`\`\`"
+  if [[ -n $note ]]; then
+    local -a bl=("${(@f)block}"); bl=("  "${^bl})
+    _dz_timeline_add $note "output${caption:+: $caption} (evidence/$name)"$'\n'"${(F)bl}"
+    print "• output: ${ev/#$HOME/~}/$name ($#lines lines, in the note too)"
+  else
+    print "• output: ${ev/#$HOME/~}/$name ($#lines lines)"
+  fi
+  _dz_reptor note "**${caption:-output}**"$'\n\n'"\`\`\`"$'\n'"${cmd:+\$ $cmd}"$'\n'"$out"$'\n'"\`\`\`"
+  return 0
 }

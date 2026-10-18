@@ -1,8 +1,8 @@
 # Commands
 
-[README](../README.md) · **Commands** · [Notes](notes.md) · [Config](config.md) · [Development](development.md)
+[README](../README.md) · [Guide](guide.md) · **Commands** · [Notes](notes.md) · [Config](config.md) · [Errors](errors.md) · [Testing](testing.md) · [Development](development.md)
 
-Everything runs through `dz`. Without options it opens the menu; with options it runs the action straight away.
+Everything runs through `dz`. Without options it opens the menu; with options it runs the action straight away. New to dz? Read the [guide](guide.md) first. When something goes wrong, dz shows a code like `dz [E201] no box loaded`: `dz --explain E201` or [errors.md](errors.md) says why.
 
 - [Overview](#overview)
 - [New box](#new-box)
@@ -14,7 +14,10 @@ Everything runs through `dz`. Without options it opens the menu; with options it
 - [Copy to the clipboard](#copy-to-the-clipboard)
 - [Done, archive, open note](#done-archive-open-note)
 - [Flags, timeline, screenshots](#flags-timeline-screenshots)
+- [Command output as evidence](#command-output-as-evidence)
 - [Creds](#creds)
+- [Deadline](#deadline)
+- [SysReptor](#sysreptor)
 - [Remove](#remove)
 - [Menu](#menu)
 - [VPN check](#vpn-check)
@@ -27,6 +30,8 @@ Everything runs through `dz`. Without options it opens the menu; with options it
 | Option | Does |
 |---|---|
 | `-n <name>` | new box (needs `-ip`) |
+| `--template <name>` | with `-n`: another note template, like `exam` |
+| `--deadline [when]` | time limit of the box (`10d`, `48h`, a date), shown in `dz -i` and the prompt |
 | `-ip <ip>` | target IP; without `-n` it changes the IP |
 | `-h <host,...>` | hostnames, added to `/etc/hosts`; without `-n` it changes them, `none` clears them |
 | `-l <name>` | load a box |
@@ -39,6 +44,7 @@ Everything runs through `dz`. Without options it opens the menu; with options it
 | `-cp [what]` | copy the target IP, a host, your IP or a cred to the clipboard |
 | `-t [host]` | hosts in the box: list them, or make `<host>` the target |
 | `-t <host> -ip <ip> [-h ...]` | add or change a host; `--drop` removes it |
+| `-t <host> --via <pivot>` | the host sits behind that pivot; `--via none` clears it |
 | `-o [name]` | open the note (editor, or Obsidian with `notes = vault`) |
 | `-d [name]` | mark a box done |
 | `-a <name>` | archive a box |
@@ -46,8 +52,10 @@ Everything runs through `dz`. Without options it opens the menu; with options it
 | `-f <host> <flag>` | store the flag of a host in the box, counted against `flag_goal` |
 | `-j [text]` | add a line to the note's timeline, or show it |
 | `-s [caption]` | screenshot to `evidence/`, embedded in the timeline |
+| `<cmd> \| dz -e [caption]` | command output to `evidence/`, with the command, as a code block in the timeline |
 | `-c [user[:secret]] [source]` | store or list creds, opt-in (`creds = yes`) |
 | `-c [nr] --valid <host,...>` | where a cred works, into the list and the note |
+| `-c --export` | users, passwords and NT hashes to `loot/` for spraying |
 | `-r <name>` | remove a box |
 | `-y` | no confirmation (with `-r`) |
 | `--note` | also trash the note (with `-r`) |
@@ -56,10 +64,11 @@ Everything runs through `dz`. Without options it opens the menu; with options it
 | `--config show` | values in use now |
 | `--config check` | settings you don't have yet, after an update |
 | `--update` | update dropzone; config, templates, boxes and notes stay |
+| `--explain [code]` | what an error code means and what to do, see [errors.md](errors.md) |
 | `--version` | version |
 | `-h`, `--help` | help (`-h` without a value, `--help` anywhere) |
 
-One action per call: `-n`, `-l`, `-v`, `-i`, `-x`, `-t`, `-p`, `-cp`, `-o`, `-d`, `-a`, `-f`, `-j`, `-s`, `-c` or `-r`. Tab completion knows every option and fills in box names after `-l`, `-r`, `-o`, `-d` and `-a` (archived ones too after `-l`, `-o` and `-d`), host names after `-t`, `--valid` and `-f`, the choices after `-cp` and nmap files after `-p`.
+One action per call: `-n`, `-l`, `-v`, `-i`, `-x`, `-t`, `-p`, `-cp`, `-o`, `-d`, `-a`, `-f`, `-j`, `-s`, `-e`, `-c` or `-r`. Tab completion knows every option and fills in box names after `-l`, `-r`, `-o`, `-d` and `-a` (archived ones too after `-l`, `-o` and `-d`), host names after `-t`, `--valid` and `-f`, the choices after `-cp` and nmap files after `-p`.
 
 ## New box
 
@@ -80,6 +89,14 @@ What it sets up:
 - a note from your template: `~/boxes/<name>/notes.md`, or `<vault>/Boxes/<name>.md` with `notes = vault`, see [notes.md](notes.md)
 - an `/etc/hosts` line tagged `# dz:<name>`, after a backup to `/etc/hosts.dz.bak`
 - one ping to the target, info only (`ping = no` in the config turns it off), and a warning when your VPN is down or the route to the target doesn't go through it (`vpncheck = no` turns that off)
+
+### Another template
+
+```bash
+dz -n cpts -ip 10.129.5.10 --template exam --deadline 10d
+```
+
+`--template exam` uses `exam.md`, `exam-note.md` or `Exam-note.md` from `~/.config/dropzone/templates/`, then from the folder of your own `template` (your vault's `Templates/`, say), then the one that ships with dropzone (`templates/exam-note.md`). A name with a `/` or `.md` is a path, read like `template` in the config. The bundled exam note has Scope, a Hosts table with a *Via* column, Ports with a Host column, Credentials, Findings, Host notes (a `### <host>` heading per host you add), Timeline and a Flags section for flags per host. It only picks the note of a **new** box; an existing note is never replaced.
 
 `dz -n` on a box that already exists updates its IP and keeps its hostnames, unless you give new ones.
 
@@ -130,6 +147,17 @@ dz -t dc01 --drop                                          # remove it
 | `/etc/hosts` | a line per host with hostnames, tagged `# dz:<box>/<host>`. `dz -a` and `dz -r` remove every line of the box, `dz -l` on an archived box puts them back |
 | Note | a row in the first table under `## Hosts`: the columns Host (or Name), IP and Hostname / FQDN are filled, without a Host column the name goes into a Role or Notes column. Plus a timeline line. A new IP is replaced in the note, exact match |
 | Names | lowercase letters, digits and `-`, like `dc01` or `ms-02` |
+
+### Hosts behind a pivot
+
+```bash
+dz -t web01 -ip 172.16.5.15                  # the pivot, its internal IP
+dz -t ms01 -ip 172.16.5.10 --via web01       # ms01 sits behind web01
+dz -t dc01 --via ms01                        # a double pivot, on a host you already have
+dz -t dc01 --via none                        # no pivot
+```
+
+`dz -t` and `dz -i` show `via web01`, the *Via* (or *Pivot*) column of the Hosts table is filled, and a change gets a timeline line. `--via` alone never changes the target. Removing a host with `--drop` also clears it as the pivot of other hosts. The main host is the entry point, so it has no pivot. Stored in `~/boxes/<box>/.via`.
 
 `dz -ip` and `dz -h` without `-t` always change the main host. `dz -i` and `dz -v` show the extra hosts.
 
@@ -211,16 +239,29 @@ All three write into the note of the loaded box, so your report grows while you 
 |---|---|
 | `dz -f 3f9a...e1` | flag into the first empty slot under `## Flags` (user, then root) |
 | `dz -f root 3f9a...e1` | into the root slot |
-| `dz -f` | show the user and root flag |
+| `dz -f dc01 3f9a...e1` | the flag of host dc01 (a box with more hosts, or the exam template) |
+| `dz -f` | show the flags, with a count against `flag_goal` |
 | `dz -j found an NFS share with backups` | `- 2026-10-14 15:32 · found an NFS share with backups` in the timeline |
 | `dz -j` | the last 10 timeline entries |
 | `dz -s` / `dz -s smb share listing` | select a region; the PNG goes to `evidence/` and is embedded in the timeline |
 
-- **Flags on a box with more hosts** (`dz -t`, an exam or an AD set): every flag is a line `- 2026-10-18 14:30 · dc01 · <flag>` at the end of `## Flags`. `dz -f <flag>` stores it for the active host, `dz -f ms01 <flag>` for another one. `dz -f` lists them with a count; set `flag_goal = 14` in the config for the CPTS exam and it shows `9/14 flags`. A flag never marks such a box done, also not `dz -f root ...`: finish it yourself with `dz -d`. The same flag twice is refused.
-- **Flags**: `- **User flag:**` lines (the bundled template) or Obsidian callouts (see [examples/obsidian](../examples/obsidian/)). A filled slot is never overwritten. A flag that isn't 32 hex gets a warning and is stored anyway. Every flag adds a timeline line, and the **root flag marks the box done**. A note without a `## Flags` section gets one.
+- **Flags on a box with more hosts** (`dz -t`, an exam or an AD set), or in a note without user/root slots (like `--template exam`): every flag is a line `- 2026-10-18 14:30 · dc01 · <flag>` at the end of `## Flags`. `dz -f <flag>` stores it for the active host, `dz -f ms01 <flag>` for another one. `dz -f` lists them with a count; set `flag_goal = 14` in the config for the CPTS exam and it shows `9/14 flags`. A flag never marks such a box done, also not `dz -f root ...`: finish it yourself with `dz -d`. The same flag twice is refused.
+- **Flags**: `- **User flag:**` lines (the bundled template) or Obsidian callouts (see [examples/obsidian](../examples/obsidian/)). A filled slot is never overwritten. A flag that isn't 32 hex gets a warning and is stored anyway. Every flag adds a timeline line, and the **root flag marks the box done**. `dz -f user|root <flag>` on a note without a `## Flags` section adds one with both slots.
 - **Timeline**: a section `## Timeline` (config `timeline`), added right before `## Flags` when the note doesn't have it. `-j` takes the rest of the line, quotes are optional.
 - **Screenshots**: saved as `evidence/<box>_<date>_<time>_<caption>.png` and embedded as `![caption](evidence/...)`. With `notes = vault` a copy goes to `Boxes/attachments/<box>/` (config `attachments`), because Obsidian only shows images inside the vault. With `notes = off` the screenshot is only saved. The tool is `xfce4-screenshooter`, `flameshot`, `gnome-screenshot` or `import`, the first one found (config `screenshot`). Needs a desktop session; Esc cancels.
 - A hotkey for screenshots: in Xfce, *Settings → Keyboard → Application Shortcuts*, command `zsh -ic 'dz -s'`. New shells load the last box, so it lands in the right note.
+
+## Command output as evidence
+
+Pipe a command into `dz -e` to keep its output for your report:
+
+```bash
+nxc smb $TARGETS --gen-relay-list relay.txt | dz -e smb signing off
+```
+
+- The output goes to `evidence/<box>_<date>_<time>_<caption>.txt`, colours stripped, with the command on top (`$ nxc smb ...`). The command comes from `commands.log`, so with `commands = no` the file has only the output.
+- The timeline gets a line plus the first 30 lines as a code block; longer output says how many lines are only in the file.
+- You still see nothing on screen; use `| tee /dev/tty | dz -e ...` to watch it too.
 
 ## Creds
 
@@ -237,6 +278,8 @@ Off by default. Turn it on with `creds = yes` in the config (`dz --config`).
 - **Domain users**: `dz -c 'corp\svc_sql'` or `dz -c jdoe@corp.local` sets `$CRED_DOMAIN` (`corp`, `corp.local`) and `$TARGET_USER` without it, so `nxc smb $TARGETS -d $CRED_DOMAIN -u $TARGET_USER -p $PASSWORD` works. The cred is stored as you typed it.
 - **Where it works**: `dz -c 2 --valid dc01,ms01` (or `dz -c --valid dc01` for the active cred, or `--valid` while storing) adds the hosts to the cred: `dz -c` shows `→ dc01, ms01`, and the *Valid on* column of its row in the note is filled. Hosts are names from `dz -t` or IPs; a name that isn't in the box gets a note, not an error.
 - The active cred sets `$TARGET_USER` and either `$PASSWORD` or `$NT_HASH`. `$USER` is left alone, because that is your own login.
+- **Keys and tickets**: a secret that is a file is stored with its full path. A private key sets `$SSH_KEY` (`dz -c 'root:loot/id_rsa'`, then `ssh -i $SSH_KEY root@$TARGET`), a `.ccache` sets `$KRB5CCNAME` (`dz -c 'administrator:loot/admin.ccache'`). dz only clears `$KRB5CCNAME` when it set it itself, so your own `export KRB5CCNAME=...` stays.
+- **For spraying**: `dz -c --export` writes every user (without the domain), password and NT hash of the box to `loot/users.txt`, `loot/passwords.txt` and `loot/hashes.txt`, one per line and no doubles, for your own `nxc smb $TARGETS -u loot/users.txt -p loot/passwords.txt --continue-on-success`. It makes them again on every call; dz runs nothing against the target.
 - Creds live in `~/boxes/<name>/creds` (only readable by you) and get a row in the *Credentials & secrets* table of the note.
 - Everything after the first `:` is the secret, so passwords with `:` work. Quote secrets with `!` or spaces.
 - `dz -c ...` and `dz --creds ...` are logged as `dz -c <hidden>` in `commands.log`. A secret on the command line is still in your zsh history; `dz -c <user>` keeps it out, or start the command with a space.
@@ -296,14 +339,39 @@ DZ_ART=7 dz    # with a fixed banner art (1-10), just this once
 
 Yes/no questions default to *No*. An empty name or IP field cancels the form. The menu covers the everyday box tasks; hosts, ports, notes and the tools are options (`dz --help`).
 
+## Deadline
+
+For an exam with a time limit (the CPTS exam has 10 days for the lab and the report):
+
+| Command | Does |
+|---|---|
+| `dz --deadline 10d` | the time limit starts now: `10d`, `48h`, `9d12h` |
+| `dz --deadline 2026-12-10T14:00` | until a date and time; a date alone means 23:59 |
+| `dz --deadline` | `cpts: day 4/10 · 5d22h left (until 2026-12-10 14:00)` |
+| `dz --deadline none` | remove it |
+| `dz -n cpts -ip ... --deadline 10d` | together with a new box |
+
+`dz -i` shows the same line, and the prompt shows what's left: `[cpts 10.129.5.10 5d22h]-`, red in the last 6 hours and `time's up` after. A new end keeps the start, so the day count stays right when you correct it. Stored in `~/boxes/<box>/.deadline`.
+
+## SysReptor
+
+Off by default. With `sysreptor = yes` in the config, `dz -s` screenshots and `dz -e` output also go to your [SysReptor](https://docs.sysreptor.com/) project, as notes under a note named after the box. It uses the [reptor](https://github.com/Syslifters/reptor) CLI:
+
+```bash
+pip install reptor
+reptor conf            # server, API token and project
+```
+
+The upload runs in the background, so dz doesn't wait for it; `logs/sysreptor.log` has what reptor said. dropzone only sends evidence: findings and the report stay your work in SysReptor. Whatever is on a screenshot or in the output (passwords, hashes) goes along, so know where your SysReptor runs.
+
 ## VPN check
 
 With `vpncheck = yes` (the default) dz checks your VPN when you make a box (`-n`), load one (`-l`), change an IP (`-ip`) or add a host (`-t`). It only warns, it never stops the command.
 
 | Warning | Means |
 |---|---|
-| `tun0 doesn't exist, is your VPN connected?` | the interface from `iface` is down: start your VPN, or set `iface` in the config |
-| `the route to 10.10.10.77 goes through eth0, not tun0` | your Kali would reach the target over another interface, so the target isn't in the VPN (wrong IP?), or another route wins |
+| `• [W201] tun0 doesn't exist, is your VPN connected?` | the interface from `iface` is down: start your VPN, or set `iface` in the config ([W201](errors.md#w201)) |
+| `• [W202] the route to 10.10.10.77 goes through eth0, not tun0` | your Kali would reach the target over another interface, so the target isn't in the VPN (wrong IP?), or another route wins ([W202](errors.md#w202)) |
 
 A host behind a pivot is fine: a route through an interface from `pivot` (default `ligolo*`, so ligolo-ng's `ligolo` interface) gets no warning. Set `pivot = none` to warn about those too, or your own patterns, like `pivot = ligolo* tun1`. Needs `ip` (iproute2); `vpncheck = no` turns it off.
 
@@ -324,6 +392,7 @@ Set when a box is loaded:
 | `$INTERFACE` | `iface` from the config |
 | `$TARGET_USER` | active cred, with `creds = yes` |
 | `$CRED_DOMAIN` | domain of the active cred (`corp\user`, `user@corp.local`), empty otherwise |
+| `$SSH_KEY` / `$KRB5CCNAME` | key file or Kerberos ticket of the active cred |
 | `$PASSWORD` / `$NT_HASH` | secret of the active cred |
 
 `$TARGET`, `$DOMAIN`, `$ATTACKER_IP`, `$INTERFACE`, `$PASSWORD` and `$NT_HASH` match the names used by [The Hacker Recipes](https://thehacker.recipes/contributing/variables) and Exegol, so their commands paste straight in.
@@ -359,9 +428,9 @@ Your config, templates, boxes and notes live outside the repo, so an update neve
 
 | Message | Fix |
 |---|---|
-| `there are local changes in ~/dropzone, commit or stash them first` | you edited dropzone's own files: `git -C ~/dropzone stash`, or commit them |
-| `~/dropzone is not a git clone` | you installed it another way: update it the same way |
-| `git pull failed` | your clone has its own commits, so it can't fast-forward: see git's message above it |
+| `dz [E702] there are local changes in ~/dropzone, ...` | you edited dropzone's own files: `git -C ~/dropzone stash`, or commit them |
+| `dz [E701] ~/dropzone is not a git clone, ...` | you installed it another way: update it the same way |
+| `dz [E703] git pull failed, ...` | no network, or your clone has its own commits so it can't fast-forward: see git's message above it |
 
 `dz --update` says `up to date` when there's nothing new.
 

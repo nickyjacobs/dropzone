@@ -33,8 +33,8 @@ The conventions are in [docs/development.md](docs/development.md). The short ver
 - Every function that does real work starts with `emulate -L zsh`.
 - Files are read, never sourced. Validate names, IPs and hostnames with the `_dz_valid_*` helpers.
 - No personal defaults: everything about a user's setup comes from their config.
-- All text is English. Errors go to stderr.
-- A new option touches `dz()`, `_dz_help`, `_dz_complete`, `docs/commands.md` and a test.
+- All text is English. Errors and warnings go to stderr with a code (`_dz_err E201 "..."`), explained in `lib/errors.zsh`; see [Add an error code](docs/development.md#add-an-error-code).
+- A new option touches `dz()`, `_dz_help`, `_dz_complete`, `docs/commands.md` and a test. Something the tests can't check (a desktop, a network, another tool) gets a row in [docs/testing.md](docs/testing.md).
 
 ## Commits
 

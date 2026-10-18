@@ -65,3 +65,33 @@ out=$(dz --config show)
 has "--config show lists iface" "iface" "$out"
 has "--config show: ping from config" "ping          no" "$out"
 has "--config show: notes is default" "Boxes" "$out"
+
+# The exam template and hosts behind a pivot.
+dz -n exam -ip 10.129.5.10 -h web.inlanefreight.local --template exam >/dev/null
+E=~/vault/Boxes/exam.md
+ok  "--template exam: the bundled exam note" grep -q '^## Findings' $E
+has "--template: placeholders filled" "| exam | 10.129.5.10 | web.inlanefreight.local | | | | |" "$(cat $E)"
+dz -t web01 -ip 172.16.5.15 >/dev/null
+out=$(dz -t ms01 -ip 172.16.5.10 --via web01)
+has "--via: said when adding" "via web01" "$out"
+has "--via: Via column in the Hosts table" "| ms01 | 172.16.5.10 | | web01 | | | |" "$(cat $E)"
+has "--via: in dz -t" "(via web01)" "$(dz -t | grep ms01)"
+has "--via: in dz -i" "via web01" "$(dz -i | grep ms01)"
+has "host notes: a heading per new host" $'### exam\n\n### web01\n\n### ms01' "$(cat $E)"
+dz -t dc01 -ip 172.16.5.5 >/dev/null
+dz -t dc01 --via ms01 >/dev/null
+has "--via on an existing host: row updated" "| dc01 | 172.16.5.5 | | ms01 |" "$(cat $E)"
+has "--via change: timeline line" "host dc01: via ms01" "$(cat $E)"
+eq  "--via alone doesn't switch the target" "" "$DZ_ACTIVE"
+nok "--via an unknown pivot fails" dz -t dc01 --via nope
+nok "--via itself fails" dz -t dc01 --via dc01
+nok "the main host has no pivot" dz -t exam --via web01
+dz -t dc01 --via none >/dev/null
+nok "--via none clears it" eval 'dz -t | grep dc01 | grep -q via'
+dz -t ms01 --drop >/dev/null
+nok "dropping a pivot clears the hosts behind it" test -s ~/boxes/exam/.via
+has "--template missing: message" "template 'nope' not found" "$(dz -n other2 -ip 10.1.1.2 --template nope 2>&1)"
+ok  "--template missing: no note" test ! -f ~/vault/Boxes/other2.md
+mkdir -p ~/.config/dropzone/templates; print -r -- $'---\nstatus: active\n---\nmine {{name}}' > ~/.config/dropzone/templates/exam.md
+dz -n other3 -ip 10.1.1.3 --template exam >/dev/null
+has "--template: your own copy wins" "mine other3" "$(cat ~/vault/Boxes/other3.md)"

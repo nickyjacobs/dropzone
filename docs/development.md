@@ -1,12 +1,13 @@
 # Development
 
-[README](../README.md) · [Commands](commands.md) · [Notes](notes.md) · [Config](config.md) · **Development**
+[README](../README.md) · [Guide](guide.md) · [Commands](commands.md) · [Notes](notes.md) · [Config](config.md) · [Errors](errors.md) · [Testing](testing.md) · **Development**
 
 ## Layout
 
 | Path | What lives there |
 |---|---|
 | `dropzone.plugin.zsh` | entry point: sets `_dz_repo` and `_dz_version`, loads `lib/config.zsh`, then the rest of `lib/` |
+| `lib/errors.zsh` | the error and warning codes (`_dz_err`, `_dz_warn`), their explanations and `dz --explain`; loaded first |
 | `lib/config.zsh` | defaults, config parser, `dz --config` |
 | `lib/box.zsh` | box folders, notes, `/etc/hosts`, load and unload |
 | `lib/cli.zsh` | `dz`, flag parsing, `--help`, tab completion |
@@ -19,9 +20,12 @@
 | `lib/tools.zsh` | `dz serve` and `dz -cp` |
 | `lib/hosts.zsh` | more hosts in a box (`dz -t`) |
 | `lib/ui.zsh` | the block layout of `--help`, `dz -i` and `dz --config show/check` |
-| `lib/notes.zsh` | flags, timeline and screenshots in the note (`dz -f`, `-j`, `-s`) |
+| `lib/notes.zsh` | flags, timeline, screenshots and command output in the note (`dz -f`, `-j`, `-s`, `-e`) |
+| `lib/clock.zsh` | the deadline of a box (`dz --deadline`) |
+| `lib/sysreptor.zsh` | evidence to SysReptor with reptor, opt-in |
 | `lib/status.zsh` | box status, done, archive, open the note |
 | `templates/box-note.md` | the note template that ships with dropzone |
+| `templates/exam-note.md` | the exam template (`dz -n ... --template exam`) |
 | `examples/obsidian/` | Obsidian template, dashboard and setup notes |
 | `tests/` | `run.zsh`, `helpers.zsh` and one `test_*.zsh` per area |
 
@@ -32,7 +36,7 @@ Conventions:
 - Every function that does real work starts with `emulate -L zsh`, so the user's zsh options (`ksh_arrays`, `nounset`, ...) can't change its behaviour ([Zsh Plugin Standard](https://wiki.zshell.dev/community/zsh_plugin_standard)).
 - Files dropzone writes are read, never sourced: the config, `.dropzone` and `creds`. Validate what you read.
 - Box names always go through `_dz_valid_name`, IPs through `_dz_valid_ip`, hostnames through `_dz_valid_host`.
-- Errors to stderr, output to stdout. Colour only through `_dz_color`.
+- Errors to stderr with a code: `_dz_err E201 "no box loaded"` (stops: `return 1` after it), `_dz_warn W202 "..."` (carries on). Output to stdout. Colour only through `_dz_color`.
 - Overviews you read (help, info, config) use the blocks from `lib/ui.zsh` (`_dz_rule`, `_dz_head`, `_dz_row`); lists you scan or pipe (`dz -v`, `dz -t`, `dz -c`) stay one line per item.
 - All text is English.
 - Nothing personal in defaults: everything about the user's setup comes from their config.
@@ -62,6 +66,14 @@ GitHub Actions (`.github/workflows/ci.yml`) runs on every push with a read-only 
 2. Add it to `_dz_help` and `_dz_complete`.
 3. Document it in `docs/commands.md`.
 4. Add a test.
+
+## Add an error code
+
+1. Pick the next free code in the right range (E1xx using dz, E2xx boxes, E3xx hosts, E4xx notes, E5xx creds, E6xx tools, E7xx setup, E8xx deadline; W for a warning) and add it to `lib/errors.zsh` with `_dz_def <code> <title> <why> <fix>`. Write *why* and *fix* for someone who has never seen the code.
+2. Use it: `_dz_err E204 "'$ip' is not an IPv4 address"; return 1`. Reuse an existing code when it's the same problem.
+3. `zsh scripts/errors-doc.zsh > docs/errors.md`.
+
+`tests/test_errors.zsh` fails when a code is used but not explained, explained but never used, or when `docs/errors.md` is out of date.
 
 ## Add a setting
 

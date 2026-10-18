@@ -1,8 +1,8 @@
 # Notes
 
-[README](../README.md) · [Commands](commands.md) · **Notes** · [Config](config.md) · [Development](development.md)
+[README](../README.md) · [Guide](guide.md) · [Commands](commands.md) · **Notes** · [Config](config.md) · [Errors](errors.md) · [Testing](testing.md) · [Development](development.md)
 
-Every box gets a note: one Markdown file for what you find, your timeline, screenshots, creds and flags. dropzone creates it from a template with `dz -n` and keeps writing into it with `dz -j`, `dz -s`, `dz -f` and `dz -c`.
+Every box gets a note: one Markdown file for what you find, your timeline, screenshots, command output, creds and flags. dropzone creates it from a template with `dz -n` and keeps writing into it with `dz -j`, `dz -s`, `dz -e`, `dz -f`, `dz -t` and `dz -c`.
 
 - [Where the note goes](#where-the-note-goes)
 - [Templates](#templates)
@@ -40,6 +40,8 @@ dropzone takes the first template it finds:
 2. `~/.config/dropzone/templates/box-note.md`: your own copy, `install.sh` puts it there once
 3. [`templates/box-note.md`](../templates/box-note.md) that ships with dropzone
 
+`dz -n <name> -ip <ip> --template <name>` picks another template for that one box, for example `--template exam` for [`templates/exam-note.md`](../templates/exam-note.md): Scope, Hosts with a *Via* column, Ports with a Host column, Credentials, Findings, Host notes and a Flags section for flags per host. dz looks for `<name>.md`, `<name>-note.md` and `<Name>-note.md` in `~/.config/dropzone/templates/`, then next to your own `template`, then in dropzone's `templates/`. Copy the exam template into your vault and adjust it like any other template.
+
 Edit your copy as much as you like: add sections, translate headings, drop what you don't use. Keep `## Timeline` and the flag lines if you want `dz -j`, `dz -s` and `dz -f` to write into them (or set `timeline` to your own heading). `status:` in the frontmatter is what `dz -v` shows.
 
 ## What dropzone writes into the note
@@ -49,10 +51,15 @@ Edit your copy as much as you like: add sections, translate headings, drop what 
 | `dz -n` / `dz -ip` | the IP everywhere (exact match), `updated:` |
 | `dz -j <text>` | `- <date> <time> · <text>` at the end of `## Timeline`; the section is added before `## Flags` when it's missing |
 | `dz -s [caption]` | a timeline line with the screenshot embedded under it |
+| `cmd \| dz -e [caption]` | a timeline line with the first 30 lines of output as a code block under it |
 | `dz -f <flag>` | `- **User flag:** <flag>` / `- **Root flag:** <flag>`, or an Obsidian callout (see below); a `## Flags` section is added when it's missing |
+| `dz -f [host] <flag>` on a box with more hosts, or a note without user/root slots | `- <date> <time> · <host> · <flag>` at the end of `## Flags`, and a timeline line with the count |
 | `dz -c user:secret` | a row in the first table under `## Credentials` |
+| `dz -c <nr> --valid <hosts>` | the *Valid on* column of that cred's row |
 | `dz -p` | rows in the first table under `## Ports` (or `### Poorten`), and a timeline line |
-| `dz -t <host> -ip <ip>` | a row in the first table under `## Hosts` (columns Host, IP, Hostnames) and a timeline line |
+| `dz -t <host> -ip <ip>` | a row in the first table under `## Hosts` (columns Host, IP, Hostnames, Via) and a timeline line; a `### <host>` heading under `## Host notes` when the note has that section |
+| `dz -t <host> --via <pivot>` | the *Via* (or *Pivot*) column of that host's row, and a timeline line |
+| `dz --deadline <when>` | a timeline line with the end |
 | `dz -d` / `dz -a` / root flag | `status: done` and `updated:` in the frontmatter |
 
 The note is never overwritten: dropzone only fills empty slots and adds lines.

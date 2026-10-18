@@ -1,6 +1,6 @@
 # Config
 
-[README](../README.md) · [Commands](commands.md) · [Notes](notes.md) · **Config** · [Development](development.md)
+[README](../README.md) · [Guide](guide.md) · [Commands](commands.md) · [Notes](notes.md) · **Config** · [Errors](errors.md) · [Testing](testing.md) · [Development](development.md)
 
 dropzone reads one file: `~/.config/dropzone/config`. `install.sh` creates it from [config.example](../config.example).
 
@@ -21,7 +21,7 @@ folders = scans loot exploits evidence
 
 - One `key = value` per line. Spaces around `=` don't matter.
 - `#` starts a comment, also after a value.
-- `[paths]`, `[box]`, `[log]`, `[notes]`, `[creds]` and `[menu]` are only there to keep it readable. A key works in any section.
+- `[paths]`, `[box]`, `[log]`, `[notes]`, `[creds]`, `[sysreptor]` and `[menu]` are only there to keep it readable. A key works in any section.
 - Remove a line, or leave the value empty, to get the default back.
 - `~` at the start of a path is your home folder.
 - `yes` / `no` settings also take `true` / `false` and `on` / `off`.
@@ -77,6 +77,12 @@ Without a `notes` line, dropzone uses `vault` when a vault is set and `folder` o
 |---|---|---|
 | `creds` | `no` | store credentials per box with `dz -c`, see [commands.md](commands.md#creds) |
 
+### [sysreptor]
+
+| Key | Default | Does |
+|---|---|---|
+| `sysreptor` | `no` | also upload `dz -s` screenshots and `dz -e` output to your SysReptor project's notes, see [commands.md](commands.md#sysreptor) |
+
 ### [menu]
 
 | Key | Default | Does |
@@ -88,7 +94,7 @@ Without a `notes` line, dropzone uses `vault` when a vault is set and `folder` o
 
 ## Prompt
 
-`_dz_prompt` prints the loaded box as a prompt segment, `[jacops 10.129.42.190]-`, and nothing when no box is loaded. Put it in your `PROMPT` (needs `setopt prompt_subst`, which Kali's `.zshrc` already sets):
+`_dz_prompt` prints the loaded box as a prompt segment, `[jacops 10.129.42.190]-`, and nothing when no box is loaded. Another host as the target (`dz -t`) shows as `[corp dc01 10.10.10.5]-`, a deadline (`dz --deadline`) as `[cpts 10.129.5.10 5d22h]-`. Put it in your `PROMPT` (needs `setopt prompt_subst`, which Kali's `.zshrc` already sets):
 
 ```zsh
 PROMPT='┌──(%n㉿%m)-$(_dz_prompt 2>/dev/null)[%~]
@@ -126,9 +132,11 @@ animate = no
 The file is read, never run as code. A line it doesn't understand is skipped with a message, and the rest still loads:
 
 ```
-dropzone config, line 8: autoload must be yes or no, not 'maybe'
-dropzone config, line 9: unknown setting 'colour'
+• [W701] config line 8: autoload must be yes or no, not 'maybe' (line skipped)
+• [W701] config line 9: unknown setting 'colour' (line skipped)
 ```
+
+`dz --explain W701` says more; all codes are in [errors.md](errors.md).
 
 Check what is in use with `dz --config show`.
 

@@ -34,9 +34,11 @@ git rev-parse -q --verify "refs/tags/v$new" >/dev/null && { echo "tag v$new alre
 zsh tests/run.zsh >/dev/null || { echo "tests fail, no release"; exit 1; }
 
 echo "$new" > VERSION
-sed -i.bak "s|^## \[Unreleased\]|## [Unreleased]\n\n## [$new] - $today|" CHANGELOG.md
-sed -i.bak "s|^\[Unreleased\]: \(.*\)/compare/v$old...HEAD|[Unreleased]: \1/compare/v$new...HEAD\n[$new]: \1/compare/v$old...v$new|" CHANGELOG.md
-rm -f CHANGELOG.md.bak
+# perl, not sed: BSD sed (macOS) doesn't turn \n into a newline.
+NEW=$new OLD=$old TODAY=$today perl -pi -e '
+  s/^## \[Unreleased\]$/## [Unreleased]\n\n## [$ENV{NEW}] - $ENV{TODAY}/;
+  s{^\[Unreleased\]: (.*)/compare/v\Q$ENV{OLD}\E\.\.\.HEAD$}{[Unreleased]: $1/compare/v$ENV{NEW}...HEAD\n[$ENV{NEW}]: $1/compare/v$ENV{OLD}...v$ENV{NEW}};
+' CHANGELOG.md
 
 git add VERSION CHANGELOG.md
 git commit -qm "Release: v$new"

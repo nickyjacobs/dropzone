@@ -18,18 +18,39 @@ _dz_note() {
   esac
 }
 
+# A template path as in the config: absolute, inside the vault with notes = vault, or
+# inside ~/.config/dropzone. In $REPLY.
+_dz_template_path() {
+  if [[ $1 == /* ]]; then REPLY=$1
+  elif [[ $DZ_NOTE_MODE == vault ]]; then REPLY=$DZ_VAULT/$1
+  else REPLY=${DZ_CONFIG:h}/$1
+  fi
+}
+
 # Template for new notes: 'template' from the config (absolute, or inside the vault with
 # notes = vault, or inside ~/.config/dropzone), then ~/.config/dropzone/templates/box-note.md,
 # then the one that ships with dropzone.
+# With a name (dz -n ... --template exam): <name>.md, <name>-note.md or <Name>-note.md in
+# ~/.config/dropzone/templates/, next to your 'template', then in dropzone's templates/.
+# A name with a / or .md is a path, like 'template'.
 _dz_template() {
-  local t=$DZ_TEMPLATE c=${DZ_CONFIG:h}
+  local t=$DZ_TEMPLATE c=${DZ_CONFIG:h} n=$1 d f
+  if [[ -n $n && $n != */* && $n != *.md ]]; then
+    local -a dirs=($c/templates)
+    [[ -n $t ]] && { _dz_template_path $t; dirs+=(${REPLY:h}) }
+    dirs+=($_dz_repo/templates)
+    for d in $dirs; do
+      for f in $n.md $n-note.md ${(C)n}-note.md; do
+        [[ -f $d/$f ]] && { print -r -- $d/$f; return 0 }
+      done
+    done
+    _dz_warn W205 "template '$n' not found in ${(j:, :)${dirs/#$HOME/~}}"; return 1
+  fi
+  [[ -n $n ]] && t=$n
   if [[ -n $t ]]; then
-    if [[ $t == /* ]]; then :
-    elif [[ $DZ_NOTE_MODE == vault ]]; then t=$DZ_VAULT/$t
-    else t=$c/$t
-    fi
+    _dz_template_path $t; t=$REPLY
     [[ -f $t ]] && { print -r -- $t; return 0 }
-    print -u2 "• template not found: $t"; return 1
+    _dz_warn W205 "template not found: $t"; return 1
   fi
   for t in $c/templates/box-note.md $_dz_repo/templates/box-note.md; do
     [[ -f $t ]] && { print -r -- $t; return 0 }
@@ -50,7 +71,7 @@ _dz_status() {
 # _dz_set_status <box> <status>: set status and updated: in the frontmatter.
 _dz_set_status() {
   local note=$(_dz_note $1)
-  [[ -f $note ]] || { print -u2 "• no note for $1, status not set"; return 0 }
+  [[ -f $note ]] || { _dz_warn W206 "no note for $1, status not set"; return 0 }
   S=$2 TODAY=$(date +%F) perl -0777 -pi -e '
     if (/\A---\n(.*?)\n---\n/s) {
       my $fm = $1;
@@ -63,8 +84,8 @@ _dz_set_status() {
 # Box from the argument, otherwise the loaded box.
 _dz_pick() {
   local name=${1:-$BOX}
-  [[ -n $name ]] || { print -u2 "dz: no box loaded, give a name"; return 1 }
-  _dz_valid_name $name || { print -u2 "dz: invalid name '$name'"; return 1 }
+  [[ -n $name ]] || { _dz_err E201 "no box loaded, give a name"; return 1 }
+  _dz_valid_name $name || { _dz_err E203 "invalid name '$name'"; return 1 }
   REPLY=$name
 }
 
@@ -73,7 +94,7 @@ _dz_done() {
   emulate -L zsh
   _dz_pick $1 || return 1
   [[ -f $DZ_ROOT/$REPLY/.dropzone || -f $DZ_ROOT/_archive/$REPLY/.dropzone ]] ||
-    { print -u2 "dz: no box '$REPLY'"; return 1 }
+    { _dz_err E202 "no box '$REPLY'"; return 1 }
   _dz_set_status $REPLY done && print "• $REPLY marked done (status: done)"
 }
 
@@ -82,8 +103,8 @@ _dz_archive() {
   emulate -L zsh
   _dz_pick $1 || return 1
   local name=$REPLY src=$DZ_ROOT/$REPLY dst=$DZ_ROOT/_archive/$REPLY re
-  [[ -f $src/.dropzone ]] || { print -u2 "dz: no box '$name' in $DZ_ROOT"; return 1 }
-  [[ -e $dst ]] && { print -u2 "dz: $dst already exists"; return 1 }
+  [[ -f $src/.dropzone ]] || { _dz_err E202 "no box '$name' in $DZ_ROOT"; return 1 }
+  [[ -e $dst ]] && { _dz_err E208 "$dst already exists"; return 1 }
   _dz_set_status $name done
   [[ $PWD == $src || $PWD == $src/* ]] && cd $DZ_ROOT
   mkdir -p ${dst:h} && mv $src $dst || return 1
@@ -99,7 +120,7 @@ _dz_unarchive() {
   local src=$DZ_ROOT/_archive/$1 dst=$DZ_ROOT/$1
   [[ -f $src/.dropzone ]] || return 1
   if [[ -e $dst ]]; then
-    print -u2 "dz: $1 is archived, but ${dst/#$HOME/~} exists and is not a box. Move it away, then dz -l $1 again."
+    _dz_err E209 "$1 is archived, but ${dst/#$HOME/~} exists and is not a box. Move it away, then dz -l $1 again."
     return 1
   fi
   mv $src $dst && _dz_set_status $1 active && print "• $1 restored from the archive (status: active)" || return 1
@@ -125,8 +146,8 @@ _dz_open() {
   emulate -L zsh
   _dz_pick $1 || return 1
   local name=$REPLY note
-  note=$(_dz_note $name) || { print -u2 "dz: notes are off (notes = off in the config)"; return 1 }
-  [[ -f $note ]] || { print -u2 "dz: no note for $name ($note)"; return 1 }
+  note=$(_dz_note $name) || { _dz_err E401 "notes are off (notes = off in the config)"; return 1 }
+  [[ -f $note ]] || { _dz_err E402 "no note for $name ($note)"; return 1 }
   local gui=0
   [[ -n $DISPLAY || -n $WAYLAND_DISPLAY ]] && (( $+commands[xdg-open] )) && gui=1
 
