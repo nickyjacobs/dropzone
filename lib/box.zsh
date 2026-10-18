@@ -166,7 +166,7 @@ _dz_hosts_all() {
 _dz_vpn_check() {
   _dz_on DZ_VPNCHECK && (( $+commands[ip] )) || return 0
   if ! ip link show $DZ_IFACE >/dev/null 2>&1; then
-    print -u2 "• warning: $DZ_IFACE doesn't exist, is your VPN connected? (iface in the config)"
+    _dz_warn W201 "$DZ_IFACE doesn't exist, is your VPN connected? (iface in the config)"
     return 0
   fi
   local -a w=(${(z)"$(ip route get $1 2>/dev/null)"})
@@ -174,7 +174,7 @@ _dz_vpn_check() {
   [[ -z $dev || $dev == $DZ_IFACE ]] && return 0
   # A host behind a pivot (ligolo-ng, ...) is routed through the tunnel, that's fine.
   for p in $DZ_PIVOT; do [[ $dev == ${~p} ]] && return 0; done
-  print -u2 "• warning: the route to $1 goes through $dev, not $DZ_IFACE${DZ_PIVOT:+ or a pivot ($DZ_PIVOT)}"
+  _dz_warn W202 "the route to $1 goes through $dev, not $DZ_IFACE${DZ_PIVOT:+ or a pivot ($DZ_PIVOT)}"
   return 0
 }
 
@@ -191,7 +191,7 @@ _dz_load() {
   emulate -L zsh
   local name=$1
   _dz_valid_name $name && _dz_box_read $DZ_ROOT/$name ||
-    { print -u2 "dz: no box '$name' in $DZ_ROOT"; return 1 }
+    { _dz_err E202 "no box '$name' in $DZ_ROOT"; return 1 }
   local -a hosts=(${=reply[3]}) w targets=($reply[2])
   local ip=$reply[2] l v
   _dz_unset_hostvars
@@ -211,6 +211,8 @@ _dz_load() {
   if (( $#hosts )); then typeset -gx DOMAIN=$hosts[1]; else unset DOMAIN; fi
   _dz_attacker_refresh
   (( $+functions[_dz_creds_export] )) && _dz_creds_export
+  unset DZ_DEADLINE
+  _dz_clock_read $name && typeset -g DZ_DEADLINE="$reply[1] $reply[2]"
   mkdir -p ${DZ_STATE:h}
   print -r -- $name > $DZ_STATE
 }
@@ -222,10 +224,10 @@ _dz_new() {
   emulate -L zsh
   local name=$1 ip=$2 h
   local -a hosts=(${(s:,:)${3// /,}})
-  _dz_valid_name $name || { print -u2 "dz: invalid name '$name'"; return 1 }
-  _dz_valid_ip $ip || { print -u2 "dz: '$ip' is not an IPv4 address"; return 1 }
+  _dz_valid_name $name || { _dz_err E203 "invalid name '$name'"; return 1 }
+  _dz_valid_ip $ip || { _dz_err E204 "'$ip' is not an IPv4 address"; return 1 }
   [[ $hosts == none ]] || for h in $hosts; do
-    _dz_valid_host $h || { print -u2 "dz: invalid hostname '$h'"; return 1 }
+    _dz_valid_host $h || { _dz_err E205 "invalid hostname '$h'"; return 1 }
   done
 
   local dir=$DZ_ROOT/$name old_ip='' old_hosts=''
@@ -235,7 +237,7 @@ _dz_new() {
   elif (( ! $#hosts )); then hosts=(${=old_hosts})
   fi
   mkdir -p $dir/$^DZ_DIRS && _dz_box_write $dir $name $ip "$hosts" "$keep_active" "${keep_hosts[@]}" ||
-    { print -u2 "dz: can't write $dir"; return 1 }
+    { _dz_err E206 "can't write $dir"; return 1 }
 
   # Note from the template (see _dz_note and _dz_template in status.zsh). An existing
   # note is never overwritten, only the IP in it.
@@ -244,7 +246,7 @@ _dz_new() {
     if [[ -f $note ]]; then
       n=$(_dz_note_ip $note "$old_ip" $ip)
       (( n )) && print "• note updated ($n× IP → $ip): ${note/#$HOME/~}" || print "• note unchanged: ${note/#$HOME/~}"
-    elif tpl=$(_dz_template); then
+    elif tpl=$(_dz_template $4); then
       mkdir -p ${note:h}
       sed -e "s|{{name}}|$name|g" -e "s|{{title}}|$name|g" \
           -e "s|{{date}}|$(date +%F)|g" \
@@ -256,7 +258,7 @@ _dz_new() {
       _dz_note_ip $note '' $ip >/dev/null
       print "• note: ${note/#$HOME/~}"
     else
-      print -u2 "• no note template found, no note. Run the same dz -n again once it's there."
+      _dz_warn W204 "no note template found, no note. Run the same dz -n again once it's there."
     fi
   fi
 
@@ -265,7 +267,7 @@ _dz_new() {
     local re; _dz_hosts_re $name all; re=$REPLY
     for h in $hosts; do
       grep -vE "$re\$" $DZ_HOSTS 2>/dev/null | grep -qiE "[[:space:]]${h//./\\.}([[:space:]]|\$)" &&
-        print -u2 "• note: $h is already in $DZ_HOSTS outside dropzone"
+        _dz_warn W203 "$h is already in $DZ_HOSTS outside dropzone"
     done
     _dz_hosts_set $name $ip "$hosts" &&
       if (( $#hosts )); then print "• $DZ_HOSTS: $ip $hosts (backup: $DZ_HOSTS.dz.bak)"
@@ -280,7 +282,7 @@ _dz_new() {
 
 _dz_workon() {
   emulate -L zsh
-  _dz_valid_name $1 || { print -u2 "dz: invalid name '$1'"; return 1 }
+  _dz_valid_name $1 || { _dz_err E203 "invalid name '$1'"; return 1 }
   if [[ ! -f $DZ_ROOT/$1/.dropzone && -f $DZ_ROOT/_archive/$1/.dropzone ]]; then
     _dz_unarchive $1 || return 1
   fi
@@ -295,7 +297,8 @@ _dz_unset_hostvars() {
 
 _dz_off() {
   _dz_unset_hostvars
-  unset BOX TARGET_IP DOMAIN TARGET TARGETS DZ_ACTIVE INTERFACE ATTACKER_IP TARGET_USER PASSWORD NT_HASH CRED_DOMAIN
+  unset BOX TARGET_IP DOMAIN TARGET TARGETS DZ_ACTIVE INTERFACE ATTACKER_IP TARGET_USER PASSWORD NT_HASH CRED_DOMAIN DZ_DEADLINE
+  (( $+functions[_dz_creds_unset_files] )) && _dz_creds_unset_files
   rm -f $DZ_STATE
 }
 
@@ -306,13 +309,13 @@ _dz_off() {
 _dz_rm() {
   emulate -L zsh
   local name=$1 yes=${2:-0} note=${3:-ask} ans
-  _dz_valid_name $name || { print -u2 "dz: invalid name '$name'"; return 1 }
+  _dz_valid_name $name || { _dz_err E203 "invalid name '$name'"; return 1 }
   local dir=$DZ_ROOT/$name notefile=''
   [[ $DZ_NOTE_MODE == vault ]] && notefile=$(_dz_note $name)
-  [[ -n $DZ_ROOT && -f $dir/.dropzone ]] || { print -u2 "dz: no box '$name' in $DZ_ROOT"; return 1 }
+  [[ -n $DZ_ROOT && -f $dir/.dropzone ]] || { _dz_err E202 "no box '$name' in $DZ_ROOT"; return 1 }
 
   if (( ! yes )); then
-    [[ -t 0 ]] || { print -u2 "dz: no terminal to confirm, add -y"; return 1 }
+    [[ -t 0 ]] || { _dz_err E108 "no terminal to confirm, add -y"; return 1 }
     print "Remove box '$name'? ($(du -sh $dir | cut -f1), $(find $dir -type f | wc -l | tr -d ' ') files)"
     read -k 1 "ans?[y/N] "; print
     [[ $ans == [yY] ]] || { print "• cancelled"; return 1 }

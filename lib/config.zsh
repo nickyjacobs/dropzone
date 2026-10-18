@@ -18,6 +18,7 @@ _dz_config_defaults() {
   DZ_VPNCHECK=yes
   DZ_PROMPT=yes
   DZ_CREDS=no
+  DZ_SYSREPTOR=no
   DZ_LOG_COMMANDS=yes
   DZ_LOG_OUTPUT=no
   DZ_TIMELINE=Timeline
@@ -41,7 +42,7 @@ _dz_config_load() {
 
   local line key val
   local -i n=0
-  _dz_cfg_err() { print -u2 "dropzone config, line $n: $1" }
+  _dz_cfg_err() { _dz_warn W701 "config line $n: $1 (line skipped)" }
   while IFS= read -r line || [[ -n $line ]]; do
     (( n++ ))
     line=${line%%[[:space:]]#\#*}                       # strip comment
@@ -79,7 +80,7 @@ _dz_config_load() {
         [[ $val == (auto|xfce4-screenshooter|flameshot|gnome-screenshot|import) ]] ||
           { _dz_cfg_err "screenshot must be auto, xfce4-screenshooter, flameshot, gnome-screenshot or import, not '$val'"; continue }
         DZ_SHOT=$val ;;
-      autoload|animate|ping|prompt|commands|output|creds|vpncheck)
+      autoload|animate|ping|prompt|commands|output|creds|vpncheck|sysreptor)
         [[ ${(L)val} == (yes|no|true|false|on|off) ]] ||
           { _dz_cfg_err "$key must be yes or no, not '$val'"; continue }
         case $key in
@@ -104,7 +105,7 @@ _dz_config_load() {
 _dz_config_resolve() {
   [[ -n $DZ_NOTE_MODE ]] || { [[ -n $DZ_VAULT ]] && DZ_NOTE_MODE=vault || DZ_NOTE_MODE=folder }
   if [[ $DZ_NOTE_MODE == vault && -z $DZ_VAULT ]]; then
-    print -u2 "dropzone config: notes = vault needs 'vault = /path/to/your/vault', using notes = folder"
+    _dz_warn W702 "notes = vault needs 'vault = /path/to/your/vault' in the config, using notes = folder"
     DZ_NOTE_MODE=folder
   fi
   return 0
@@ -129,6 +130,7 @@ _dz_config_show() {
     notes vault "${DZ_VAULT:--}"  notes vault_folder "$DZ_NOTES"  notes attachments "$DZ_ATTACH"
     notes timeline "$DZ_TIMELINE"  notes flag_goal "$DZ_FLAG_GOAL"  notes screenshot "$DZ_SHOT"
     creds creds "$DZ_CREDS"
+    sysreptor sysreptor "$DZ_SYSREPTOR"
     menu art "${DZ_ART:-random}"  menu animate "$DZ_ANIMATE")
   local sec last=''
   for sec k v in $rows; do

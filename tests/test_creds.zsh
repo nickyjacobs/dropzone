@@ -70,5 +70,33 @@ has "domain user stored as typed" 'corp\svc_sql' "$(dz -c)"
 dz -c 'web:S3cr3t' HTTP --valid alpha >/dev/null
 eq  "--valid while storing" '| HTTP | web | S3cr3t | alpha | |' "$(grep '| web |' $N)"
 ok  "an old 4-field creds file still loads" eval 'dz -c 2 >/dev/null && [[ $TARGET_USER == admin ]]'
+
+# Export for spraying.
+dz -c --export >/dev/null
+D=~/boxes/alpha/loot
+eq  "--export: users without domain, no doubles" "admin alex jdoe svc svc_sql web" "$(sort $D/users.txt | paste -sd' ' -)"
+ok  "--export: passwords" grep -qx 'Summer2026!' $D/passwords.txt
+nok "--export: no hashes in passwords.txt" grep -q 31d6cfe0 $D/passwords.txt
+eq  "--export: hashes" 31d6cfe0d16ae931b73c59d7e0c089c0 "$(cat $D/hashes.txt)"
+eq  "--export: files only for you" 600 "$(stat -c %a $D/users.txt 2>/dev/null || stat -f %Lp $D/users.txt)"
+has "--export: says what it wrote" "users.txt (6), passwords.txt (5), hashes.txt (1)" "$(dz -c --export)"
+
+# Key and ticket files.
+mkdir -p ~/boxes/alpha/loot
+print -r -- $'-----BEGIN OPENSSH PRIVATE KEY-----\nx\n-----END OPENSSH PRIVATE KEY-----' > ~/boxes/alpha/loot/id_rsa
+print x > ~/boxes/alpha/loot/admin.ccache
+cd ~/boxes/alpha
+dz -c 'root:loot/id_rsa' 'backup share' >/dev/null
+eq  "a key file sets SSH_KEY with the full path" "${HOME:A}/boxes/alpha/loot/id_rsa" "${SSH_KEY:A}"
+eq  "and no PASSWORD" "" "${PASSWORD-}"
+dz -c 'administrator:loot/admin.ccache' >/dev/null
+eq  ".ccache sets KRB5CCNAME" "${HOME:A}/boxes/alpha/loot/admin.ccache" "${KRB5CCNAME:A}"
+dz -c 1 >/dev/null
+eq  "another cred clears what dz set" "|" "${SSH_KEY-}|${KRB5CCNAME-}"
+export KRB5CCNAME=/tmp/mine.ccache
+dz -c 2 >/dev/null; dz -x >/dev/null
+eq  "your own KRB5CCNAME stays" /tmp/mine.ccache "$KRB5CCNAME"
+unset KRB5CCNAME; cd ~
+
 dz -x >/dev/null
 eq  "-x clears CRED_DOMAIN" "" "${CRED_DOMAIN-}"

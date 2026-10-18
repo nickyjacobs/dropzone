@@ -47,5 +47,5 @@ _dz_record_start() {
   local log=$reply[5]
   DZ_RECORDING=$log "${reply[@]}"
   [[ -e $log ]] && exit
-  print -u2 "dz: recording didn't start, carrying on without it"
+  _dz_warn W402 "recording didn't start, carrying on without it"
 }

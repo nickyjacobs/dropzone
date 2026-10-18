@@ -11,7 +11,7 @@
 _dz_my_ip() {
   _dz_attacker_refresh
   REPLY=$ATTACKER_IP
-  [[ -n $REPLY ]] || { print -u2 "dz: $DZ_IFACE is down, no IP to use (connect your VPN, or set iface in the config)"; return 1 }
+  [[ -n $REPLY ]] || { _dz_err E601 "$DZ_IFACE is down, no IP to use (connect your VPN, or set iface in the config)"; return 1 }
 }
 
 # IP of the pivot for dz serve --via: an IP, or a host of the loaded box (dz -t), in $REPLY.
@@ -32,8 +32,8 @@ _dz_serve() {
   while (( $# )); do
     a=$1
     if [[ $a == --via ]]; then
-      [[ -n $2 ]] || { print -u2 "dz: --via needs the pivot: a host of the box (dz -t) or its IP"; return 1 }
-      _dz_via_ip $2 || { print -u2 "dz: no host '$2' in ${BOX:-the box}, give its IP or add it with dz -t"; return 1 }
+      [[ -n $2 ]] || { _dz_err E602 "--via needs the pivot: a host of the box (dz -t) or its IP"; return 1 }
+      _dz_via_ip $2 || { _dz_err E603 "no host '$2' in ${BOX:-the box}, give its IP or add it with dz -t"; return 1 }
       via=$REPLY; shift
     elif [[ $a == <1-65535> ]]; then port=$a
     else dir=$a
@@ -41,15 +41,15 @@ _dz_serve() {
     shift
   done
   # Windows only talks SMB on 445, and the pivot already uses that port itself.
-  (( smb )) && [[ -n $via ]] && { print -u2 "dz: SMB doesn't work through a pivot listener, use HTTP: dz serve --via ..."; return 1 }
+  (( smb )) && [[ -n $via ]] && { _dz_err E604 "SMB doesn't work through a pivot listener, use HTTP: dz serve --via ..."; return 1 }
   dir=${dir:-$PWD}
   # 'dz serve exploits' = the exploits folder of the loaded box.
   [[ ! -d $dir && -n $BOX && -d $DZ_ROOT/$BOX/$dir ]] && dir=$DZ_ROOT/$BOX/$dir
-  [[ -d $dir ]] || { print -u2 "dz: no folder $dir"; return 1 }
+  [[ -d $dir ]] || { _dz_err E605 "no folder $dir"; return 1 }
   dir=${dir:A}
   # Never share a folder with box files (creds, .dropzone, notes) or your whole home.
   if [[ $dir == ${HOME:A} || -e $dir/.dropzone || -e $dir/creds || -e $dir/notes.md ]]; then
-    print -u2 "dz: ${dir/#$HOME/~} holds your box files, serve a subfolder (dz serve exploits)"
+    _dz_err E606 "${dir/#$HOME/~} holds your box files, serve a subfolder (dz serve exploits)"
     return 1
   fi
   _dz_my_ip || return 1; ip=$REPLY
@@ -57,7 +57,7 @@ _dz_serve() {
   _dz_ui
 
   if (( smb )); then
-    (( $+commands[impacket-smbserver] )) || { print -u2 "dz: impacket-smbserver not found (apt install python3-impacket)"; return 1 }
+    (( $+commands[impacket-smbserver] )) || { _dz_err E607 "impacket-smbserver not found (apt install python3-impacket)"; return 1 }
     port=${port:-445}
     _dz_rule; _dz_head "SMB share" "\\\\$ip\\share → ${dir/#$HOME/~}"
     _dz_row "copy" "copy \\\\$ip\\share\\<file> ." 8
@@ -129,9 +129,9 @@ _dz_cp_value() {
 
 _dz_copy() {
   emulate -L zsh
-  [[ -n $BOX ]] || { print -u2 "dz: no box loaded"; return 1 }
+  [[ -n $BOX ]] || { _dz_err E201 "no box loaded"; return 1 }
   _dz_cp_value "$1" || {
-    print -u2 "dz: nothing to copy for '${1:-target}' (target, <host>, me, domain, targets, user, pass, hash)"
+    _dz_err E608 "nothing to copy for '${1:-target}' (target, <host>, me, domain, targets, user, pass, hash)"
     return 1 }
   local value=$REPLY what=$reply[1] secret=$reply[2] tool=''
   if [[ -n $WAYLAND_DISPLAY ]] && (( $+commands[wl-copy] )); then tool=wl-copy

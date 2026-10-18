@@ -106,15 +106,15 @@ _dz_ports_note() {
 _dz_ports() {
   emulate -L zsh -o extended_glob
   local file=$1 note='' l
-  [[ -n $BOX ]] || { print -u2 "dz: no box loaded"; return 1 }
-  _dz_box_read $DZ_ROOT/$BOX || { print -u2 "dz: box '$BOX' is gone (removed or archived?)"; return 1 }
+  [[ -n $BOX ]] || { _dz_err E201 "no box loaded"; return 1 }
+  _dz_box_read $DZ_ROOT/$BOX || { _dz_err E207 "box '$BOX' is gone (removed or archived?)"; return 1 }
   local main_ip=$reply[2]
   if [[ -z $file ]]; then
     local -a found=($DZ_ROOT/$BOX/scans/**/*.(xml|gnmap)(N.om[1]))
-    (( $#found )) || { print -u2 "dz: no .xml or .gnmap in $DZ_ROOT/$BOX/scans/ (nmap -oA scans/<name> ...)"; return 1 }
+    (( $#found )) || { _dz_err E609 "no .xml or .gnmap in $DZ_ROOT/$BOX/scans/ (nmap -oA scans/<name> ...)"; return 1 }
     file=$found[1]
   fi
-  [[ -r $file ]] || { print -u2 "dz: can't read $file"; return 1 }
+  [[ -r $file ]] || { _dz_err E610 "can't read $file"; return 1 }
 
   # IP -> host name: the main host is the box name, the rest come from dz -t.
   local -A name=($main_ip $BOX)
@@ -134,7 +134,7 @@ _dz_ports() {
     shown+=("$(printf '  %-12s %-10s %-14s %s' $name[$ip] $port/$proto "$svc" "$ver")")
   done < <(_dz_nmap_parse $file)
 
-  (( $#other )) && print -u2 "• not in $BOX, skipped: $other (add a host with dz -t <host> -ip <ip>)"
+  (( $#other )) && _dz_warn W601 "not in $BOX, skipped: $other (add a host with dz -t <host> -ip <ip>)"
   (( $#rows )) || { print "• no open ports for $BOX in ${file/#$HOME/~}"; return 0 }
   print -rl -- $shown
 
@@ -148,6 +148,6 @@ _dz_ports() {
   else
     print "• the note already has all ${#rows} open ports"
   fi
-  grep -qE '^#{2,3} (Ports|Poorten)' $note || print -u2 "• the note has no '## Ports' table, see docs/notes.md"
+  grep -qE '^#{2,3} (Ports|Poorten)' $note || _dz_warn W602 "the note has no '## Ports' table, see docs/notes.md"
   return 0
 }

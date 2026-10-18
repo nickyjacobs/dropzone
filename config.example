@@ -78,6 +78,13 @@ screenshot = auto
 creds = no
 
 
+[sysreptor]
+
+# Also upload dz -s screenshots and dz -e output to your SysReptor project's notes, with
+# reptor (pip install reptor, then reptor conf). Secrets in them go along (yes / no)
+sysreptor = no
+
+
 [menu]
 
 # Banner art: 1 to 10, or random

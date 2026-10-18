@@ -84,3 +84,41 @@ has "a blank line between the callout and the list" $'> 111111111111111111111111
 eq  "the flags stay inside the Flags section" "" "$(sed -n '/^## Flags/,$p' $C | sed -n '/^## [^F]/,$p' | grep '· corp ·')"
 DZ_FLAG_GOAL=0
 eq  "without a goal: just the number" "  3 flags" "$(dz -f | tail -1)"
+
+# Command output as evidence (dz -e).
+dz -l alpha >/dev/null
+_dz_log_preexec "nxc smb 10.10.10.1 --gen-relay-list | dz -e smb signing"
+out=$(print -r -- $'\e[1;32mSMB\e[0m  10.10.10.1  445  DC01  signing:False\r\nline 2' | dz -e smb signing)
+f=(~/boxes/alpha/evidence/alpha_*_smb-signing.txt(N))
+eq  "-e: a .txt in evidence/ with the caption" 1 "$#f"
+eq  "-e: the command on top, from commands.log" '$ nxc smb 10.10.10.1 --gen-relay-list' "$(head -1 $f[1])"
+nok "-e: colours and CRs stripped" grep -q $'\e\\|\r' $f[1]
+has "-e: output in the file" "SMB  10.10.10.1  445  DC01  signing:False" "$(cat $f[1])"
+has "-e: timeline entry with the file" "· output: smb signing (evidence/${f[1]:t})" "$(cat $N)"
+has "-e: code block in the timeline, indented" $'  ````text\n  $ nxc smb 10.10.10.1 --gen-relay-list\n  SMB  10.10.10.1' "$(cat $N)"
+has "-e: says how many lines" "2 lines" "$out"
+_dz_log_preexec "seq 1 50 | dz -e long"
+seq 1 50 | dz -e long >/dev/null
+has "-e: long output cut in the note" "... 20 more lines in evidence/" "$(cat $N)"
+eq  "-e: but whole in the file" 50 "$(grep -c '^[0-9]' ~/boxes/alpha/evidence/alpha_*_long.txt)"
+_dz_log_preexec "ls"
+print -r -- 'plain output' | dz -e nolog >/dev/null
+has "-e: without a logged dz -e line, just the output" $'  ````text\n  plain output' "$(cat $N)"
+nok "-e: empty output fails" eval 'print -n "" | dz -e nothing'
+
+# SysReptor upload (reptor is stubbed, runs in the background).
+reptor() { print -r -- "$*" >> ~/reptor.calls; [[ $* == *note* ]] && cat >> ~/reptor.calls; return 0 }
+commands[reptor]=reptor
+print hi | dz -e off >/dev/null
+ok  "sysreptor = no: nothing uploaded" test ! -e ~/reptor.calls
+DZ_SYSREPTOR=yes
+has "sysreptor: says it uploads" "uploading to note 'alpha'" "$(print 'whoami output' | dz -e whoami)"
+sleep 1
+has "sysreptor: -e goes as a note under the box" "-n alpha note" "$(cat ~/reptor.calls)"
+has "sysreptor: with the output" "whoami output" "$(cat ~/reptor.calls)"
+DISPLAY=:0; _dz_shot_tool() { REPLY=fake }; _dz_shot_take() { print png > $2 }
+dz -s proof >/dev/null; sleep 1
+has "sysreptor: -s uploads the PNG" "-n alpha file $HOME/boxes/alpha/evidence/alpha_" "$(cat ~/reptor.calls)"
+unset 'commands[reptor]'; unfunction reptor
+has "sysreptor: no reptor, says how to get it" "pip install reptor" "$(print x | dz -e y 2>&1)"
+DZ_SYSREPTOR=no
