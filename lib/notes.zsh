@@ -1,6 +1,7 @@
 # notes: flags, timeline and screenshots in the note of the loaded box.
 #
 #   dz -f [user|root] <flag>   flag into the note's Flags section (root flag = done)
+#   dz -f <host> <flag>        flag of a host, as a line in the Flags section (exams, AD sets)
 #   dz -j <text>               timestamped line in the timeline section
 #   dz -s [caption]            screenshot to evidence/, embedded in the timeline
 #
@@ -8,6 +9,8 @@
 # '## Flags' when the note doesn't have one yet. Flags work in two layouts:
 #   - **User flag:** <flag>                    (the template that ships with dropzone)
 #   **User flag** + '> [!success]- Flag' + '> <flag>'   (Obsidian callout, see examples/)
+# A box with more hosts (dz -t) keeps a list instead: '- <date> <time> · <host> · <flag>',
+# with a count against 'flag_goal' from the config. It is never marked done by a flag.
 
 # Note of the loaded box in $REPLY, or fail with a message.
 _dz_note_need() {
@@ -72,19 +75,76 @@ _dz_flags_set() {
   ' $1
 }
 
-# dz -f [user|root] [flag]
+# Host flags of note $1: reply=("host flag" ...), in order.
+_dz_flags_list() {
+  local out=$(perl -0777 -ne '
+    if (/^## Flags[ \t]*\n(.*?)(?=^## |\z)/sm) {
+      my $sec = $1;
+      print "$1 $2\n" while $sec =~ /^- \d{4}-\d\d-\d\d \d\d:\d\d · (\S+) · (\S+)[ \t]*$/mg;
+    }' $1)
+  reply=(${(f)out})
+}
+
+# _dz_flags_add <note> <host> <flag>: a line at the end of the Flags section (added when
+# the note has none).
+_dz_flags_add() {
+  local ts; strftime -s ts '%F %H:%M' $EPOCHSECONDS
+  ENTRY="- $ts · $2 · $3" perl -0777 -pi -e '
+    unless (/^## Flags[ \t]*$/m) { $_ .= "\n" unless /\n\z/; $_ .= "\n## Flags\n\n" }
+    s{(^## Flags[ \t]*\n)(.*?)(?=^## |\z)}{
+      my ($head, $body) = ($1, $2);
+      $body =~ s/\s+\z//;
+      # Straight under an earlier flag line, otherwise after a blank line (a list right
+      # under a callout would end up inside it).
+      my $sep = $body eq "" ? "\n" : $body =~ /^- \d{4}-[^\n]*\z/m ? "$body\n" : "$body\n\n";
+      $head . $sep . "$ENV{ENTRY}\n\n"
+    }sme;
+  ' $1
+}
+
+# dz -f [user|root|<host>] [flag]
 _dz_flag() {
   emulate -L zsh
-  local kind=$1 flag=$2 note
+  local kind=$1 flag=$2 note l
   _dz_note_need || return 1; note=$REPLY
+  _dz_box_read $DZ_ROOT/$BOX 2>/dev/null
+  local -a extra=("${_dz_bh[@]}")
   _dz_flags_get $note
   local user=$reply[1] root=$reply[2]
+  _dz_flags_list $note
+  local -a list=("${reply[@]}")
+  local -i have=$(( $#list + ($#user > 0) + ($#root > 0) ))
 
   if [[ -z $flag ]]; then                                # show
-    printf '%-5s %s\n' user "${user:--}" root "${root:--}"
+    (( $#list && ! $#user && ! $#root )) || printf '%-5s %s\n' user "${user:--}" root "${root:--}"
+    for l in $list; do printf '%-12s %s\n' ${l%% *} ${l#* }; done
+    if (( DZ_FLAG_GOAL )); then print "  $have/$DZ_FLAG_GOAL flags"
+    elif (( $#list )); then print "  $have flags"
+    fi
     return 0
   fi
   [[ $flag == *[[:space:]]* ]] && { print -u2 "dz: a flag has no spaces"; return 1 }
+  [[ -z $kind && ( $flag == $BOX || -n ${(M)extra:#${(b)flag} *} ) ]] &&
+    { print -u2 "dz: $flag is a host, give the flag too: dz -f $flag <flag>"; return 1 }
+  [[ $flag == "$user" || $flag == "$root" || -n ${(M)list:#* ${(b)flag}} ]] &&
+    { print -u2 "dz: that flag is already in the note"; return 1 }
+  # A box with more hosts: flags per host, the active one when you don't name it.
+  [[ -z $kind && $#extra -gt 0 ]] && kind=${DZ_ACTIVE:-$BOX}
+  if [[ -n $kind && $kind != (user|root) ]]; then
+    [[ $kind == $BOX || -n ${(M)extra:#$kind *} ]] ||
+      { print -u2 "dz: no host '$kind' in $BOX (dz -t lists them), or use user / root"; return 1 }
+    [[ $flag =~ '^[0-9a-f]{32}$' ]] || print -u2 "• note: '$flag' is not the usual HTB flag (32 hex), stored anyway"
+    _dz_flags_add $note $kind $flag
+    _dz_flags_list $note
+    [[ -n ${(M)reply:#$kind ${(b)flag}} ]] || { print -u2 "dz: couldn't place the flag in $note"; return 1 }
+    (( have++ ))
+    local count=$have
+    (( DZ_FLAG_GOAL )) && count=$have/$DZ_FLAG_GOAL
+    _dz_timeline_add $note "flag $count ($kind)"
+    print "• flag $count stored for $kind"
+    (( DZ_FLAG_GOAL && have == DZ_FLAG_GOAL )) && print "• that's all $DZ_FLAG_GOAL, dz -d marks $BOX done"
+    return 0
+  fi
   if [[ -z $kind ]]; then
     if [[ -z $user ]]; then kind=user
     elif [[ -z $root ]]; then kind=root
@@ -92,7 +152,7 @@ _dz_flag() {
     fi
   fi
   local -i idx; [[ $kind == user ]] && idx=1 || idx=2
-  local cur=$reply[idx]
+  local cur; (( idx == 1 )) && cur=$user || cur=$root
   [[ -n $cur ]] && { print -u2 "dz: $BOX already has a $kind flag ($cur). Change it in the note."; return 1 }
   [[ $flag =~ '^[0-9a-f]{32}$' ]] || print -u2 "• note: '$flag' is not the usual HTB flag (32 hex), stored anyway"
 
@@ -102,7 +162,8 @@ _dz_flag() {
     { print -u2 "dz: couldn't place the flag in $note (Flags section changed?)"; return 1 }
   _dz_timeline_add $note "$kind flag"
   print "• $kind flag stored in the note"
-  if [[ $kind == root ]]; then
+  # One root flag finishes a single box, not a set of hosts.
+  if [[ $kind == root ]] && (( ! $#extra )); then
     _dz_set_status $BOX done && print "• $BOX marked done (status: done)"
   fi
 }

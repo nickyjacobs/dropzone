@@ -59,3 +59,28 @@ DZ_SHOT=nothere; unfunction _dz_shot_tool; source $_dz_repo/lib/notes.zsh
 has "missing configured tool is reported" "'nothere' not found" "$(dz -s 2>&1)"
 nok "-j without a box fails" eval 'BOX= dz -j x'
 has "--config show lists [notes]" "timeline      Timeline" "$(dz --config show)"
+
+# Flags per host: a box with more hosts keeps a list and is never marked done by a flag.
+dz -n corp -ip 10.10.10.10 >/dev/null
+dz -t dc01 -ip 10.10.10.5 >/dev/null
+C=~/vault/Boxes/corp.md
+DZ_FLAG_GOAL=3
+out=$(dz -f $U)
+has "flag without a kind goes to the active host" "flag 1/3 stored for corp" "$out"
+ok  "line in the Flags section" grep -qE "^- [0-9-]+ [0-9:]+ · corp · $U\$" $C
+dz -t dc01 >/dev/null
+has "the active host follows dz -t" "for dc01" "$(dz -f $R)"
+nok "the same flag twice fails" dz -f corp $R
+nok "a flag for an unknown host fails" dz -f nope $R
+has "and says so" "no host 'nope'" "$(dz -f nope 22222222222222222222222222222222 2>&1)"
+nok "a host name alone isn't stored as a flag" dz -f dc01
+dz -f root 11111111111111111111111111111111 >/dev/null
+eq  "root flag on a box with hosts: not done" active "$(_dz_status corp)"
+out=$(dz -f)
+has "-f lists the host flags" "dc01         $R" "$out"
+has "-f counts against flag_goal" "3/3 flags" "$out"
+has "timeline line with the count" "· flag 2/3 (dc01)" "$(cat $C)"
+has "a blank line between the callout and the list" $'> 11111111111111111111111111111111\n\n- ' "$(cat $C)"
+eq  "the flags stay inside the Flags section" "" "$(sed -n '/^## Flags/,$p' $C | sed -n '/^## [^F]/,$p' | grep '· corp ·')"
+DZ_FLAG_GOAL=0
+eq  "without a goal: just the number" "  3 flags" "$(dz -f | tail -1)"
