@@ -170,9 +170,11 @@ _dz_vpn_check() {
     return 0
   fi
   local -a w=(${(z)"$(ip route get $1 2>/dev/null)"})
-  local dev=${w[${w[(i)dev]}+1]}
-  [[ -z $dev || $dev == $DZ_IFACE ]] ||
-    print -u2 "• warning: the route to $1 goes through $dev, not $DZ_IFACE"
+  local dev=${w[${w[(i)dev]}+1]} p
+  [[ -z $dev || $dev == $DZ_IFACE ]] && return 0
+  # A host behind a pivot (ligolo-ng, ...) is routed through the tunnel, that's fine.
+  for p in $DZ_PIVOT; do [[ $dev == ${~p} ]] && return 0; done
+  print -u2 "• warning: the route to $1 goes through $dev, not $DZ_IFACE${DZ_PIVOT:+ or a pivot ($DZ_PIVOT)}"
   return 0
 }
 
@@ -293,7 +295,7 @@ _dz_unset_hostvars() {
 
 _dz_off() {
   _dz_unset_hostvars
-  unset BOX TARGET_IP DOMAIN TARGET TARGETS DZ_ACTIVE INTERFACE ATTACKER_IP TARGET_USER PASSWORD NT_HASH
+  unset BOX TARGET_IP DOMAIN TARGET TARGETS DZ_ACTIVE INTERFACE ATTACKER_IP TARGET_USER PASSWORD NT_HASH CRED_DOMAIN
   rm -f $DZ_STATE
 }
 

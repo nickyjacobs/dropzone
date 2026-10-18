@@ -4,6 +4,7 @@ C=$DZ_CONFIG
 eq "default boxes" $HOME/boxes "$DZ_ROOT"
 eq "default folders" "scans loot exploits evidence logs" "$DZ_DIRS"
 eq "default iface" tun0 "$DZ_IFACE"
+eq "default pivot" 'ligolo*' "$DZ_PIVOT"
 
 cp $_dz_repo/config.example $C
 _dz_config_load
@@ -39,6 +40,11 @@ has "relative boxes refused" "line 14: boxes must be an absolute path" "$out"
 
 sed -i.bak '/^folders/d' $C && _dz_config_load 2>/dev/null
 eq "removed line = default after reload" "scans loot exploits evidence logs" "$DZ_DIRS"
+
+print 'pivot = ligolo* tun9' > $C && _dz_config_load
+eq "pivot: patterns, not expanded" 'ligolo* tun9' "$DZ_PIVOT"
+print 'pivot = none' > $C && _dz_config_load
+eq "pivot = none" 0 "$#DZ_PIVOT"
 
 print 'art = 7' > $C && _dz_config_load
 eq "art = 7" 7 "$DZ_ART"
