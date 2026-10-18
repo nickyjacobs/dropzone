@@ -20,6 +20,22 @@
   <img src="assets/demo.gif" alt="dropzone demo" width="85%">
 </p>
 
+## Why dropzone
+
+I built dropzone during my CPTS prep. Every new box started the same way: make the folders, copy a note template, add the hosts entry, export the IP, and later paste flags, creds and screenshots into the note by hand. Ten minutes of setup before the real work starts, and easy to get wrong when you're tired.
+
+So dropzone is the place I start. Today that's HTB boxes and the CPTS exam, next it's CTFs, and later real pentests: one command sets up the drop zone, and everything you find during the engagement lands in it.
+
+## Feedback wanted
+
+dropzone is young and grew out of one person's workflow, so it probably misses things that are obvious in yours. If you try it, I'd like to hear:
+
+- what was confusing or broke on your setup
+- what you still do by hand for every box
+- what you'd need for CTFs, Pro Labs or real engagements
+
+Post it in [Discussions](https://github.com/nickyjacobs/dropzone/discussions), open an [issue](https://github.com/nickyjacobs/dropzone/issues/new/choose) or send a pull request. "I tried it and X annoyed me" is useful feedback too.
+
 ## Features
 
 - **Box in one command**: `dz -n jacops -ip 10.129.42.190 -h jacops.htb` makes the folder, the note, the `/etc/hosts` line and loads `$TARGET_IP`, `$DOMAIN` and `$ATTACKER_IP` in your shell.
@@ -148,7 +164,7 @@ OSCP bans tools that exploit or scan on their own. dropzone only does admin: fol
 
 ## Contributing
 
-Issues and pull requests are welcome, see [CONTRIBUTING.md](CONTRIBUTING.md). Security problems: [SECURITY.md](SECURITY.md).
+Ideas and questions go to [Discussions](https://github.com/nickyjacobs/dropzone/discussions), bugs and pull requests are welcome too, see [CONTRIBUTING.md](CONTRIBUTING.md). Security problems: [SECURITY.md](SECURITY.md).
 
 ## License
 
