@@ -4,6 +4,25 @@ All notable changes to dropzone. Format based on [Keep a Changelog](https://keep
 
 ## [Unreleased]
 
+### Added
+- **Command output as evidence** (`<cmd> | dz -e [caption]`): the output to `evidence/`, colours stripped, with the command from `commands.log`, and the first 30 lines as a code block in the timeline.
+- **Exam template** (`dz -n ... --template exam`): Scope, Hosts with a *Via* column, Ports with a Host column, Credentials, Findings, Host notes, flags per host. `--template <name>` also finds your own templates.
+- **Hosts behind a pivot** (`dz -t <host> --via <pivot>`): shown in `dz -t` and `dz -i`, the *Via* column of the note, `--via none` clears it.
+- **Deadline** (`dz --deadline 10d`, a date, `none`): `dz -i` shows `day 4/10 · 5d22h left`, the prompt shows what's left.
+- **Creds export** (`dz -c --export`): users, passwords and NT hashes to `loot/` for your own spraying.
+- **Key and ticket creds**: a private key file sets `$SSH_KEY`, a `.ccache` sets `$KRB5CCNAME`.
+- **SysReptor** (`sysreptor = yes`, opt-in): `dz -s` and `dz -e` also upload to your project's notes with reptor, in the background.
+- `dz -t` puts a `### <host>` heading under `## Host notes` when the note has that section.
+- **Error codes**: every error and warning has a code, `dz [E201] no box loaded` / `• [W202] ...`. `dz --explain <code>` says why it happens and what to do, `dz --explain` lists them all.
+- Docs: [guide.md](docs/guide.md) (how dz behaves, what trips people up, an exam run-through), [errors.md](docs/errors.md) (every code, made from `lib/errors.zsh`) and [testing.md](docs/testing.md) (what the tests cover, what still needs a check by hand).
+
+### Changed
+- Error and warning messages start with their code; config mistakes read `• [W701] config line 8: ... (line skipped)`.
+- A note without user/root flag slots (like the exam template) keeps flags per host, also with one host.
+
+### Fixed
+- `scripts/release.sh` works on macOS (perl instead of BSD sed).
+
 ## [1.1.5] - 2026-10-18
 
 ### Added
