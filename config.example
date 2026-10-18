@@ -18,6 +18,10 @@ folders = scans loot exploits evidence logs
 # Network interface for $ATTACKER_IP
 iface = tun0
 
+# Interfaces of a pivot tunnel (ligolo-ng), patterns separated by spaces, or none.
+# The VPN check accepts a route through them.
+pivot = ligolo*
+
 # Load the last box in new terminals (yes / no)
 autoload = yes
 
@@ -60,6 +64,9 @@ attachments = Boxes/attachments
 
 # Heading of the timeline section, filled by dz -j, dz -f and dz -s
 timeline = Timeline
+
+# Flags to find in a box with more hosts, dz -f counts them (14 on the CPTS exam), 0 = no count
+flag_goal = 0
 
 # Screenshot tool for dz -s: auto, xfce4-screenshooter, flameshot, gnome-screenshot or import
 screenshot = auto

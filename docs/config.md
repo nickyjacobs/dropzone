@@ -41,6 +41,7 @@ folders = scans loot exploits evidence
 | `folders` | `scans loot exploits evidence logs` | subfolders in every new box |
 | `iface` | `tun0` | interface for `$ATTACKER_IP` and `$INTERFACE`, shown in the menu |
 | `autoload` | `yes` | load the last box in new terminals |
+| `pivot` | `ligolo*` | interfaces of a pivot tunnel, patterns separated by spaces, or `none`: a route through one of them is fine for the VPN check |
 | `ping` | `yes` | ping the target once after `-n` or `-ip` (info only) |
 | `vpncheck` | `yes` | warn when the VPN interface is down or the route to the target doesn't go through it; never blocks |
 | `prompt` | `yes` | show `[box ip]-` in your prompt, see [Prompt](#prompt) |
@@ -65,6 +66,7 @@ folders = scans loot exploits evidence
 | `vault_folder` | `Boxes` | note folder inside the vault |
 | `attachments` | `Boxes/attachments` | folder inside the vault for screenshot copies, one subfolder per box |
 | `timeline` | `Timeline` | heading of the timeline section (`## Timeline`), filled by `dz -j`, `-f` and `-s` |
+| `flag_goal` | `0` | flags to find in a box with more hosts; `dz -f` counts against it (`14` for the CPTS exam), `0` = no count |
 | `screenshot` | `auto` | tool for `dz -s`: `auto` (first found), `xfce4-screenshooter`, `flameshot`, `gnome-screenshot` or `import` |
 
 Without a `notes` line, dropzone uses `vault` when a vault is set and `folder` otherwise. All about notes, templates and Obsidian: **[notes.md](notes.md)**.

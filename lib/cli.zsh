@@ -28,11 +28,14 @@ _dz_help() {
   _dz_row "-j <text>" "line in the timeline, -j alone shows it"
   _dz_row "-s [caption]" "screenshot to evidence/, into the note"
   _dz_row "-f [user|root] <flag>" "flag into the note (root = done), -f shows them"
+  _dz_row "-f <host> <flag>" "flag of a host in the box (dz -t), counted"
   _dz_row "-c [user[:secret]]" "store creds (needs creds = yes), -c lists them"
+  _dz_row "-c [nr] --valid <hosts>" "where a cred works, into the note"
   _dz_row "-p [file]" "open ports from your nmap output into the note"
   _dz_rule; _dz_head Tools
   _dz_row "serve [dir] [port]" "HTTP server + download commands with your IP"
   _dz_row "serve smb [dir]" "SMB share + copy commands"
+  _dz_row "serve --via <host>" "for a host behind a pivot: ligolo listener + commands"
   _dz_row "-cp [what]" "copy to the clipboard: target, <host>, me, user, pass"
   _dz_rule; _dz_head Setup
   _dz_row "--config [show|check]" "edit the config, show it, list new settings"
@@ -138,7 +141,7 @@ dz() {
   local -i stop=${@[(i)(-j|--journal|-s|--shot)]}
   (( ${${@[1,stop-1]}[(I)--help]} )) && { _dz_help; return 0 }
 
-  local act='' name='' ip='' host='' yes=0 note=ask all='' cred='' credsrc='' fkind='' text='' label='' drop='' file='' what=''
+  local act='' name='' ip='' host='' yes=0 note=ask all='' cred='' credsrc='' valid='' fkind='' text='' label='' drop='' file='' what=''
   while (( $# )); do
     case $1 in
       -n|--new)    _dz_val $1 "$2" && _dz_act new || return 1; name=$2; shift ;;
@@ -159,14 +162,18 @@ dz() {
       -a|--archive) _dz_val $1 "$2" && _dz_act archive || return 1; name=$2; shift ;;
       --all)       all=1 ;;
       -f|--flag)   _dz_act flag || return 1
-                   [[ $2 == (user|root) ]] && { fkind=$2; shift }
-                   [[ -n $2 && $2 != -* ]] && { text=$2; shift } ;;
+                   # -f [user|root|<host>] [flag]: two words = kind + flag, one word = the flag.
+                   if [[ -n $2 && $2 != -* && -n $3 && $3 != -* ]]; then fkind=$2 text=$3; shift 2
+                   elif [[ $2 == (user|root) ]]; then fkind=$2; shift
+                   elif [[ -n $2 && $2 != -* ]]; then text=$2; shift
+                   fi ;;
       # -j and -s take the rest of the line as text, quotes optional.
       -j|--journal) _dz_act journal || return 1; shift; text="$*"; break ;;
       -s|--shot)   _dz_act shot || return 1; shift; text="$*"; break ;;
       -c|--creds)  _dz_act creds || return 1
                    [[ -n $2 && $2 != -* ]] && { cred=$2; shift }
                    [[ -n $cred && -n $2 && $2 != -* ]] && { credsrc=$2; shift } ;;
+      --valid)     _dz_val $1 "$2" || return 1; valid=$2; shift ;;
       -y|--yes)    yes=1 ;;
       --note)      note=yes ;;
       --keep-note) note=no ;;
@@ -201,7 +208,7 @@ dz() {
     open) _dz_open $name ;;
     done) _dz_done $name ;;
     archive) _dz_archive $name ;;
-    creds) _dz_creds "$cred" "$credsrc" ;;
+    creds) _dz_creds "$cred" "$credsrc" "$valid" ;;
     flag) _dz_flag "$fkind" "$text" ;;
     journal) _dz_journal "$text" ;;
     shot) _dz_shot "$text" ;;
@@ -229,6 +236,11 @@ _dz_comp_hosts() {
   [[ -n $BOX ]] && _dz_box_read $DZ_ROOT/$BOX 2>/dev/null && h=($BOX ${_dz_bh%% *})
   _describe -t hosts host h
 }
+_dz_comp_flag() {
+  local -a k=(user root)
+  [[ -n $BOX ]] && _dz_box_read $DZ_ROOT/$BOX 2>/dev/null && (( $#_dz_bh )) && k+=($BOX ${_dz_bh%% *})
+  _describe -t kinds kind k
+}
 _dz_comp_all() {
   local -a b=($DZ_ROOT/*/.dropzone(Nn:h:t)) a=($DZ_ROOT/_archive/*/.dropzone(Nn:h:t))
   _describe -t boxes box b
@@ -245,8 +257,8 @@ _dz_complete() {
     '-t[hosts in the box]::host:_dz_comp_hosts' '--drop[remove the host, with -t]' \
     '-p[nmap output into the note]::nmap output:_files -g "*.(xml|gnmap)"' \
     '-cp[copy to the clipboard]::what:_dz_comp_copy' \
-    '-c[store or list creds]::user\:secret:' \
-    '-f[store or show a flag]::kind:(user root)' '-j[add to the timeline]:*::text:' '-s[take a screenshot]:*::caption:' \
+    '-c[store or list creds]::user\:secret:' '--valid[hosts where the cred works, with -c]:hosts:_dz_comp_hosts' \
+    '-f[store or show a flag]::kind:_dz_comp_flag' '-j[add to the timeline]:*::text:' '-s[take a screenshot]:*::caption:' \
     '-o[open the note]::box:_dz_comp_all' '-d[mark done]::box:_dz_comp_all' '-a[archive a box]:box:_dz_comp_boxes' \
     '-y[no confirmation]' '--note[also trash the note]' '--keep-note[keep the note]' \
     '--config[edit the config]::action:(show check)' '--update[update dropzone]' '--version[version]' '--help[help]'

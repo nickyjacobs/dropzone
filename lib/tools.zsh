@@ -3,6 +3,8 @@
 #
 #   dz serve [dir] [port]       HTTP server + download commands for every file
 #   dz serve smb [dir] [port]   SMB share (impacket) + copy commands
+#   dz serve --via <host|ip>    for hosts behind a pivot: the ligolo listener to add, and
+#                               download commands with the pivot's IP
 #   dz -cp [what]               copy the target IP, a host, your IP, a cred, ... to the clipboard
 
 # Your IP on the VPN interface, in $REPLY, or fail with a message.
@@ -12,14 +14,34 @@ _dz_my_ip() {
   [[ -n $REPLY ]] || { print -u2 "dz: $DZ_IFACE is down, no IP to use (connect your VPN, or set iface in the config)"; return 1 }
 }
 
-# dz serve [smb] [dir] [port]
+# IP of the pivot for dz serve --via: an IP, or a host of the loaded box (dz -t), in $REPLY.
+_dz_via_ip() {
+  local l
+  if _dz_valid_ip $1; then REPLY=$1; return 0; fi
+  [[ -n $BOX ]] && _dz_box_read $DZ_ROOT/$BOX 2>/dev/null || return 1
+  [[ $1 == $BOX ]] && { REPLY=$reply[2]; return 0 }
+  for l in $_dz_bh; do [[ ${l%% *} == $1 ]] && { REPLY=${${l#* }%% *}; return 0 }; done
+  return 1
+}
+
+# dz serve [smb] [dir] [port] [--via <host|ip>]
 _dz_serve() {
   emulate -L zsh
-  local smb=0 dir='' port='' a f ip url
+  local smb=0 dir='' port='' via='' a f ip url
   [[ $1 == smb ]] && { smb=1; shift }
-  for a in "$@"; do
-    if [[ $a == <1-65535> ]]; then port=$a; else dir=$a; fi
+  while (( $# )); do
+    a=$1
+    if [[ $a == --via ]]; then
+      [[ -n $2 ]] || { print -u2 "dz: --via needs the pivot: a host of the box (dz -t) or its IP"; return 1 }
+      _dz_via_ip $2 || { print -u2 "dz: no host '$2' in ${BOX:-the box}, give its IP or add it with dz -t"; return 1 }
+      via=$REPLY; shift
+    elif [[ $a == <1-65535> ]]; then port=$a
+    else dir=$a
+    fi
+    shift
   done
+  # Windows only talks SMB on 445, and the pivot already uses that port itself.
+  (( smb )) && [[ -n $via ]] && { print -u2 "dz: SMB doesn't work through a pivot listener, use HTTP: dz serve --via ..."; return 1 }
   dir=${dir:-$PWD}
   # 'dz serve exploits' = the exploits folder of the loaded box.
   [[ ! -d $dir && -n $BOX && -d $DZ_ROOT/$BOX/$dir ]] && dir=$DZ_ROOT/$BOX/$dir
@@ -48,9 +70,21 @@ _dz_serve() {
     return
   fi
 
-  port=${port:-80}
-  url=http://$ip${${port:#80}:+:$port}
+  # Through a pivot the target downloads from the pivot's IP; a ligolo listener there
+  # forwards the port to this server. A pivot can't listen below 1024 without root.
+  if [[ -n $via ]]; then
+    port=${port:-8000}
+    url=http://$via:$port
+  else
+    port=${port:-80}
+    url=http://$ip${${port:#80}:+:$port}
+  fi
   _dz_rule; _dz_head "HTTP server" "$url → ${dir/#$HOME/~}"
+  if [[ -n $via ]]; then
+    _dz_row "ligolo" "listener_add --addr 0.0.0.0:$port --to $ip:$port --tcp" 8
+    _dz_row "" "${_ud}in the ligolo-ng proxy, on the session of the pivot ($via)${_ur}" 8
+    (( port < 1024 )) && _dz_row "note" "the pivot needs root to listen on port $port" 8
+  fi
   if (( ! $#files )); then
     _dz_row "" "(the folder is empty)" 8
   fi
