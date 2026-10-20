@@ -66,6 +66,11 @@ dz -n beta -ip 10.10.10.22 >/dev/null 2>&1
 nok "-r .. is refused" dz -r ..
 nok "-r . is refused" dz -r .
 nok "-r unknown box fails" dz -r gamma
+dz -n old -ip 10.10.10.77 >/dev/null; cd ~; dz -a old >/dev/null
+ok  "-r removes an archived box" dz -r old -y --keep-note
+nok "and its folder is gone" test -e ~/boxes/_archive/old
+nok "-l after another action is refused" dz -n x1 -ip 10.10.10.78 -l alpha
+nok "and makes no box" test -e ~/boxes/x1
 nok "-r without -y and without a terminal fails" dz -r beta </dev/null
 dz -r alpha -y --note >/dev/null 2>&1
 ok  "-r removes the box folder" test ! -d $B/alpha

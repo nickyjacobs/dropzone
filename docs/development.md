@@ -6,13 +6,13 @@
 
 | Path | What lives there |
 |---|---|
-| `dropzone.plugin.zsh` | entry point: sets `_dz_repo` and `_dz_version`, loads `lib/config.zsh`, then the rest of `lib/` |
+| `dropzone.plugin.zsh` | entry point: sets `_dz_repo` and `_dz_version`, loads `lib/errors.zsh`, `lib/art.zsh` and `lib/config.zsh`, then the rest of `lib/` |
 | `lib/errors.zsh` | the error and warning codes (`_dz_err`, `_dz_warn`), their explanations and `dz --explain`; loaded first |
 | `lib/config.zsh` | defaults, config parser, `dz --config` |
 | `lib/box.zsh` | box folders, notes, `/etc/hosts`, load and unload |
 | `lib/cli.zsh` | `dz`, flag parsing, `--help`, tab completion |
 | `lib/menu.zsh` | interactive menu |
-| `lib/art.zsh` | banner art |
+| `lib/art.zsh` | the 10 banner arts: equal lines, at most 76×14 (`tests/test_menu.zsh` checks it) |
 | `lib/creds.zsh` | creds per box (`dz -c`), opt-in |
 | `lib/log.zsh` | command log (`preexec` hook) and `script(1)` recording |
 | `lib/prompt.zsh` | `_dz_prompt`, the prompt segment |
@@ -20,7 +20,7 @@
 | `lib/tools.zsh` | `dz serve` and `dz -cp` |
 | `lib/hosts.zsh` | more hosts in a box (`dz -t`) |
 | `lib/ui.zsh` | the block layout of `--help`, `dz -i` and `dz --config show/check` |
-| `lib/notes.zsh` | flags, timeline, screenshots and command output in the note (`dz -f`, `-j`, `-s`, `-e`) |
+| `lib/notes.zsh` | flags, timeline, screenshots and command output in the note, search (`dz -f`, `-j`, `-s`, `-e`, `-g`) |
 | `lib/clock.zsh` | the deadline of a box (`dz --deadline`) |
 | `lib/sysreptor.zsh` | evidence to SysReptor with reptor, opt-in |
 | `lib/status.zsh` | box status, done, archive, open the note |

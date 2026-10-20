@@ -25,7 +25,7 @@ _dz_def E102 "option needs a value" \
   "The option takes a value (a name, an IP, a file), but nothing followed it, or the next word starts with '-' and reads as another option." \
   "Put the value right after the option: 'dz -l jacops', 'dz -ip 10.10.10.5'. Quote values that contain spaces."
 _dz_def E103 "more than one action" \
-  "Every dz call does one thing: -n, -l, -v, -i, -x, -t, -p, -cp, -o, -d, -a, -f, -j, -s, -e, -c or -r. Two of them in one call are refused, so nothing half happens." \
+  "Every dz call does one thing: -n, -l, -v, -i, -x, -t, -p, -cp, -o, -d, -a, -f, -j, -s, -e, -g, -c or -r. Two of them in one call are refused, so nothing half happens." \
   "Split it into two calls: 'dz -l jacops' and then 'dz -i'. Options like -ip, -h, --via and --template are not actions and can go along."
 _dz_def E104 "no action given" \
   "The call has options but none of them says what to do, for example only '-y' or '--all'." \
@@ -133,8 +133,8 @@ _dz_def E408 "couldn't place the flag" \
   "dz wrote the flag but couldn't find it back in the note: the Flags section has a layout dz doesn't know." \
   "Use the layout from the bundled template (- **User flag:** lines) or the Obsidian callouts in examples/obsidian/, or a Flags section with a plain list."
 _dz_def E409 "no screenshot tool" \
-  "dz -s needs xfce4-screenshooter, flameshot, gnome-screenshot or ImageMagick's import, and none was found (or the one from 'screenshot' isn't installed)." \
-  "Install one: 'sudo apt install flameshot'. Or set 'screenshot = auto'."
+  "dz -s needs a screenshot tool, and none was found (or the one from 'screenshot' isn't installed). On X11: xfce4-screenshooter, flameshot, gnome-screenshot, spectacle or ImageMagick's import. On Wayland: grim with slurp, spectacle, gnome-screenshot or flameshot." \
+  "Install one: 'sudo apt install flameshot', on Wayland 'sudo apt install grim slurp'. Or set 'screenshot = auto'."
 _dz_def E410 "no desktop for a screenshot" \
   "There is no graphical session (DISPLAY / WAYLAND_DISPLAY), for example over SSH." \
   "Take the screenshot in your desktop session (RDP, VNC, the VM window), or save output with 'cmd | dz -e'."
@@ -194,7 +194,7 @@ _dz_def E605 "no such folder to serve" \
   "The folder doesn't exist, as a path or as a subfolder of the loaded box." \
   "Check the path; 'dz serve exploits' serves the box's exploits/ folder."
 _dz_def E606 "folder holds your box files" \
-  "dz serve refuses a box folder (creds, .dropzone, notes.md) and your home folder, so a target can't download your creds or notes." \
+  "dz serve refuses a box folder (creds, .dropzone, notes.md), the boxes folder and the archive (they hold every box), anything above them, and your home folder, so a target can't download your creds or notes." \
   "Serve a subfolder: 'dz serve exploits' or 'dz serve ~/tools'."
 _dz_def E607 "impacket-smbserver missing" \
   "'dz serve smb' uses impacket's SMB server, which isn't installed." \
@@ -217,6 +217,10 @@ _dz_def W602 "note has no ports table" \
 _dz_def W603 "reptor not found" \
   "'sysreptor = yes' uploads evidence with the reptor CLI, which isn't installed. The evidence is saved locally anyway." \
   "'pip install reptor' and 'reptor conf', or set 'sysreptor = no'."
+
+_dz_def W604 "serving your creds lists" \
+  "The folder has users.txt, passwords.txt or hashes.txt, the lists 'dz -c --export' writes to loot/. Anyone who reaches the server can download them." \
+  "Serve another folder ('dz serve exploits'), or move the lists out first. Ctrl-C stops the server."
 
 # --- E7xx: setup, config, update
 _dz_def E701 "dropzone is not a git clone" \

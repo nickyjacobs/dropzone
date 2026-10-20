@@ -67,7 +67,7 @@ folders = scans loot exploits evidence
 | `attachments` | `Boxes/attachments` | folder inside the vault for screenshot copies, one subfolder per box |
 | `timeline` | `Timeline` | heading of the timeline section (`## Timeline`), filled by `dz -j`, `-f` and `-s` |
 | `flag_goal` | `0` | flags to find in a box with more hosts; `dz -f` counts against it (`14` for the CPTS exam), `0` = no count |
-| `screenshot` | `auto` | tool for `dz -s`: `auto` (first found), `xfce4-screenshooter`, `flameshot`, `gnome-screenshot` or `import` |
+| `screenshot` | `auto` | tool for `dz -s`: `auto` (first found, Wayland tools first on Wayland), `xfce4-screenshooter`, `flameshot`, `gnome-screenshot`, `spectacle`, `grim` (with `slurp`) or `import` |
 
 Without a `notes` line, dropzone uses `vault` when a vault is set and `folder` otherwise. All about notes, templates and Obsidian: **[notes.md](notes.md)**.
 

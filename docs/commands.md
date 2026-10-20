@@ -15,6 +15,7 @@ Everything runs through `dz`. Without options it opens the menu; with options it
 - [Done, archive, open note](#done-archive-open-note)
 - [Flags, timeline, screenshots](#flags-timeline-screenshots)
 - [Command output as evidence](#command-output-as-evidence)
+- [Search the notes](#search-the-notes)
 - [Creds](#creds)
 - [Deadline](#deadline)
 - [SysReptor](#sysreptor)
@@ -53,10 +54,11 @@ Everything runs through `dz`. Without options it opens the menu; with options it
 | `-j [text]` | add a line to the note's timeline, or show it |
 | `-s [caption]` | screenshot to `evidence/`, embedded in the timeline |
 | `<cmd> \| dz -e [caption]` | command output to `evidence/`, with the command, as a code block in the timeline |
+| `-g <term> [--all]` | search the notes of every box, `--all` includes the archive |
 | `-c [user[:secret]] [source]` | store or list creds, opt-in (`creds = yes`) |
 | `-c [nr] --valid <host,...>` | where a cred works, into the list and the note |
 | `-c --export` | users, passwords and NT hashes to `loot/` for spraying |
-| `-r <name>` | remove a box |
+| `-r <name>` | remove a box, also an archived one |
 | `-y` | no confirmation (with `-r`) |
 | `--note` | also trash the note (with `-r`) |
 | `--keep-note` | keep the note (with `-r`) |
@@ -68,7 +70,7 @@ Everything runs through `dz`. Without options it opens the menu; with options it
 | `--version` | version |
 | `-h`, `--help` | help (`-h` without a value, `--help` anywhere) |
 
-One action per call: `-n`, `-l`, `-v`, `-i`, `-x`, `-t`, `-p`, `-cp`, `-o`, `-d`, `-a`, `-f`, `-j`, `-s`, `-e`, `-c` or `-r`. Tab completion knows every option and fills in box names after `-l`, `-r`, `-o`, `-d` and `-a` (archived ones too after `-l`, `-o` and `-d`), host names after `-t`, `--valid` and `-f`, the choices after `-cp` and nmap files after `-p`.
+One action per call: `-n`, `-l`, `-v`, `-i`, `-x`, `-t`, `-p`, `-cp`, `-o`, `-d`, `-a`, `-f`, `-j`, `-s`, `-e`, `-g`, `-c` or `-r`. Tab completion knows every option and fills in box names after `-l`, `-r`, `-o`, `-d` and `-a` (archived ones too after `-l`, `-r`, `-o` and `-d`), host names after `-t`, `--valid` and `-f`, the choices after `-cp` and nmap files after `-p`.
 
 ## New box
 
@@ -207,7 +209,7 @@ wget http://172.16.5.15:8000/linpeas.sh -O /tmp/linpeas.sh
 
 Paste the `listener_add` line in the ligolo-ng proxy, on the session of the pivot. The port is 8000 unless you give one: a pivot without root can't listen below 1024. Use the pivot's **internal** IP, the one the target can reach. SMB doesn't go through a listener (Windows only talks SMB on 445, and the pivot uses that port itself), so `serve smb --via` is refused.
 
-It listens on your VPN IP only, not on your other interfaces, so nobody on your LAN can read the folder. `dz serve exploits` serves a subfolder of the loaded box. A folder with box files in it (`creds`, `.dropzone`, `notes.md`) and your home folder are refused. If your VPN interface is down it tells you, instead of printing a wrong IP. Needs `python3`, and `impacket-smbserver` for SMB.
+It listens on your VPN IP only, not on your other interfaces, so nobody on your LAN can read the folder. `dz serve exploits` serves a subfolder of the loaded box. A folder with box files in it (`creds`, `.dropzone`, `notes.md`), your boxes folder, the archive, any folder above them and your home folder are refused. A folder with the lists from `dz -c --export` (`users.txt`, `passwords.txt`, `hashes.txt`) gets a warning (`W604`), so `dz serve loot` doesn't hand out your creds by accident. If your VPN interface is down it tells you, instead of printing a wrong IP. Needs `python3`, and `impacket-smbserver` for SMB.
 
 ## Copy to the clipboard
 
@@ -248,7 +250,7 @@ All three write into the note of the loaded box, so your report grows while you 
 - **Flags on a box with more hosts** (`dz -t`, an exam or an AD set), or in a note without user/root slots (like `--template exam`): every flag is a line `- 2026-10-18 14:30 · dc01 · <flag>` at the end of `## Flags`. `dz -f <flag>` stores it for the active host, `dz -f ms01 <flag>` for another one. `dz -f` lists them with a count; set `flag_goal = 14` in the config for the CPTS exam and it shows `9/14 flags`. A flag never marks such a box done, also not `dz -f root ...`: finish it yourself with `dz -d`. The same flag twice is refused.
 - **Flags**: `- **User flag:**` lines (the bundled template) or Obsidian callouts (see [examples/obsidian](../examples/obsidian/)). A filled slot is never overwritten. A flag that isn't 32 hex gets a warning and is stored anyway. Every flag adds a timeline line, and the **root flag marks the box done**. `dz -f user|root <flag>` on a note without a `## Flags` section adds one with both slots.
 - **Timeline**: a section `## Timeline` (config `timeline`), added right before `## Flags` when the note doesn't have it. `-j` takes the rest of the line, quotes are optional.
-- **Screenshots**: saved as `evidence/<box>_<date>_<time>_<caption>.png` and embedded as `![caption](evidence/...)`. With `notes = vault` a copy goes to `Boxes/attachments/<box>/` (config `attachments`), because Obsidian only shows images inside the vault. With `notes = off` the screenshot is only saved. The tool is `xfce4-screenshooter`, `flameshot`, `gnome-screenshot` or `import`, the first one found (config `screenshot`). Needs a desktop session; Esc cancels.
+- **Screenshots**: saved as `evidence/<box>_<date>_<time>_<caption>.png` and embedded as `![caption](evidence/...)`. With `notes = vault` a copy goes to `Boxes/attachments/<box>/` (config `attachments`), because Obsidian only shows images inside the vault. With `notes = off` the screenshot is only saved. The tool is the first one found (config `screenshot`): on X11 `xfce4-screenshooter`, `flameshot`, `gnome-screenshot`, `spectacle` or `import`; on Wayland (sway, Hyprland, KDE, GNOME) `grim` with `slurp`, `spectacle`, `gnome-screenshot` or `flameshot`. Needs a desktop session; Esc cancels.
 - A hotkey for screenshots: in Xfce, *Settings → Keyboard → Application Shortcuts*, command `zsh -ic 'dz -s'`. New shells load the last box, so it lands in the right note.
 
 ## Command output as evidence
@@ -262,6 +264,21 @@ nxc smb $TARGETS --gen-relay-list relay.txt | dz -e smb signing off
 - The output goes to `evidence/<box>_<date>_<time>_<caption>.txt`, colours stripped, with the command on top (`$ nxc smb ...`). The command comes from `commands.log`, so with `commands = no` the file has only the output.
 - The timeline gets a line plus the first 30 lines as a code block; longer output says how many lines are only in the file.
 - You still see nothing on screen; use `| tee /dev/tty | dz -e ...` to watch it too.
+
+## Search the notes
+
+```bash
+dz -g <term> [--all]
+```
+
+Every line with the term, in any case, from the notes of all boxes, per box with its line number. For *where did I see that before?*: a service version, a user name, a technique from an earlier box. `--all` searches the archive too. The term is taken as it is, so `dz -g --via` looks for `--via`.
+
+```
+[+] jacops  2
+       41  - 2026-10-14 15:02 · kerberoast svc_sql, cracked with rockyou
+       57  | svc_sql | kerberoast | ...
+• 2 lines in 1 of 6 boxes
+```
 
 ## Creds
 
@@ -302,6 +319,7 @@ dz -r <name> [-y] [--note | --keep-note]
 | `~/boxes/<name>/` | system trash (`gio trash`), deleted if there is no trash |
 | the note | `notes = folder`: along with the folder · `notes = vault`: `.trash/` in the vault, only if you choose so |
 | `/etc/hosts` lines | removed, every host of the box |
+| an archived box | removed the same way, from `_archive/` |
 | loaded box | unloaded |
 
 Only folders made by dropzone can be removed. Names must start with a letter or digit, so `.` and `..` are never a box.
@@ -315,18 +333,34 @@ DZ_ART=7 dz    # with a fixed banner art (1-10), just this once
 
 <p align="center"><img src="../assets/menu.gif" alt="dropzone menu: new box form, box list, yes/no choice" width="85%"></p>
 
+The status line under the banner shows the loaded box, the target (with the active host, `dz -t`), the time left with a deadline, and your VPN IP.
+
 | Item | Does |
 |---|---|
 | New box | form for name, IP and hostnames |
 | Load box | pick a box from the list, archived ones included |
-| Change IP | new IP for the main host of the loaded box, old IP prefilled |
-| Open note | open the note of the loaded box (your editor, or Obsidian with `notes = vault`) |
+| Target › | submenu for the target of the loaded box, see below |
+| Notes › | submenu for the note of the loaded box, see below |
 | Mark done | mark the loaded box done, optionally archive it |
 | Remove box | pick a box, confirm, choose whether the note goes too |
 | Unload box | unload the box |
 | Quit | close the menu |
 
-*Change IP*, *Open note*, *Mark done* and *Unload box* are greyed out when no box is loaded. A box list longer than the screen scrolls.
+| Target › | Does | Same as |
+|---|---|---|
+| Change IP | new IP for the main host, old IP prefilled | `dz -ip <ip>` |
+| Switch host | pick the main host or another host as the target | `dz -t <host>` |
+| Add host | form for host, IP and hostnames | `dz -t <host> -ip <ip> -h ...` |
+| Deadline | shows the deadline, sets a new one (`10d`, a date) or `none` | `dz --deadline <when>` |
+
+| Notes › | Does | Same as |
+|---|---|---|
+| Open note | your editor, or Obsidian with `notes = vault` | `dz -o` |
+| Timeline entry | a line in the timeline | `dz -j <text>` |
+| Add flag | a flag for the active host (or the next free user/root slot) | `dz -f <flag>` |
+| Creds | user and secret, the secret doesn't show while you type | `dz -c <user>` |
+
+*Target ›*, *Notes ›*, *Mark done* and *Unload box* are greyed out when no box is loaded. *Switch host* needs a second host, the note items need notes, *Creds* needs `creds = yes`. A box list longer than the screen scrolls.
 
 | Key | Action |
 |---|---|
@@ -337,7 +371,7 @@ DZ_ART=7 dz    # with a fixed banner art (1-10), just this once
 | `←` `→` / `Tab` | switch Yes / No |
 | `y` / `n` | yes / no straight away |
 
-Yes/no questions default to *No*. An empty name or IP field cancels the form. The menu covers the everyday box tasks; hosts, ports, notes and the tools are options (`dz --help`).
+Yes/no questions default to *No*. An empty field cancels the form. `q` in a submenu goes back to the main menu. Ports, screenshots, evidence, search and the tools are options (`dz --help`).
 
 ## Deadline
 

@@ -5,6 +5,7 @@
 #   dz -j <text>               timestamped line in the timeline section
 #   dz -s [caption]            screenshot to evidence/, embedded in the timeline
 #   <cmd> | dz -e [caption]    command output to evidence/, with the command, in the timeline
+#   dz -g <term> [--all]       search the notes of every box (--all: the archive too)
 #
 # The timeline section is '## <timeline>' (config, default Timeline); dz adds it before
 # '## Flags' when the note doesn't have one yet. Flags work in two layouts:
@@ -183,26 +184,38 @@ _dz_journal() {
   _dz_timeline_add $note "${1//$'\n'/ }" && print "• added to the timeline of $BOX"
 }
 
-# Screenshot tool: 'screenshot' from the config, or the first one found.
+# Is screenshot tool $1 installed? grim needs slurp to select the region.
+_dz_shot_has() {
+  [[ $1 == grim ]] && { (( $+commands[grim] && $+commands[slurp] )); return }
+  (( $+commands[$1] ))
+}
+
+# Screenshot tool: 'screenshot' from the config, or the first one found. On Wayland
+# (sway, Hyprland, KDE, GNOME) the Wayland tools first: the X11 ones see nothing there.
 _dz_shot_tool() {
   local t
   if [[ $DZ_SHOT != auto ]]; then
-    (( $+commands[$DZ_SHOT] )) && { REPLY=$DZ_SHOT; return 0 }
-    _dz_err E409 "screenshot tool '$DZ_SHOT' not found"; return 1
+    _dz_shot_has $DZ_SHOT && { REPLY=$DZ_SHOT; return 0 }
+    _dz_err E409 "screenshot tool '$DZ_SHOT' not found${${(M)DZ_SHOT:#grim}:+ (grim needs slurp too)}"; return 1
   fi
-  for t in xfce4-screenshooter flameshot gnome-screenshot import; do
-    (( $+commands[$t] )) && { REPLY=$t; return 0 }
+  local -a tools=(xfce4-screenshooter flameshot gnome-screenshot spectacle import)
+  [[ -n $WAYLAND_DISPLAY ]] && tools=(grim spectacle gnome-screenshot flameshot)
+  for t in $tools; do
+    _dz_shot_has $t && { REPLY=$t; return 0 }
   done
-  _dz_err E409 "no screenshot tool found (xfce4-screenshooter, flameshot, gnome-screenshot or import)"
+  _dz_err E409 "no screenshot tool found (${(j:, :)${(@)tools/#%grim/grim + slurp}})"
   return 1
 }
 
 # _dz_shot_take <tool> <file>: select a region and save it as PNG.
 _dz_shot_take() {
+  local g
   case $1 in
     xfce4-screenshooter) xfce4-screenshooter -r -s $2 ;;
     flameshot)           flameshot gui -r > $2 ;;
     gnome-screenshot)    gnome-screenshot -a -f $2 ;;
+    spectacle)           spectacle -r -b -n -o $2 ;;
+    grim)                g=$(slurp) && grim -g "$g" $2 ;;   # Esc in slurp = no screenshot
     import)              import $2 ;;
   esac 2>/dev/null
 }
@@ -245,6 +258,39 @@ _dz_shot() {
   _dz_timeline_add $note "screenshot${caption:+: $caption}"$'\n'"  $embed"
   print "• screenshot: ${ev/#$HOME/~}/$name (in the note too)"
   _dz_reptor file $ev/$name
+}
+
+# dz -g <term> [--all]: every line with <term> (any case) in the notes of all boxes, per
+# box with its line number. 'Where did I see that before?' across boxes.
+_dz_grep() {
+  emulate -L zsh -o extended_glob
+  local term=$1 all=$2 b note l
+  [[ -n $term ]] || { _dz_err E102 "-g needs a search term (dz -g <term>)"; return 1 }
+  [[ $DZ_NOTE_MODE == off ]] && { _dz_err E401 "notes are off (notes = off in the config)"; return 1 }
+  local -a boxes=($DZ_ROOT/*/.dropzone(Nn:h:t)) hits
+  [[ -n $all ]] && boxes+=($DZ_ROOT/_archive/*/.dropzone(Nn:h:t))
+  _dz_ui
+  local on=$_ug off=$_ur
+  local -i n=0 nb=0
+  for b in $boxes; do
+    note=$(_dz_note $b) && [[ -f $note ]] || continue
+    hits=(${(f)"$(grep -n -i -F -- "$term" $note 2>/dev/null)"})
+    (( $#hits )) || continue
+    (( nb++, n += $#hits ))
+    _dz_head $b "$#hits"
+    for l in $hits; do
+      local text=${${l#*:}##[[:space:]]#}
+      [[ -n $on ]] && text=${text//(#bi)(${(b)term})/$on$match[1]$off}
+      printf '    %s%5s%s  %s
+' "$_ud" ${l%%:*} "$_ur" "$text"
+    done
+  done
+  local nt=$#boxes
+  if (( n )); then print "• $n line${${n:#1}:+s} in $nb of $nt box${${nt:#1}:+es}"
+  else
+    print "• no '$term' in the notes of $#boxes boxes"
+    [[ -n $all ]] || print "  dz -g ${(q-)term} --all also searches the archive"
+  fi
 }
 
 # The command that is piping into dz -e, from commands.log (logged just before it ran),

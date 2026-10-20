@@ -47,11 +47,17 @@ _dz_serve() {
   [[ ! -d $dir && -n $BOX && -d $DZ_ROOT/$BOX/$dir ]] && dir=$DZ_ROOT/$BOX/$dir
   [[ -d $dir ]] || { _dz_err E605 "no folder $dir"; return 1 }
   dir=${dir:A}
-  # Never share a folder with box files (creds, .dropzone, notes) or your whole home.
-  if [[ $dir == ${HOME:A} || -e $dir/.dropzone || -e $dir/creds || -e $dir/notes.md ]]; then
+  # Never share a folder with box files (creds, .dropzone, notes), the boxes folder or
+  # anything above it (that holds every box), or your whole home.
+  local root=${DZ_ROOT:A}
+  if [[ $dir == ${HOME:A} || $root == $dir || $root == $dir/* || $dir == $root/_archive ||
+        -e $dir/.dropzone || -e $dir/creds || -e $dir/notes.md ]]; then
     _dz_err E606 "${dir/#$HOME/~} holds your box files, serve a subfolder (dz serve exploits)"
     return 1
   fi
+  # loot/ after dz -c --export: the lists are your creds.
+  local -a lists=($dir/(users|passwords|hashes).txt(N))
+  (( $#lists )) && _dz_warn W604 "${dir/#$HOME/~} has ${(j:, :)lists:t}, the target can download them"
   _dz_my_ip || return 1; ip=$REPLY
   local -a files=($dir/*(N.:t))
   _dz_ui

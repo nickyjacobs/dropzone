@@ -4,8 +4,23 @@ All notable changes to dropzone. Format based on [Keep a Changelog](https://keep
 
 ## [Unreleased]
 
+### Added
+- **Menu submenus**: *Target ›* (Change IP, Switch host, Add host, Deadline) and *Notes ›* (Open note, Timeline entry, Add flag, Creds). The main menu keeps 8 items; *Creds* asks for the secret without showing it.
+- The menu's status line shows the active host and the time left with a deadline.
+- **Search the notes** (`dz -g <term> [--all]`): every line with the term from the notes of all boxes, per box with line numbers; `--all` includes the archive.
+- **Wayland screenshots** for `dz -s`: `grim` with `slurp` and `spectacle`, tried first on Wayland; `spectacle` also on X11. `screenshot = grim` / `spectacle` in the config (#5).
+- Ten new banner arts: the word DROPZONE in ten different letters, each with a scene of what dz does (a parachute, the crate with the box folders, the plane, the landing marker, a pivot drop, the terminal, the note, the flag and the exam clock).
+
 ### Changed
 - Docs: README explains why dropzone exists and asks for feedback; ideas and questions go to Discussions.
+- `dz -r` also removes an archived box.
+
+### Fixed
+- `art = <n>` in the config was checked against a fixed 10 instead of the real number of arts, because the arts loaded after the config.
+- `dz -n a -ip <ip> -l b` loaded `b` instead of refusing two actions.
+
+### Security
+- `dz serve` refused a box folder, but not the boxes folder itself, the archive or a folder above them, which hold every box and its creds. Those are refused now, and serving the lists from `dz -c --export` gives a warning (`W604`).
 
 ## [1.2.0] - 2026-10-18
 

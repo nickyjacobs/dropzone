@@ -37,6 +37,7 @@ _dz_help() {
   _dz_row "-c [nr] --valid <hosts>" "where a cred works, into the note"
   _dz_row "-c --export" "users, passwords, hashes to loot/ for spraying"
   _dz_row "-p [file]" "open ports from your nmap output into the note"
+  _dz_row "-g <term> [--all]" "search the notes of every box, --all with the archive"
   _dz_rule; _dz_head Tools
   _dz_row "serve [dir] [port]" "HTTP server + download commands with your IP"
   _dz_row "serve smb [dir]" "SMB share + copy commands"
@@ -132,7 +133,7 @@ _dz_info() {
 # Parser helpers for dz: one action per call, and options that take a value.
 # They work on the locals of dz (dynamic scope).
 _dz_act() {
-  [[ -z $act || $act == $1 ]] || { _dz_err E103 "pick one action (-n, -l, -v, -i, -x, -t, -p, -cp, -o, -d, -a, -f, -j, -s, -e, -c, -r)"; return 1 }
+  [[ -z $act || $act == $1 ]] || { _dz_err E103 "pick one action (-n, -l, -v, -i, -x, -t, -p, -cp, -o, -d, -a, -f, -j, -s, -e, -g, -c, -r)"; return 1 }
   act=$1
 }
 _dz_val() {
@@ -153,7 +154,9 @@ dz() {
   while (( $# )); do
     case $1 in
       -n|--new)    _dz_val $1 "$2" && _dz_act new || return 1; name=$2; shift ;;
-      -l|--load)   _dz_val $1 "$2" || return 1; name=$2; [[ -z $act ]] && act=load; shift ;;
+      -l|--load)   _dz_val $1 "$2" || return 1
+                   # -l goes along with -ip / -h, not with another action (-n x -l y).
+                   _dz_act load || return 1; name=$2; shift ;;
       -r|--remove) _dz_val $1 "$2" && _dz_act rm || return 1; name=$2; shift ;;
       -ip|--ip)    _dz_val $1 "$2" || return 1; ip=$2; shift ;;
       -h|--host)   [[ -n $2 && $2 != -* ]] || { _dz_help; return 0 }   # -h alone = help
@@ -163,6 +166,10 @@ dz() {
       --drop)      drop=1 ;;
       --via)       _dz_val $1 "$2" || return 1; via=$2; shift ;;
       -p|--ports)  _dz_act ports || return 1; [[ -n $2 && $2 != -* ]] && { file=$2; shift } ;;
+      # The term may start with a dash (dz -g --via), so no _dz_val.
+      -g|--grep)   _dz_act grep || return 1
+                   [[ -n $2 ]] || { _dz_err E102 "-g needs a search term (dz -g <term>)"; return 1 }
+                   text=$2; shift ;;
       -cp|--copy)  _dz_act copy || return 1; [[ -n $2 && $2 != -* ]] && { what=$2; shift } ;;
       -i|--info)   _dz_act info || return 1 ;;
       -x|--off)    _dz_act off || return 1 ;;
@@ -233,6 +240,7 @@ dz() {
     info) _dz_info ;;
     target) _dz_target "$label" "$ip" "$host" "$drop" "$via" ;;
     ports) _dz_ports "$file" ;;
+    grep)  _dz_grep "$text" "$all" ;;
     copy)  _dz_copy "$what" ;;
     off)  _dz_off && print "• box unloaded" ;;
     *)    _dz_err E104 "no action given (dz --help)"; return 1 ;;
@@ -275,8 +283,8 @@ _dz_complete() {
     '-ip[target IP]:ip:' '--template[note template for -n]:template:(exam)' '--deadline[time limit of the box]::when:(10d 24h none)' \
     '-h[hostnames, comma separated]:hostnames:' \
     '-l[load a box]:box:_dz_comp_all' \
-    '(-n -l -v -i -x -o -d -a -c)-r[remove a box]:box:_dz_comp_boxes' \
-    '-v[view boxes]' '--all[include the archive, with -v]' '-i[show the loaded box]' '-x[unload the box]' \
+    '(-n -l -v -i -x -o -d -a -c)-r[remove a box]:box:_dz_comp_all' \
+    '-v[view boxes]' '--all[include the archive, with -v or -g]' '-g[search the notes of every box]:term:' '-i[show the loaded box]' '-x[unload the box]' \
     '-t[hosts in the box]::host:_dz_comp_hosts' '--drop[remove the host, with -t]' '--via[pivot of the host, with -t]:pivot:_dz_comp_hosts' \
     '-p[nmap output into the note]::nmap output:_files -g "*.(xml|gnmap)"' \
     '-cp[copy to the clipboard]::what:_dz_comp_copy' \

@@ -40,19 +40,19 @@ Post it in [Discussions](https://github.com/nickyjacobs/dropzone/discussions), o
 
 - **Box in one command**: `dz -n jacops -ip 10.129.42.190 -h jacops.htb` makes the folder, the note, the `/etc/hosts` line and loads `$TARGET_IP`, `$DOMAIN` and `$ATTACKER_IP` in your shell.
 - **Your note writes itself**: a timeline with `dz -j`, screenshots with `dz -s`, command output with `cmd | dz -e`, flags with `dz -f`, creds with `dz -c`, and a new IP changes everywhere in the note.
-- **Notes your way**: plain Markdown in the box folder, or in your Obsidian vault.
+- **Notes your way**: plain Markdown in the box folder, or in your Obsidian vault. `dz -g` searches the notes of every box.
 - **More hosts per box** for AD sets and pivots: `dz -t dc01 -ip ...` gives `$DC01_IP`, `$TARGETS` and a hosts line, `dz -t dc01` makes it the target.
 - **Exam-ready**: `--template exam`, flags per host with a count, hosts behind a pivot (`--via`), a `--deadline` in your prompt, creds per host with an export for spraying, and evidence to SysReptor if you want.
 - **Your nmap output in the note**: `dz -p` fills the ports table from your own scan; dropzone never scans.
 - **Less typing**: `dz serve` prints download commands with your IP, `dz -cp` copies an IP or a cred, and a warning appears when your VPN is down.
 - **Every terminal knows the box**: new shells load the last box, your prompt shows it, and each command is logged per box.
-- **Interactive menu** with `dz`, short options for everything else, tab completion.
+- **Interactive menu** with `dz` (target and note submenus), short options for everything else, tab completion.
 - **Clear errors**: every error has a code, like `dz [E201] no box loaded`, and `dz --explain E201` tells you why and what to do.
 - **Safe**: files are read, never run, `/etc/hosts` is backed up, removed boxes go to the trash.
 
 ## Quick start
 
-Needs zsh 5.8+, perl and `ip` (iproute2), all on Kali by default. A few commands use optional tools, and tell you when one is missing: `xclip`, `xsel` or `wl-copy` for `dz -cp`, a screenshot tool for `dz -s` (`xfce4-screenshooter`, `flameshot`, `gnome-screenshot` or ImageMagick), `python3` and `impacket-smbserver` for `dz serve`, `sudo` for `/etc/hosts`, `reptor` for the opt-in SysReptor upload.
+Needs zsh 5.8+, perl and `ip` (iproute2), all on Kali by default. A few commands use optional tools, and tell you when one is missing: `xclip`, `xsel` or `wl-copy` for `dz -cp`, a screenshot tool for `dz -s` (`xfce4-screenshooter`, `flameshot`, `gnome-screenshot`, `spectacle` or ImageMagick; on Wayland `grim` + `slurp`), `python3` and `impacket-smbserver` for `dz serve`, `sudo` for `/etc/hosts`, `reptor` for the opt-in SysReptor upload.
 
 ```bash
 git clone https://github.com/nickyjacobs/dropzone.git ~/dropzone
@@ -81,6 +81,7 @@ dz -j found an NFS share with backups    # line in the note's timeline
 dz -s showmount output                   # screenshot, embedded in the note
 nxc smb $TARGETS 2>&1 | dz -e smb hosts  # command output as evidence in the note
 dz -f 3f9a...e1                          # flag into the note
+dz -g kerberoast                         # search the notes of every box
 dz -v                                    # all boxes with status
 dz -a jacops                             # done: archive it
 dz --help                                # everything else
