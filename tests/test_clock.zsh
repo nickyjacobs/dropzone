@@ -27,3 +27,10 @@ ok  "none removes it" test ! -e $D
 nok "and the prompt stops showing it" eval '[[ "$(_dz_prompt)" == *up* ]]'
 dz -x >/dev/null
 nok "--deadline without a box fails" dz --deadline 10d
+
+# dz -i with a deadline and more hosts: the main host keeps its IP (the clock reuses reply).
+dz -n clockhosts -ip 10.10.70.1 >/dev/null; dz -t dc01 -ip 10.10.70.5 >/dev/null; dz --deadline 10d >/dev/null
+out=$(NO_COLOR=1 dz -i)
+has "-i with deadline and hosts: main shows its IP" "main       10.10.70.1" "$out"
+has "and the clock" "day 1/10" "$out"
+has "-i: the note path starts with ~" "note       ~/" "$out"
