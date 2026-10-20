@@ -49,8 +49,9 @@ _dz_serve() {
   dir=${dir:A}
   # Never share a folder with box files (creds, .dropzone, notes), the boxes folder or
   # anything above it (that holds every box), or your whole home.
+  # ${dir%/}: '/' is above everything too.
   local root=${DZ_ROOT:A}
-  if [[ $dir == ${HOME:A} || $root == $dir || $root == $dir/* || $dir == $root/_archive ||
+  if [[ $dir == ${HOME:A} || $root == $dir || $root == ${dir%/}/* || $dir == $root/_archive ||
         -e $dir/.dropzone || -e $dir/creds || -e $dir/notes.md ]]; then
     _dz_err E606 "${dir/#$HOME/~} holds your box files, serve a subfolder (dz serve exploits)"
     return 1

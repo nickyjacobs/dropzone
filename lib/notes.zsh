@@ -264,7 +264,7 @@ _dz_shot() {
 # box with its line number. 'Where did I see that before?' across boxes.
 _dz_grep() {
   emulate -L zsh -o extended_glob
-  local term=$1 all=$2 b note l
+  local term=$1 all=$2 b note l text
   [[ -n $term ]] || { _dz_err E102 "-g needs a search term (dz -g <term>)"; return 1 }
   [[ $DZ_NOTE_MODE == off ]] && { _dz_err E401 "notes are off (notes = off in the config)"; return 1 }
   local -a boxes=($DZ_ROOT/*/.dropzone(Nn:h:t)) hits
@@ -279,7 +279,7 @@ _dz_grep() {
     (( nb++, n += $#hits ))
     _dz_head $b "$#hits"
     for l in $hits; do
-      local text=${${l#*:}##[[:space:]]#}
+      text=${${l#*:}##[[:space:]]#}
       [[ -n $on ]] && text=${text//(#bi)(${(b)term})/$on$match[1]$off}
       printf '    %s%5s%s  %s
 ' "$_ud" ${l%%:*} "$_ur" "$text"
@@ -288,7 +288,7 @@ _dz_grep() {
   local nt=$#boxes
   if (( n )); then print "• $n line${${n:#1}:+s} in $nb of $nt box${${nt:#1}:+es}"
   else
-    print "• no '$term' in the notes of $#boxes boxes"
+    print "• no '$term' in the notes of $nt box${${nt:#1}:+es}"
     [[ -n $all ]] || print "  dz -g ${(q-)term} --all also searches the archive"
   fi
 }

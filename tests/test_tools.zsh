@@ -69,6 +69,10 @@ mkdir -p ~/boxes/_archive
 nok "serve: refuses the archive" dz serve ~/boxes/_archive
 DZ_ROOT=~/work/boxes; mkdir -p ~/work/boxes
 nok "serve: refuses a folder above the boxes folder" dz serve ~/work
+nok "serve: refuses /" dz serve /
+DZ_ROOT=~/'w[1]'/boxes; mkdir -p $DZ_ROOT ~/w1
+nok "serve: boxes folder under a path with [ ]" dz serve ~/'w[1]'
+DZ_ROOT=~/boxes
 DZ_ROOT=~/boxes
 mkdir -p ~/boxes/corp/loot; print 'S3cret!' > ~/boxes/corp/loot/passwords.txt
 has "serve: warns for exported creds lists" "W604" "$(dz serve loot 2>&1)"

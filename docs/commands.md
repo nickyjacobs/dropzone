@@ -271,7 +271,7 @@ nxc smb $TARGETS --gen-relay-list relay.txt | dz -e smb signing off
 dz -g <term> [--all]
 ```
 
-Every line with the term, in any case, from the notes of all boxes, per box with its line number. For *where did I see that before?*: a service version, a user name, a technique from an earlier box. `--all` searches the archive too. The term is taken as it is, so `dz -g --via` looks for `--via`.
+Every line with the term, in any case, from the notes of all boxes, per box with its line number. For *where did I see that before?*: a service version, a user name, a technique from an earlier box. `--all` searches the archive too. The term is taken as it is, so `dz -g --via` looks for `--via`; quote a term with spaces: `dz -g 'smb signing'`.
 
 ```
 [+] jacops  2
@@ -360,7 +360,7 @@ The status line under the banner shows the loaded box, the target (with the acti
 | Add flag | a flag for the active host (or the next free user/root slot) | `dz -f <flag>` |
 | Creds | user and secret, the secret doesn't show while you type | `dz -c <user>` |
 
-*Target ›*, *Notes ›*, *Mark done* and *Unload box* are greyed out when no box is loaded. *Switch host* needs a second host, the note items need notes, *Creds* needs `creds = yes`. A box list longer than the screen scrolls.
+*Target ›*, *Notes ›*, *Mark done* and *Unload box* are greyed out when no box is loaded. *Switch host* needs a second host, the note items need notes, *Creds* needs `creds = yes` (with neither, *Notes ›* is greyed out). A box list longer than the screen scrolls.
 
 | Key | Action |
 |---|---|

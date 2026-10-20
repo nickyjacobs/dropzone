@@ -46,6 +46,8 @@ DZ_CREDS=yes; _dz_set_sub notes
 eq  "and on with creds = yes" 0 "$_dz_off[4]"
 DZ_NOTE_MODE=off; _dz_set_sub notes
 eq  "notes = off: the note items are off" "1 1 1 0" "$_dz_off"
+DZ_CREDS=no; _dz_set_main
+eq  "notes = off and creds = no: Notes › is off" 1 "$_dz_off[4]"
 DZ_NOTE_MODE=vault DZ_CREDS=no
 
 # Switch host: the main host and the extra hosts, the active one marked.
@@ -55,6 +57,7 @@ eq  "Switch host is on with more hosts" 0 "$_dz_off[2]"
 _dz_set_hosts
 eq  "host list: main host and dc01" "box1 dc01" "$_dz_boxnames"
 has "the active host is marked" "active" "$_dz_items[2]"
+eq  "and selected" 2 "$_dz_sel"
 has "host list has a title" "Switch host · box1" "$(_dz_draw 1)"
 out=$(_dz_draw 1)
 has "status line shows the active host" "10.10.20.5 (dc01)" "$out"

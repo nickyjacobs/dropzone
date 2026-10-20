@@ -71,10 +71,10 @@ _dz_draw() {
       seg+=(left "${REPLY:-time's up}")
     fi
   fi
-  seg+=($DZ_IFACE ${_dz_tun:-down})
+  seg+=("$DZ_IFACE" "${_dz_tun:-down}")
   for k v in $seg; do
     col=118
-    [[ $k == $DZ_IFACE && -z $_dz_tun ]] && col=196
+    [[ $k == "$DZ_IFACE" && -z $_dz_tun ]] && col=196
     [[ $k == left ]] && { (( ${DZ_DEADLINE#* } - EPOCHSECONDS < 21600 )) && col=196 || col=214 }
     st+=$'\e[38;5;248m'$k$' \e[1;38;5;'$col'm'$v$'\e[0m   '
     plain+="$k $v   "
@@ -142,6 +142,8 @@ _dz_set_main() {
   _dz_items=('New box' 'Load box' 'Target ›' 'Notes ›' 'Mark done' 'Remove box' 'Unload box' 'Quit')
   _dz_off=(0 0 0 0 0 0 0 0)
   [[ -z $BOX ]] && _dz_off[3]=1 _dz_off[4]=1 _dz_off[5]=1 _dz_off[7]=1
+  # Notes off and creds off: nothing in the Notes submenu works.
+  [[ $DZ_NOTE_MODE == off ]] && ! _dz_on DZ_CREDS && _dz_off[4]=1
   (( _dz_sel > $#_dz_items )) && _dz_sel=1
 }
 
@@ -175,6 +177,7 @@ _dz_set_hosts() {
     w=(${=l})
     [[ $w[1] == $_dz_ba ]] && mark=active || mark=''
     _dz_boxnames+=$w[1]; _dz_items+="${(r:20:)w[1]} ${(r:16:)w[2]}$mark"
+    [[ -n $mark ]] && _dz_sel=$#_dz_items      # start on the active host
   done
 }
 
@@ -424,8 +427,8 @@ _dz_menu() {
   case $action in
     new)  _dz_new $name $ip "$host" ;;
     ip)   _dz_new $BOX $ip ;;
-    host) _dz_target $name ;;
-    addhost) _dz_target $name $ip "$host" ;;
+    host) _dz_target "$name" ;;
+    addhost) _dz_target "$name" "$ip" "$host" ;;
     deadline) _dz_deadline "$text" ;;
     journal) _dz_journal "$text" ;;
     flag) _dz_flag '' "$text" ;;
