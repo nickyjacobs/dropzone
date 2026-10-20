@@ -24,10 +24,14 @@ Type "dz -j found an NFS share with backups" Sleep 300ms Enter
 Sleep 1.5s
 Type "dz -f 3f9a1c0e8b7d6a5f4e3d2c1b0a998877" Sleep 300ms Enter
 Sleep 1.5s
-Type "dz -v" Sleep 300ms Enter
+Type "dz -t dc01 -ip 10.129.42.191 -h dc01.jacops.htb" Sleep 300ms Enter
+Sleep 2s
+Type "nxc smb $TARGETS | dz -e smb signing" Sleep 300ms Enter
+Sleep 2s
+Type "clear; dz -v" Sleep 300ms Enter
 Sleep 2.5s
-Type "sed -n '/^## Timeline/,/^## Lessons/p' notes.md" Sleep 300ms Enter
-Sleep 3.5s
+Type "clear; sed -n '/^## Timeline/,/^## Lessons/p' notes.md" Sleep 300ms Enter
+Sleep 4.5s
 Type "clear; dz" Sleep 300ms Enter
 Sleep 4s
 Down Sleep 600ms
