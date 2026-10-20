@@ -8,6 +8,7 @@ All notable changes to dropzone. Format based on [Keep a Changelog](https://keep
 
 ### Fixed
 - `dz -i` on a box with a deadline and more hosts showed a timestamp instead of the main host's IP.
+- `dz -i` showed the note's full path instead of `~/...`.
 
 ### Changed
 - Docs: the guide covers `dz -g`, removing an archived box and what `dz serve` refuses.
