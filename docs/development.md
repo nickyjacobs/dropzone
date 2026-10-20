@@ -128,6 +128,6 @@ The tag runs `.github/workflows/release.yml`: it checks that `VERSION` matches t
 | `gitleaks.yml` | every push and PR | secret scan over the full history |
 | `lychee.yml` | Markdown changes, weekly | checks every link in the docs |
 | `release.yml` | tag `v*.*.*` | GitHub Release from the CHANGELOG |
-| `demo.yml` | change to `assets/*.tape` | renders `demo.gif` and `menu.gif` with [VHS](https://github.com/charmbracelet/vhs) as an artifact; download them, check them, commit them |
+| `demo.yml` | change to `assets/*.tape` | renders `demo.gif`, `menu.gif`, `arts.gif` and `hosts.gif` with [VHS](https://github.com/charmbracelet/vhs) as an artifact (a fixed tun0 IP and a stand-in `nxc`, see `assets/demo-env.sh`); download them, check them, commit them. Render again after `scripts/release.sh`, so the menu shows the new version |
 
 Dependabot keeps the actions up to date, with pull requests against `develop`.

@@ -50,6 +50,8 @@ What you really need to know to use dz without surprises. Every option is in [co
 
 A run-through for a network exam like the HTB CPTS (one entry point, internal hosts behind a pivot, many flags, a report at the end):
 
+<p align="center"><img src="../assets/hosts.gif" alt="dz -t: an exam box with a pivot host and a DC behind it, switching the target, a flag per host, dz -i and dz -g" width="85%"></p>
+
 ```bash
 # config once: flag_goal = 14, creds = yes (and sysreptor = yes if you use it)
 dz -n cpts -ip 10.129.5.10 -h inlanefreight.local --template exam --deadline 10d

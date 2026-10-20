@@ -4,8 +4,12 @@ All notable changes to dropzone. Format based on [Keep a Changelog](https://keep
 
 ## [Unreleased]
 
+### Fixed
+- `dz -i` on a box with a deadline and more hosts showed a timestamp instead of the main host's IP.
+
 ### Changed
 - Docs: the guide covers `dz -g`, removing an archived box and what `dz serve` refuses.
+- Docs: new GIFs of the 10 banner arts and of a box with more hosts (`docs/commands.md`, `docs/guide.md`); the demo and menu GIFs show hosts, `dz -e` and the submenus, without VPN warnings.
 
 ## [1.3.0] - 2026-10-20
 
