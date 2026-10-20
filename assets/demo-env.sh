@@ -16,8 +16,8 @@ source $repo/dropzone.plugin.zsh
 _dz_attacker_ip() { print 10.10.14.7 }
 # A stand-in for nxc, so dz -e has output to save.
 nxc() {
-  print 'SMB  10.129.42.190  445  JACOPS  [*] Windows Server 2019 Build 17763 x64 (name:JACOPS) (domain:jacops.htb) (signing:False) (SMBv1:False)'
-  print 'SMB  10.129.42.191  445  DC01    [*] Windows Server 2019 Build 17763 x64 (name:DC01) (domain:jacops.htb) (signing:True) (SMBv1:False)'
+  print 'SMB  10.129.42.190  445  JACOPS  [*] Windows Server 2019 (name:JACOPS) (domain:jacops.htb) (signing:False)'
+  print 'SMB  10.129.42.191  445  DC01    [*] Windows Server 2019 (name:DC01) (domain:jacops.htb) (signing:True)'
 }
 PROMPT='%F{240}kali%f \$(_dz_prompt)%F{39}%~%f %F{46}❯%f '
 cd ~
