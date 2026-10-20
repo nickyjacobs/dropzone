@@ -30,7 +30,7 @@ What you really need to know to use dz without surprises. Every option is in [co
 7. **The note is never overwritten**, also not by `dz -n` on an existing box or by a new template. A changed template only counts for new boxes.
 8. **Headings are how dz finds its place.** Rename `## Timeline`, `## Flags`, `## Hosts`, `## Ports` or `## Credentials` and dz can't write there any more (or adds a new section). Keep them, or set `timeline` for your own timeline heading.
 9. **The VPN check only warns.** A `[W201]` or `[W202]` never stops a command. It's there so you notice a dead VPN before you lose an hour.
-10. **`dz -r` is a trash, `dz -a` is an archive.** Removing moves the box folder to the system trash (and the vault note only if you say so). Archiving keeps everything under `~/boxes/_archive/` and `dz -l` brings it back.
+10. **`dz -r` is a trash, `dz -a` is an archive.** Removing moves the box folder to the system trash (and the vault note only if you say so). Archiving keeps everything under `~/boxes/_archive/` and `dz -l` brings it back; `dz -r` also takes an archived box.
 
 ## Your note
 
@@ -42,7 +42,8 @@ What you really need to know to use dz without surprises. Every option is in [co
 ## Secrets
 
 - Creds are **off** by default (`creds = yes` turns them on), because they are stored in plain text: in `~/boxes/<box>/creds` (only readable by you), in the note, and in the trash after `dz -r`.
-- `dz -cp pass` copies a password without printing it; `dz -c` and `--creds` are logged as `<hidden>`.
+- `dz -cp pass` copies a password without printing it; `dz -c` and `--creds` are logged as `<hidden>`. *Creds* in the menu doesn't show the secret while you type.
+- `dz serve` never shares a box folder, your boxes folder, the archive or a folder above them. Serving `loot/` after `dz -c --export` gives `[W604]`: those lists are your creds.
 - With `notes = vault`, the note with the creds table lands wherever your vault syncs to. With `sysreptor = yes`, screenshots and command output go to your SysReptor server. Think about that before an exam or a client job.
 
 ## An exam with dz
@@ -63,6 +64,7 @@ dz -c --export                                              # users/passwords/ha
 dz -t ms01 && dz -f <flag>                                  # flag of ms01, 3/14
 dz -s ms01 local admin                                      # screenshot into the timeline
 dz --deadline                                               # day 6/10 · 3d22h left
+dz -g svc_sql --all                                         # seen that user on an earlier box?
 ```
 
 ## When something goes wrong
