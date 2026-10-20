@@ -11,7 +11,7 @@ All notable changes to dropzone. Format based on [Keep a Changelog](https://keep
 - The menu's status line shows the active host and the time left with a deadline.
 - **Search the notes** (`dz -g <term> [--all]`): every line with the term from the notes of all boxes, per box with line numbers; `--all` includes the archive.
 - **Wayland screenshots** for `dz -s`: `grim` with `slurp` and `spectacle`, tried first on Wayland; `spectacle` also on X11. `screenshot = grim` / `spectacle` in the config (#5).
-- Ten new banner arts: the word DROPZONE in ten different letters, each with a scene of what dz does (a parachute, the crate with the box folders, the plane, the landing marker, a pivot drop, the terminal, the note, the flag and the exam clock).
+- New banner arts: next to the classic logo, nine arts with the word DROPZONE in their own letters and a scene of what dz does (a parachute, the crate with the box folders, the plane, the landing marker, a pivot drop, the terminal, the note, the flag and the exam clock).
 
 ### Changed
 - Docs: README explains why dropzone exists and asks for feedback; ideas and questions go to Discussions.
