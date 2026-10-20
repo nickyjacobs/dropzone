@@ -4,6 +4,8 @@ All notable changes to dropzone. Format based on [Keep a Changelog](https://keep
 
 ## [Unreleased]
 
+## [1.3.0] - 2026-10-20
+
 ### Added
 - **Menu submenus**: *Target ›* (Change IP, Switch host, Add host, Deadline) and *Notes ›* (Open note, Timeline entry, Add flag, Creds). The main menu keeps 8 items; *Creds* asks for the secret without showing it.
 - The menu's status line shows the active host and the time left with a deadline.
@@ -102,7 +104,8 @@ First public release.
 - `examples/obsidian/`: a callout template, a Dataview dashboard and setup notes.
 - Tests, CI on Ubuntu and Kali, secret scan, link check, releases from this changelog.
 
-[Unreleased]: https://github.com/nickyjacobs/dropzone/compare/v1.2.0...HEAD
+[Unreleased]: https://github.com/nickyjacobs/dropzone/compare/v1.3.0...HEAD
+[1.3.0]: https://github.com/nickyjacobs/dropzone/compare/v1.2.0...v1.3.0
 [1.2.0]: https://github.com/nickyjacobs/dropzone/compare/v1.1.5...v1.2.0
 [1.1.5]: https://github.com/nickyjacobs/dropzone/compare/v1.1.0...v1.1.5
 [1.1.0]: https://github.com/nickyjacobs/dropzone/compare/v1.0.0...v1.1.0
