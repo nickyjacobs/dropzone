@@ -4,6 +4,8 @@ All notable changes to dropzone. Format based on [Keep a Changelog](https://keep
 
 ## [Unreleased]
 
+## [1.3.1] - 2026-10-20
+
 ### Fixed
 - `dz -i` on a box with a deadline and more hosts showed a timestamp instead of the main host's IP.
 
@@ -111,7 +113,8 @@ First public release.
 - `examples/obsidian/`: a callout template, a Dataview dashboard and setup notes.
 - Tests, CI on Ubuntu and Kali, secret scan, link check, releases from this changelog.
 
-[Unreleased]: https://github.com/nickyjacobs/dropzone/compare/v1.3.0...HEAD
+[Unreleased]: https://github.com/nickyjacobs/dropzone/compare/v1.3.1...HEAD
+[1.3.1]: https://github.com/nickyjacobs/dropzone/compare/v1.3.0...v1.3.1
 [1.3.0]: https://github.com/nickyjacobs/dropzone/compare/v1.2.0...v1.3.0
 [1.2.0]: https://github.com/nickyjacobs/dropzone/compare/v1.1.5...v1.2.0
 [1.1.5]: https://github.com/nickyjacobs/dropzone/compare/v1.1.0...v1.1.5
