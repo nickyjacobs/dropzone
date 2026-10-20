@@ -64,6 +64,20 @@ has "serve: a box subfolder by name" "shell.elf" "$(dz serve exploits)"
 nok "serve: refuses the box folder (creds, .dropzone, notes)" dz serve ~/boxes/corp
 has "and says why" "holds your box files" "$(dz serve ~/boxes/corp 2>&1)"
 nok "serve: refuses your home folder" dz serve ~
+nok "serve: refuses the boxes folder (every box)" dz serve ~/boxes
+mkdir -p ~/boxes/_archive
+nok "serve: refuses the archive" dz serve ~/boxes/_archive
+DZ_ROOT=~/work/boxes; mkdir -p ~/work/boxes
+nok "serve: refuses a folder above the boxes folder" dz serve ~/work
+nok "serve: refuses /" dz serve /
+DZ_ROOT=~/'w[1]'/boxes; mkdir -p $DZ_ROOT ~/w1
+nok "serve: boxes folder under a path with [ ]" dz serve ~/'w[1]'
+DZ_ROOT=~/boxes
+DZ_ROOT=~/boxes
+mkdir -p ~/boxes/corp/loot; print 'S3cret!' > ~/boxes/corp/loot/passwords.txt
+has "serve: warns for exported creds lists" "W604" "$(dz serve loot 2>&1)"
+has "and still serves" "STARTED python3" "$(dz serve loot 2>/dev/null)"
+rm -rf ~/boxes/corp/loot/passwords.txt
 impacket-smbserver() { print "STARTED smb $*" }
 commands[impacket-smbserver]=impacket-smbserver
 out=$(dz serve smb ~/tools)

@@ -94,6 +94,7 @@ dz [E201] no box loaded
 | [W601](#w601) | scan has IPs outside the box |
 | [W602](#w602) | note has no ports table |
 | [W603](#w603) | reptor not found |
+| [W604](#w604) | serving your creds lists |
 | [E701](#e701) | dropzone is not a git clone |
 | [E702](#e702) | local changes in dropzone |
 | [E703](#e703) | git pull failed |
@@ -121,7 +122,7 @@ dz [E201] no box loaded
 <a id="e103"></a>
 ### E103 · more than one action
 
-**Error.** Every dz call does one thing: -n, -l, -v, -i, -x, -t, -p, -cp, -o, -d, -a, -f, -j, -s, -e, -c or -r. Two of them in one call are refused, so nothing half happens.
+**Error.** Every dz call does one thing: -n, -l, -v, -i, -x, -t, -p, -cp, -o, -d, -a, -f, -j, -s, -e, -g, -c or -r. Two of them in one call are refused, so nothing half happens.
 
 **What to do:** Split it into two calls: `dz -l jacops` and then `dz -i`. Options like -ip, -h, --via and --template are not actions and can go along.
 
@@ -365,9 +366,9 @@ dz [E201] no box loaded
 <a id="e409"></a>
 ### E409 · no screenshot tool
 
-**Error.** dz -s needs xfce4-screenshooter, flameshot, gnome-screenshot or ImageMagick's import, and none was found (or the one from `screenshot` isn't installed).
+**Error.** dz -s needs a screenshot tool, and none was found (or the one from `screenshot` isn't installed). On X11: xfce4-screenshooter, flameshot, gnome-screenshot, spectacle or ImageMagick's import. On Wayland: grim with slurp, spectacle, gnome-screenshot or flameshot.
 
-**What to do:** Install one: `sudo apt install flameshot`. Or set `screenshot = auto`.
+**What to do:** Install one: `sudo apt install flameshot`, on Wayland `sudo apt install grim slurp`. Or set `screenshot = auto`.
 
 <a id="e410"></a>
 ### E410 · no desktop for a screenshot
@@ -502,7 +503,7 @@ dz [E201] no box loaded
 <a id="e606"></a>
 ### E606 · folder holds your box files
 
-**Error.** dz serve refuses a box folder (creds, .dropzone, notes.md) and your home folder, so a target can't download your creds or notes.
+**Error.** dz serve refuses a box folder (creds, .dropzone, notes.md), the boxes folder and the archive (they hold every box), anything above them, and your home folder, so a target can't download your creds or notes.
 
 **What to do:** Serve a subfolder: `dz serve exploits` or `dz serve ~/tools`.
 
@@ -554,6 +555,13 @@ dz [E201] no box loaded
 **Warning.** `sysreptor = yes` uploads evidence with the reptor CLI, which isn't installed. The evidence is saved locally anyway.
 
 **What to do:** `pip install reptor` and `reptor conf`, or set `sysreptor = no`.
+
+<a id="w604"></a>
+### W604 · serving your creds lists
+
+**Warning.** The folder has users.txt, passwords.txt or hashes.txt, the lists `dz -c --export` writes to loot/. Anyone who reaches the server can download them.
+
+**What to do:** Serve another folder (`dz serve exploits`), or move the lists out first. Ctrl-C stops the server.
 
 ## 7xx · Setup, config and update
 

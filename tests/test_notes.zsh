@@ -122,3 +122,55 @@ has "sysreptor: -s uploads the PNG" "-n alpha file $HOME/boxes/alpha/evidence/al
 unset 'commands[reptor]'; unfunction reptor
 has "sysreptor: no reptor, says how to get it" "pip install reptor" "$(print x | dz -e y 2>&1)"
 DZ_SYSREPTOR=no
+
+# Screenshot tools: X11 and Wayland (the tools are stubbed, nothing is captured).
+source $_dz_repo/lib/notes.zsh
+DZ_SHOT=auto
+for t in xfce4-screenshooter flameshot gnome-screenshot spectacle import grim slurp; do unset "commands[$t]"; done
+WAYLAND_DISPLAY= DISPLAY=:0
+commands[import]=/usr/bin/import commands[spectacle]=/usr/bin/spectacle
+_dz_shot_tool; eq "x11: spectacle before import" spectacle "$REPLY"
+commands[xfce4-screenshooter]=/usr/bin/xfce4-screenshooter
+_dz_shot_tool; eq "x11: xfce4-screenshooter first" xfce4-screenshooter "$REPLY"
+WAYLAND_DISPLAY=wayland-0
+_dz_shot_tool; eq "wayland: spectacle before the X11 tools" spectacle "$REPLY"
+commands[grim]=/usr/bin/grim
+_dz_shot_tool; eq "wayland: grim without slurp is skipped" spectacle "$REPLY"
+commands[slurp]=/usr/bin/slurp
+_dz_shot_tool; eq "wayland: grim with slurp first" grim "$REPLY"
+unset "commands[spectacle]" "commands[grim]"
+has "wayland: no tool names the Wayland ones" "grim + slurp, spectacle" "$(_dz_shot_tool 2>&1)"
+DZ_SHOT=grim; unset "commands[slurp]"; commands[grim]=/usr/bin/grim
+has "screenshot = grim without slurp says so" "needs slurp" "$(_dz_shot_tool 2>&1)"
+DZ_SHOT=auto
+slurp() { print '10,20 300x200' }
+grim() { print -r -- "$*" > ~/grim-args; print png > $3 }
+_dz_shot_take grim ~/shot.png
+eq  "grim gets the region from slurp" "-g 10,20 300x200 $HOME/shot.png" "$(cat ~/grim-args)"
+slurp() { return 1 }; rm -f ~/shot.png ~/grim-args
+_dz_shot_take grim ~/shot.png
+nok "Esc in slurp: no grim, no file" test -e ~/shot.png
+spectacle() { print -r -- "$*" > ~/spec-args }
+_dz_shot_take spectacle ~/shot.png
+eq  "spectacle: region, in the background, to the file" "-r -b -n -o $HOME/shot.png" "$(cat ~/spec-args)"
+print 'screenshot = grim' >> ~/.config/dropzone/config
+eq  "config takes screenshot = grim" grim "$(_dz_config_load 2>&1; print $DZ_SHOT)"
+WAYLAND_DISPLAY= DISPLAY=
+
+# dz -g: search the notes of every box.
+dz -n gsearch -ip 10.10.60.1 >/dev/null; dz -j found SMB signing disabled >/dev/null
+dz -n gother -ip 10.10.60.2 >/dev/null; dz -j smb null session works >/dev/null
+dz -n gold -ip 10.10.60.3 >/dev/null; dz -j old SMB share >/dev/null; cd ~; dz -a gold >/dev/null
+out=$(dz -g smb)
+has "-g: hit in one box" "[+] gsearch" "$out"
+has "-g: and in another" "[+] gother" "$out"
+has "-g: the line, any case" "found SMB signing disabled" "$out"
+nok "-g: the archive stays out" grep -q gold <<< "$out"
+has "-g: count" "lines in" "$out"
+has "-g --all: with the archive" "[+] gold" "$(dz -g smb --all)"
+has "-g: no hits says so" "no 'kerberoast' in the notes" "$(dz -g kerberoast)"
+has "-g: a term with a dash is a term" "no '--via'" "$(dz -g --via)"
+has "-g: says where else to look" "--all also searches the archive" "$(dz -g kerberoast)"
+nok "-g --all: no archive hint" grep -q 'also searches' <<< "$(dz -g kerberoast --all)"
+nok "-g without a term fails" dz -g
+DZ_NOTE_MODE=off; nok "-g with notes = off fails" dz -g smb; DZ_NOTE_MODE=vault

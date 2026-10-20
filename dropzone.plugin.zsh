@@ -11,13 +11,15 @@ typeset -g _dz_version=$(<$_dz_repo/VERSION 2>/dev/null)
 zmodload -F zsh/datetime b:strftime p:EPOCHSECONDS 2>/dev/null
 autoload -Uz add-zsh-hook
 
-# Error codes and config first (the config reports with them), then the rest of lib/.
+# Error codes, arts and config first (the config reports with the codes and checks
+# 'art' against the number of arts), then the rest of lib/.
 source $_dz_repo/lib/errors.zsh
+source $_dz_repo/lib/art.zsh
 source $_dz_repo/lib/config.zsh
 () {
   local f
   for f in $_dz_repo/lib/*.zsh(N); do
-    [[ ${f:t} == (config|errors).zsh ]] || source $f
+    [[ ${f:t} == (art|config|errors).zsh ]] || source $f
   done
 }
 

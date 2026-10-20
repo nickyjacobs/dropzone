@@ -77,8 +77,8 @@ _dz_config_load() {
         DZ_FLAG_GOAL=$val ;;
       attachments) DZ_ATTACH=$val ;;
       screenshot)
-        [[ $val == (auto|xfce4-screenshooter|flameshot|gnome-screenshot|import) ]] ||
-          { _dz_cfg_err "screenshot must be auto, xfce4-screenshooter, flameshot, gnome-screenshot or import, not '$val'"; continue }
+        [[ $val == (auto|xfce4-screenshooter|flameshot|gnome-screenshot|spectacle|grim|import) ]] ||
+          { _dz_cfg_err "screenshot must be auto, xfce4-screenshooter, flameshot, gnome-screenshot, spectacle, grim or import, not '$val'"; continue }
         DZ_SHOT=$val ;;
       autoload|animate|ping|prompt|commands|output|creds|vpncheck|sysreptor)
         [[ ${(L)val} == (yes|no|true|false|on|off) ]] ||
@@ -90,8 +90,8 @@ _dz_config_load() {
         esac ;;
       art)
         if [[ $val == random ]]; then DZ_ART=
-        elif [[ $val == <1-> ]] && (( val <= ${_dz_art_count:-10} )); then DZ_ART=$val
-        else _dz_cfg_err "art must be 1 to ${_dz_art_count:-10} or random, not '$val'"; continue
+        elif [[ $val == <1-> ]] && (( val <= _dz_art_count )); then DZ_ART=$val
+        else _dz_cfg_err "art must be 1 to $_dz_art_count or random, not '$val'"; continue
         fi ;;
       *) _dz_cfg_err "unknown setting '$key'"; continue ;;
     esac

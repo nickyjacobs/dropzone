@@ -43,6 +43,15 @@ Sleep 1s
 Escape
 Sleep 1s
 
+# The Target submenu: switch the target to another host
+Type "3"
+Sleep 1.5s
+Down Sleep 600ms
+Escape
+Sleep 800ms
+Escape
+Sleep 800ms
+
 # Mark done: the Yes/No choice
 Type "5"
 Sleep 1.5s

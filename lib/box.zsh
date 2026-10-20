@@ -311,6 +311,8 @@ _dz_rm() {
   local name=$1 yes=${2:-0} note=${3:-ask} ans
   _dz_valid_name $name || { _dz_err E203 "invalid name '$name'"; return 1 }
   local dir=$DZ_ROOT/$name notefile=''
+  # An archived box can go too.
+  [[ ! -f $dir/.dropzone && -f $DZ_ROOT/_archive/$name/.dropzone ]] && dir=$DZ_ROOT/_archive/$name
   [[ $DZ_NOTE_MODE == vault ]] && notefile=$(_dz_note $name)
   [[ -n $DZ_ROOT && -f $dir/.dropzone ]] || { _dz_err E202 "no box '$name' in $DZ_ROOT"; return 1 }
 

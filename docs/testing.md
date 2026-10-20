@@ -15,14 +15,14 @@ What the automatic tests cover, and what can only be confirmed by hand on a real
 | Area | Covered automatically | Stubbed, so not really tested |
 |---|---|---|
 | Boxes, hosts, notes, flags, creds, deadline, config, errors | everything | – |
-| `dz -s` | file names, vault copy, embed | the screenshot tool itself |
+| `dz -s` | file names, vault copy, embed, which tool on X11 and Wayland, the grim/slurp and spectacle arguments | the screenshot tool itself |
 | `dz -e` | file, command from the log, code block | – |
 | `dz -cp` | values, secrets not printed | the real clipboard (`xclip`, `wl-copy`) |
 | `dz serve` | commands, bind address, refusals, `--via` | `python3 -m http.server`, `impacket-smbserver`, ligolo |
 | VPN check | the logic for tun0, other routes and pivots | `ip route` on a real VPN |
 | SysReptor | what is sent, opt-in, missing `reptor` | `reptor` and a SysReptor server |
 | `/etc/hosts` | lines, tags, backup | `sudo` and the real `/etc/hosts` |
-| Menu | keys, forms, scrolling | a real terminal over RDP or SSH |
+| Menu | submenus, greyed items, the host list, the status line, the 10 arts fit | the keys and forms in a real terminal over RDP or SSH |
 
 ## Manual checks
 
@@ -37,7 +37,10 @@ Status: **open** (not tested by hand yet) or the date it was confirmed.
 | `dz -c <user>`: the secret prompt shows nothing while typing | 1.0.0 | open |
 | `dz -h <host>`: sudo asks for the password, the line is in `/etc/hosts` | 1.0.0 | open |
 | `dz -cp` / `dz -cp pass`: the value is on the clipboard (X11 and Wayland) | 1.1.0 | open |
+| `dz -s` on Wayland: `grim` + `slurp` (sway, Hyprland) and `spectacle` (KDE) select a region, PNG in the note | 1.3.0 | open |
 | The menu over RDP: arrows, Enter, Esc, forms | 1.0.0 | open |
+| The menu: *Target ›* and *Notes ›*, every item once, `q` goes back; the secret in *Creds* stays hidden | 1.3.0 | open |
+| The 10 arts over RDP: each one shows whole, `DZ_ART=1` to `DZ_ART=10 dz` | 1.3.0 | open |
 | `output = yes`: a new terminal records with `script(1)`, `exit` closes it | 1.0.0 | open |
 | `--deadline`: the prompt counts down, turns red in the last 6 hours, `time's up` after | 1.2.0 | open |
 

@@ -4,8 +4,25 @@ All notable changes to dropzone. Format based on [Keep a Changelog](https://keep
 
 ## [Unreleased]
 
+## [1.3.0] - 2026-10-20
+
+### Added
+- **Menu submenus**: *Target ›* (Change IP, Switch host, Add host, Deadline) and *Notes ›* (Open note, Timeline entry, Add flag, Creds). The main menu keeps 8 items; *Creds* asks for the secret without showing it.
+- The menu's status line shows the active host and the time left with a deadline.
+- **Search the notes** (`dz -g <term> [--all]`): every line with the term from the notes of all boxes, per box with line numbers; `--all` includes the archive.
+- **Wayland screenshots** for `dz -s`: `grim` with `slurp` and `spectacle`, tried first on Wayland; `spectacle` also on X11. `screenshot = grim` / `spectacle` in the config (#5).
+- New banner arts: next to the classic logo, nine arts with the word DROPZONE in their own letters and a scene of what dz does (a parachute, the crate with the box folders, the plane, the landing marker, a pivot drop, the terminal, the note, the flag and the exam clock).
+
 ### Changed
 - Docs: README explains why dropzone exists and asks for feedback; ideas and questions go to Discussions.
+- `dz -r` also removes an archived box.
+
+### Fixed
+- `art = <n>` in the config was checked against a fixed 10 instead of the real number of arts, because the arts loaded after the config.
+- `dz -n a -ip <ip> -l b` loaded `b` instead of refusing two actions.
+
+### Security
+- `dz serve` refused a box folder, but not the boxes folder itself, the archive or a folder above them, which hold every box and its creds. Those are refused now, and serving the lists from `dz -c --export` gives a warning (`W604`).
 
 ## [1.2.0] - 2026-10-18
 
@@ -87,7 +104,8 @@ First public release.
 - `examples/obsidian/`: a callout template, a Dataview dashboard and setup notes.
 - Tests, CI on Ubuntu and Kali, secret scan, link check, releases from this changelog.
 
-[Unreleased]: https://github.com/nickyjacobs/dropzone/compare/v1.2.0...HEAD
+[Unreleased]: https://github.com/nickyjacobs/dropzone/compare/v1.3.0...HEAD
+[1.3.0]: https://github.com/nickyjacobs/dropzone/compare/v1.2.0...v1.3.0
 [1.2.0]: https://github.com/nickyjacobs/dropzone/compare/v1.1.5...v1.2.0
 [1.1.5]: https://github.com/nickyjacobs/dropzone/compare/v1.1.0...v1.1.5
 [1.1.0]: https://github.com/nickyjacobs/dropzone/compare/v1.0.0...v1.1.0

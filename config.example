@@ -68,7 +68,8 @@ timeline = Timeline
 # Flags to find in a box with more hosts, dz -f counts them (14 on the CPTS exam), 0 = no count
 flag_goal = 0
 
-# Screenshot tool for dz -s: auto, xfce4-screenshooter, flameshot, gnome-screenshot or import
+# Screenshot tool for dz -s: auto, xfce4-screenshooter, flameshot, gnome-screenshot,
+# spectacle, grim (Wayland, with slurp) or import
 screenshot = auto
 
 
