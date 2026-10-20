@@ -4,6 +4,16 @@ All notable changes to dropzone. Format based on [Keep a Changelog](https://keep
 
 ## [Unreleased]
 
+## [1.3.1] - 2026-10-20
+
+### Fixed
+- `dz -i` on a box with a deadline and more hosts showed a timestamp instead of the main host's IP.
+- `dz -i` showed the note's full path instead of `~/...`.
+
+### Changed
+- Docs: the guide covers `dz -g`, removing an archived box and what `dz serve` refuses.
+- Docs: new GIFs of the 10 banner arts and of a box with more hosts (`docs/commands.md`, `docs/guide.md`); the demo and menu GIFs show hosts, `dz -e` and the submenus, without VPN warnings.
+
 ## [1.3.0] - 2026-10-20
 
 ### Added
@@ -104,7 +114,8 @@ First public release.
 - `examples/obsidian/`: a callout template, a Dataview dashboard and setup notes.
 - Tests, CI on Ubuntu and Kali, secret scan, link check, releases from this changelog.
 
-[Unreleased]: https://github.com/nickyjacobs/dropzone/compare/v1.3.0...HEAD
+[Unreleased]: https://github.com/nickyjacobs/dropzone/compare/v1.3.1...HEAD
+[1.3.1]: https://github.com/nickyjacobs/dropzone/compare/v1.3.0...v1.3.1
 [1.3.0]: https://github.com/nickyjacobs/dropzone/compare/v1.2.0...v1.3.0
 [1.2.0]: https://github.com/nickyjacobs/dropzone/compare/v1.1.5...v1.2.0
 [1.1.5]: https://github.com/nickyjacobs/dropzone/compare/v1.1.0...v1.1.5

@@ -130,6 +130,8 @@ New terminals load the last box automatically. `$ATTACKER_IP` is read again befo
 
 ## More hosts in a box
 
+<p align="center"><img src="../assets/hosts.gif" alt="dz -t: an exam box with a pivot host and a DC behind it, switching the target, a flag per host, dz -i and dz -g" width="85%"></p>
+
 For an AD set, a pivot or a lab with several machines: the box keeps its own IP (the main host), and you add the others by name.
 
 ```bash
@@ -331,7 +333,11 @@ dz             # open the menu
 DZ_ART=7 dz    # with a fixed banner art (1-10), just this once
 ```
 
-<p align="center"><img src="../assets/menu.gif" alt="dropzone menu: new box form, box list, yes/no choice" width="85%"></p>
+<p align="center"><img src="../assets/menu.gif" alt="dropzone menu: new box form, box list, Target › Switch host, Notes › Timeline entry, yes/no choice" width="85%"></p>
+
+The banner picks one of 10 arts at every start, never the same one twice in a row (`art` in the config, or `DZ_ART=<n> dz` once):
+
+<p align="center"><img src="../assets/arts.gif" alt="the 10 banner arts of the dropzone menu, one after the other" width="85%"></p>
 
 The status line under the banner shows the loaded box, the target (with the active host, `dz -t`), the time left with a deadline, and your VPN IP.
 

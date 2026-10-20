@@ -23,38 +23,54 @@ Sleep 3s
 # New box: the form
 Enter
 Sleep 1s
-Type "jacops" Enter
+Type "corp" Enter
 Sleep 500ms
-Type "10.129.42.190" Enter
+Type "10.129.5.10" Enter
 Sleep 500ms
-Type "jacops.htb" Sleep 500ms Enter
-Sleep 2.5s
+Type "corp.htb" Sleep 500ms Enter
+Sleep 2s
 
-# Back in the menu with the box loaded: load another one from the list
+# A second host, so the Target submenu can switch to it
+Hide
+Type "dz -t dc01 -ip 10.129.5.11 >/dev/null; clear" Enter
+Sleep 1s
+Show
+
+# Load box: the list scrolls
 Type "dz" Sleep 300ms Enter
-Sleep 2.5s
+Sleep 2s
 Down Sleep 600ms
 Enter
-Sleep 1.5s
-Down@300ms 6
-Sleep 1s
-Up@300ms 2
-Sleep 1s
+Sleep 1.2s
+Down@250ms 6
+Sleep 800ms
 Escape
-Sleep 1s
+Sleep 800ms
 
-# The Target submenu: switch the target to another host
+# Target › Switch host: dc01 becomes the target
 Type "3"
 Sleep 1.5s
-Down Sleep 600ms
-Escape
+Type "2"
+Sleep 1.5s
+Down Sleep 800ms
+Enter
+Sleep 2s
+
+# Notes › Timeline entry
+Type "dz" Sleep 300ms Enter
+Sleep 2s
+Type "4"
+Sleep 1.5s
+Type "2"
 Sleep 800ms
-Escape
-Sleep 800ms
+Type "smb signing off on dc01" Sleep 400ms Enter
+Sleep 2s
 
 # Mark done: the Yes/No choice
-Type "5"
+Type "dz" Sleep 300ms Enter
 Sleep 1.5s
+Type "5"
+Sleep 1.2s
 Right Sleep 600ms
 Left Sleep 1s
 Escape

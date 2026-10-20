@@ -106,20 +106,21 @@ _dz_info() {
   _dz_box_read $DZ_ROOT/$BOX || { _dz_err E207 "box '$BOX' is gone (removed or archived?), dz -x"; return 1 }
   _dz_attacker_refresh
   _dz_ui
-  local note=$(_dz_note $BOX) l
+  # reply is reused below (the clock), so keep the main host's IP.
+  local note=$(_dz_note $BOX) l main_ip=$reply[2]
   local -a extra=("${_dz_bh[@]}") w
   _dz_rule; _dz_head $BOX "$(_dz_status $BOX)"
   _dz_row target "$TARGET_IP${DZ_ACTIVE:+ ($DZ_ACTIVE)}" 10
   _dz_row hosts "${reply[3]:--}" 10
   _dz_row attacker "${ATTACKER_IP:-$DZ_IFACE down}" 10
   _dz_row folder "${DZ_ROOT/#$HOME/~}/$BOX" 10
-  _dz_row note "$([[ -f $note ]] && print ${note/#$HOME/~} || print -)" 10
+  _dz_row note "$([[ -f $note ]] && print -r -- "${note/#$HOME/~}" || print -)" 10
   [[ -n $TARGET_USER ]] && _dz_row cred "$TARGET_USER (dz -c)" 10
   _dz_clock_read $BOX && { _dz_clock_text $reply[1] $reply[2]; _dz_row clock "$REPLY" 10 }
   [[ -n $DZ_RECORDING ]] && _dz_row recording "${DZ_RECORDING/#$HOME/~}" 10
   if (( $#extra )); then
     _dz_rule; _dz_head Hosts "dz -t"
-    _dz_row main "$reply[2]" 10
+    _dz_row main "$main_ip" 10
     for l in $extra; do
       w=(${=l}); _dz_label_var $w[1]; local hv=$REPLY
       _dz_via_get $w[1]

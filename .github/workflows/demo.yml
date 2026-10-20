@@ -22,8 +22,11 @@ jobs:
       - uses: charmbracelet/vhs-action@v2
         with:
           path: assets/demo.tape
-      - name: Menu
-        run: vhs assets/menu.tape
+      - name: Menu, arts, hosts
+        run: |
+          vhs assets/menu.tape
+          vhs assets/arts.tape
+          vhs assets/hosts.tape
       - uses: actions/upload-artifact@v7
         with:
           name: demo
