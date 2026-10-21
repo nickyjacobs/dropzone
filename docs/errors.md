@@ -83,6 +83,7 @@ dz [E201] no box loaded
 | [W402](#w402) | terminal recording didn't start |
 | [W403](#w403) | no timeline section |
 | [W404](#w404) | active finding is gone |
+| [W405](#w405) | timeline line not written |
 | [E501](#e501) | creds is off |
 | [E502](#e502) | no such cred |
 | [E503](#e503) | invalid host for --valid |
@@ -484,6 +485,13 @@ dz [E201] no box loaded
 **Warning.** The active finding's heading isn't in the note anymore (removed or renamed by hand), so evidence goes to the timeline again.
 
 **What to do:** `dz --finding` lists the findings; pick one with `dz --finding <nr>` or start a new one.
+
+<a id="w405"></a>
+### W405 · timeline line not written
+
+**Warning.** The command worked, but dz couldn't write its line in the note's timeline: the note or its folder isn't writable.
+
+**What to do:** See E420: check the note and its folder with `ls -l`.
 
 ## 5xx · Creds
 

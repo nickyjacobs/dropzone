@@ -221,3 +221,18 @@ for style in '**%s flag:** ' '- **%s flag**: ' '**%s flag**: '; do
   eq  "style '$style': one User and one Root line" 2 "$(sed -n '/^## Flags/,$p' $S | grep -c 'flag')"
   eq  "style '$style': flag stored" "$U" "$(_dz_flags_get $S; print -r -- $reply[1])"
 done
+dz -l slots >/dev/null
+print -r -- $'---\nupdated: x\n---\n## Flags\n\n- **User flag:** \n- **Root flag:** \n' > $S
+i1=$(ls -i $S | awk '{print $1}'); _dz_flags_normalize $S
+eq  "normalize leaves dz-style lines alone (no rewrite)" "$i1" "$(ls -i $S | awk '{print $1}')"
+
+# Review round 4: a filled line in another style, and only one of the two lines.
+printf -- "---\nupdated: x\n---\n## Flags\n\n**User flag:** $U\n**Root flag:** \n" > $S
+dz -f $R >/dev/null
+eq  "filled other-style user flag is read, root stored" "$U|$R" "$(_dz_flags_get $S; print -r -- "$reply[1]|$reply[2]")"
+printf -- "---\nupdated: x\n---\n## Flags\n\n**User flag:** \n" > $S
+dz -f $U >/dev/null; dz -f $R >/dev/null
+eq  "only a user line: root slot added when needed" "$U|$R" "$(_dz_flags_get $S; print -r -- "$reply[1]|$reply[2]")"
+print -r -- $'---\nupdated: x\n---\n## Proof\n\n**User flag:** \n\n## Flags\n' > $S
+dz -f $U >/dev/null
+eq  "a stray flag line outside Flags: single box keeps a host list" 1 "$(grep -c "· slots · $U" $S)"

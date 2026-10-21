@@ -119,7 +119,7 @@ _dz_finding_add() {
       $fh . $sec
     }sme;
     s/^updated: .*$/updated: $ENV{TODAY}/m;
-  ' $1
+  ' $1 || return 1
   _dz_finding_row $1 $2 evidence +1
 }
 
@@ -145,7 +145,7 @@ _dz_evidence_place() {
   local n
   if _dz_finding_active $1; then
     n=$REPLY
-    _dz_finding_add $1 $n "$2"$'\n'"$3"
+    _dz_finding_add $1 $n "$2"$'\n'"$3" || return 1
     _dz_timeline_add $1 "$2 → F$n"
     REPLY=F$n
     return 0
@@ -177,6 +177,7 @@ _dz_finding() {
   fi
 
   [[ -n $new && -z $text ]] && { print "• no title, no finding"; return 1 }
+  _dz_note_write_need $note || return 1
   local lc=${(L)text}
   [[ -n $new ]] && lc=''     # the menu form: always a new finding
   # Stop
@@ -191,6 +192,7 @@ _dz_finding() {
     local mode=pick
     [[ $lc == done* ]] && { mode=done; lc=${lc#done} }
     n=${${lc//[[:space:]]/}#f}
+    [[ -n $n ]] && n=$(( 10#$n ))
     [[ -z $n ]] && { n=$cur; [[ -n $n ]] || { _dz_err E417 "no active finding, give its number: dz --finding done <nr>"; return 1 } }
     local hit=${(M)all:#$n$'\t'*}
     [[ -n $hit ]] || { _dz_err E417 "no finding F$n in $BOX (dz --finding lists them)"; return 1 }

@@ -90,6 +90,7 @@ _dz_todo() {
     return 0
   fi
 
+  _dz_note_write_need $note || return 1
   # Tick off: 'done <nr>'. Other text that starts with 'done' is a to-do.
   [[ -z $new && ${(L)text} == done ]] && { _dz_err E102 "--todo done needs the number of the to-do (dz --todo lists them)"; return 1 }
   if [[ -z $new && ${(L)text} =~ '^done[[:space:]]+([0-9]+)$' ]]; then

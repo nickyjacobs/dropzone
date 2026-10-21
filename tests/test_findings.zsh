@@ -186,3 +186,17 @@ chmod a-w ~/vault/Boxes/ro.md
 has "read-only note: E420" "E420" "$(dz --finding X 2>&1)"
 nok "and no E413" grep -q E413 <<< "$(dz --todo x 2>&1)"
 chmod u+w ~/vault/Boxes/ro.md
+
+# Review round 4: a read-only note changes nothing, leading zeros.
+dz -n ro2 -ip 10.10.72.1 --template exam >/dev/null
+O2=~/vault/Boxes/ro2.md
+dz --finding One >/dev/null; dz --todo first >/dev/null
+cp $O2 ~/ro2.before
+chmod a-w $O2
+for c in "dz --finding done 1" "dz --todo done 1" "dz --finding Two" "dz -j x" "dz -f $_dz_repo"; do
+  has "read-only: '${c[1,20]}' says E420" "E420" "$(eval $c 2>&1)"
+done
+has "read-only: -e says E420" "E420" "$(print x | dz -e cap 2>&1)"
+chmod u+w $O2
+ok  "read-only: the note is unchanged" cmp -s $O2 ~/ro2.before
+has "--finding 01 is F1" "active: F1" "$(dz --finding 01)"

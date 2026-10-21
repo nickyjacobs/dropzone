@@ -16,8 +16,8 @@ All notable changes to dropzone. Format based on [Keep a Changelog](https://keep
 ### Fixed
 - `dz -c 'corp\user'` printed the user without the backslash (`corpuser`); the stored cred was right.
 - `dz -f root <flag>` on a note with a `## Flags` section but no user/root lines added a second Flags section.
-- `dz -f` on a note with empty flag lines in another style (`**User flag:**`, `- **User flag**:`) turns them into dz's slots instead of adding a second Flags section.
-- A note dz can't write (a read-only vault) now says so (`E420`) instead of reporting a missing section.
+- `dz -f` on a note with flag lines in another style (`**User flag:**`, `- **User flag**:`), filled or empty, turns them into dz's lines instead of adding a second Flags section.
+- A note dz can't write (a read-only vault) is reported up front (`E420`, or `W405` for a side timeline line) and left unchanged, instead of half-changed with a misleading error.
 
 ## [1.3.1] - 2026-10-20
 

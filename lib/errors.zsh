@@ -168,6 +168,9 @@ _dz_def E419 "couldn't change the finding's status" \
 _dz_def E420 "can't write the note" \
   "dz can't read or change the note file, or can't make a new file in its folder (perl edits in place through a temporary file). Often a vault on a read-only mount, or files owned by another user." \
   "Check the path in the message: 'ls -l' on the note and its folder. Fix the mount or the owner, then run the command again."
+_dz_def W405 "timeline line not written" \
+  "The command worked, but dz couldn't write its line in the note's timeline: the note or its folder isn't writable." \
+  "See E420: check the note and its folder with 'ls -l'."
 _dz_def W401 "unusual flag format" \
   "HTB flags are 32 hex characters; this one isn't. It's stored anyway, because other platforms use other formats." \
   "Nothing, if it's right. Otherwise fix it in the note."

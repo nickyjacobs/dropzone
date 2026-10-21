@@ -20,10 +20,10 @@
 # With 'add_sections = no' dz never adds a section: it fails, and the caller reports it.
 # Also ends the note with a newline, so a heading on the last line can be written under.
 # Only writes the note when something changes. Status 1 = missing (add_sections = no),
-# 2 = the note can't be read or written (reported here, E420).
+# 2 = the note can't be written (see _dz_note_writable).
 _dz_section_ensure() {
   local note=$1 head=$2 st; shift 2
-  [[ -r $note && -w $note && -w ${note:h} ]] || { _dz_err E420 "can't write the note $note"; return 2 }
+  _dz_note_writable $note || return 2
   # 0 = there, 3 = there but no newline at the end, 1 = missing.
   HEAD=$head perl -0777 -ne 'exit(/^## \Q$ENV{HEAD}\E[ \t]*$/m ? (/\n\z/ ? 0 : 3) : 1)' $note
   st=$?
@@ -40,11 +40,24 @@ _dz_section_ensure() {
   ' $note
 }
 
-# _dz_section_need <note> <heading> [before...]: _dz_section_ensure, and the E413 when the
-# section is missing.
+# Can dz change note $1? perl edits in place through a new file in the same folder, so the
+# folder must be writable too.
+_dz_note_writable() { [[ -r $1 && -w $1 && -w ${1:h} ]] }
+
+# _dz_note_write_need <note>: _dz_note_writable, or E420. Every command that changes the
+# note checks this first, so nothing half happens.
+_dz_note_write_need() {
+  _dz_note_writable $1 || { _dz_err E420 "can't write the note $1"; return 1 }
+}
+
+# _dz_section_need <note> <heading> [before...]: _dz_section_ensure, with E413 or E420.
 _dz_section_need() {
-  _dz_section_ensure "$@" && return 0
-  (( $? == 1 )) && _dz_err E413 "the note has no '## $2' section (add_sections = no)"
+  _dz_section_ensure "$@"
+  case $? in
+    0) return 0 ;;
+    1) _dz_err E413 "the note has no '## $2' section (add_sections = no)" ;;
+    *) _dz_err E420 "can't write the note $1" ;;
+  esac
   return 1
 }
 
@@ -67,7 +80,7 @@ _dz_timeline_add() {
   _dz_section_ensure $1 "$DZ_TIMELINE" Flags; st=$?
   if (( st )); then
     [[ -n $strict ]] && return $(( st + 1 ))
-    (( st == 2 )) && return 0
+    (( st == 2 )) && { _dz_warn W405 "can't write the note $1, timeline line not written: ${2%%$'\n'*}"; return 0 }
     _dz_warn W403 "the note has no '## $DZ_TIMELINE' (add_sections = no), line not written: ${2%%$'\n'*}"
     return 0
   fi
@@ -106,23 +119,51 @@ _dz_flags_get() {
   reply=("$reply[1]" "$reply[2]")
 }
 
-# Does note $1 have user/root slots dz can write into: a callout, or '- **User flag:**'?
-_dz_flags_slots() { grep -qE '^(\*\*User flag\*\*[[:space:]]*$|- \*\*User flag:\*\*)' $1 }
+# Does the Flags section of note $1 have user/root slots: a callout ('**User flag**' with
+# '> [!success]'), '- **User flag:**', or another style _dz_flags_normalize turns into one?
+_dz_flags_slots() {
+  perl -0777 -ne '
+    exit(/^## Flags[ \t]*\n(.*?)(?=^## |\z)/sm && $1 =~ /^(?:- )?\*\*User flag(?:\*\*[ \t]*$|:\*\*|\*\*:)/m ? 0 : 1)
+  ' $1
+}
 
-# _dz_flags_set <note> <User|Root> <flag>: into the empty callout; adds the Flags
-# section when the note has none.
+# User/root lines in the Flags section in another style ('**User flag:** x',
+# '- **User flag**: x') become dz's '- **User flag:** x', filled or empty. Only writes
+# when there is such a line.
+_dz_flags_normalize() {
+  local re='^(?:- )?\*\*(User|Root) flag(?::\*\*|\*\*:)'
+  RE=$re perl -0777 -ne '
+    my $other = 0;
+    if (/^## Flags[ \t]*\n(.*?)(?=^## |\z)/sm) {
+      my $sec = $1;
+      # Whole lines only (the pattern has its own group), minus the ones already in dz style.
+      $other = grep { !/^- \*\*(?:User|Root) flag:\*\*/ }
+        $sec =~ /^((?:- )?\*\*(?:User|Root) flag(?::\*\*|\*\*:)[^\n]*)/mg;
+    }
+    exit($other ? 0 : 1)
+  ' $1 || return 0
+  RE=$re perl -0777 -pi -e '
+    s{(^## Flags[ \t]*\n)(.*?)(?=^## |\z)}{
+      my ($h, $b) = ($1, $2);
+      $b =~ s/(?:$ENV{RE})[ \t]*/- **$1 flag:** /mg;
+      "$h$b"
+    }sme' $1
+}
+
+# _dz_flags_set <note> <User|Root> <flag>: into the empty callout or '- **X flag:**' line;
+# the slot that is missing is added at the top of the Flags section (and the section too).
 _dz_flags_set() {
-  if ! _dz_flags_slots $1; then
-    _dz_section_need $1 Flags || return 1
-    # Empty user/root lines in another style ('**User flag:**', '- **User flag**:') become
-    # dz's slots; without them the slots go at the top of the Flags section.
+  _dz_section_need $1 Flags || return 1
+  K=$2 perl -0777 -ne '
+    exit(/^\*\*$ENV{K} flag\*\*[ \t]*\n> \[!success\]/m || /^- \*\*$ENV{K} flag:\*\*/m ? 0 : 1)
+  ' $1 ||
     perl -0777 -pi -e '
-      s{(^## Flags[ \t]*\n)(.*?)(?=^## |\z)}{
-        my ($h, $b) = ($1, $2);
-        my $n = $b =~ s/^(?:- )?\*\*(User|Root) flag(?::\*\*|\*\*:?)[ \t]*$/- **$1 flag:** /mg;
-        $n ? "$h$b" : do { $b =~ s/\A\n*//; "$h\n- **User flag:** \n- **Root flag:** \n\n$b" }
-      }sme' $1
-  fi
+      my $t = $_;
+      my $add = join "", map {
+        $t =~ /^\*\*$_ flag\*\*[ \t]*\n> \[!success\]/m || $t =~ /^- \*\*$_ flag:\*\*/m ? "" : "- **$_ flag:** \n"
+      } qw(User Root);
+      s/^(## Flags[ \t]*\n)\n*/$1\n$add\n/m;
+    ' $1
   K=$2 FLAG=$3 perl -0777 -pi -e '
     s/(^\*\*$ENV{K} flag\*\*[ \t]*\n> \[!success\][^\n]*\n)>[ \t]*\n/$1> $ENV{FLAG}\n/m
       or s/^(- \*\*$ENV{K} flag:\*\*)[ \t]*$/$1 $ENV{FLAG}/m;
@@ -163,6 +204,10 @@ _dz_flag() {
   _dz_note_need || return 1; note=$REPLY
   _dz_box_read $DZ_ROOT/$BOX 2>/dev/null
   local -a extra=("${_dz_bh[@]}")
+  if [[ -n $flag ]]; then
+    _dz_note_write_need $note || return 1
+    _dz_flags_normalize $note
+  fi
   _dz_flags_get $note
   local user=$reply[1] root=$reply[2]
   _dz_flags_list $note
@@ -184,7 +229,7 @@ _dz_flag() {
     { _dz_err E405 "that flag is already in the note"; return 1 }
   # A box with more hosts, or a note without user/root slots (the exam template): flags
   # per host, the active one when you don't name it.
-  [[ -z $kind ]] && { (( $#extra )) || ! grep -qE '^(- )?\*\*(User flag)' $note } && kind=${DZ_ACTIVE:-$BOX}
+  [[ -z $kind ]] && { (( $#extra )) || ! _dz_flags_slots $note } && kind=${DZ_ACTIVE:-$BOX}
   if [[ -n $kind && $kind != (user|root) ]]; then
     [[ $kind == $BOX || -n ${(M)extra:#$kind *} ]] ||
       { _dz_err E407 "no host '$kind' in $BOX (dz -t lists them), or use user / root"; return 1 }
@@ -233,11 +278,12 @@ _dz_journal() {
     [[ -n $out ]] && print -r -- $out || print "no timeline entries for $BOX yet"
     return 0
   fi
+  _dz_note_write_need $note || return 1
   _dz_timeline_add -s $note "${1//$'\n'/ }"
   case $? in
     0) ;;
     2) _dz_err E413 "the note has no '## $DZ_TIMELINE' section (add_sections = no)"; return 1 ;;
-    *) return 1 ;;
+    *) _dz_err E420 "can't write the note $note"; return 1 ;;
   esac
   print "• added to the timeline of $BOX"
 }
@@ -287,6 +333,7 @@ _dz_shot() {
     [[ -n $BOX ]] || { _dz_err E201 "no box loaded"; return 1 }
   else
     _dz_note_need || return 1; note=$REPLY
+    _dz_note_write_need $note || return 1
   fi
   [[ -n $DISPLAY || -n $WAYLAND_DISPLAY ]] || { _dz_err E410 "no desktop session for a screenshot"; return 1 }
   _dz_shot_tool || return 1; tool=$REPLY
@@ -377,6 +424,7 @@ _dz_evidence() {
     [[ -n $BOX ]] || { _dz_err E201 "no box loaded"; return 1 }
   else
     _dz_note_need || return 1; note=$REPLY
+    _dz_note_write_need $note || return 1
   fi
   [[ -t 0 ]] && { _dz_err E411 "pipe a command into it: nxc smb \$TARGET | dz -e smb signing"; return 1 }
   out=$(perl -pe 's/\e\[[0-9;?]*[ -\/]*[@-~]//g; s/\e\][^\a]*\a//g; s/\r//g')
