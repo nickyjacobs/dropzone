@@ -236,3 +236,11 @@ eq  "only a user line: root slot added when needed" "$U|$R" "$(_dz_flags_get $S;
 print -r -- $'---\nupdated: x\n---\n## Proof\n\n**User flag:** \n\n## Flags\n' > $S
 dz -f $U >/dev/null
 eq  "a stray flag line outside Flags: single box keeps a host list" 1 "$(grep -c "· slots · $U" $S)"
+
+# Review round 5: slots under another heading work, like before 1.4.0.
+dz -l slots >/dev/null
+print -r -- $'---\nupdated: x\nstatus: active\n---\n## Vlaggen\n\n- **User flag:** \n- **Root flag:** \n' > $S
+dz -f $U >/dev/null; dz -f $R >/dev/null
+eq  "slots under '## Vlaggen' are filled" "$U|$R" "$(_dz_flags_get $S; print -r -- "$reply[1]|$reply[2]")"
+nok "no Flags section added" grep -q '^## Flags' $S
+eq  "and the root flag marks it done" done "$(_dz_status slots)"

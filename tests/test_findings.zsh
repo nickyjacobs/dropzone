@@ -108,8 +108,8 @@ DZ_NOTE_MODE=vault
 # dz -i shows the active finding; dz -i <host> its findings.
 dz -l exam >/dev/null
 dz --finding Kerberoastable svc >/dev/null
-has "-i: the active finding" "F3 · Kerberoastable svc (dc01)" "$(dz -i)"
-has "-i <host>: findings of the host" "F3  open  0 evidence  Kerberoastable svc" "$(dz -i dc01)"
+has "-i: the active finding" "F4 · Kerberoastable svc (dc01)" "$(dz -i)"
+has "-i <host>: findings of the host" "F4  open  0 evidence  Kerberoastable svc" "$(dz -i dc01)"
 nok "-i <main host>: not dc01's findings" grep -q Kerberoastable <<< "$(dz -i exam)"
 
 # Creds that work on a host, in dz -i <host>, without the secret.
@@ -128,7 +128,7 @@ nok "creds = no: no creds block" grep -q 'Creds that work' <<< "$(dz -i dc01)"
 reptor() { print -r -- "$*" >> ~/reptor.calls; [[ $* == *note* ]] && cat >> ~/reptor.calls; return 0 }
 commands[reptor]=reptor; DZ_SYSREPTOR=yes
 print 'out' | dz -e asrep >/dev/null; sleep 1
-has "sysreptor: the finding in the caption" "**F3 · asrep**" "$(cat ~/reptor.calls)"
+has "sysreptor: the finding in the caption" "**F4 · asrep**" "$(cat ~/reptor.calls)"
 unset 'commands[reptor]'; unfunction reptor; DZ_SYSREPTOR=no
 
 # Review fixes.
@@ -200,3 +200,22 @@ has "read-only: -e says E420" "E420" "$(print x | dz -e cap 2>&1)"
 chmod u+w $O2
 ok  "read-only: the note is unchanged" cmp -s $O2 ~/ro2.before
 has "--finding 01 is F1" "active: F1" "$(dz --finding 01)"
+
+# Review round 5: a code block with '#' lines inside a finding; numbers never reused.
+dz -n r5 -ip 10.10.73.1 --template $_dz_repo/templates/box-note.md >/dev/null
+Q=~/vault/Boxes/r5.md
+dz --finding SQL injection >/dev/null
+perl -0pi -e 's/(\*\*Status:\*\* open\n)/$1\n```bash\n# dump the users table\nsqlmap -u x --dump\n```\n/' $Q
+print 'db dumped' | dz -e sqlmap >/dev/null
+eq  "evidence after the code block, not inside it" "sqlmap -u x --dump|\`\`\`|" "$(grep -A2 '^sqlmap -u x' $Q | paste -sd'|' - | cut -d'|' -f1-3)"
+has "evidence is under the finding" "output: sqlmap" "$(sed -n '/^### F1/,/^## /p' $Q)"
+has "the count sees it" "1 evidence" "$(dz --finding)"
+dz --finding Two >/dev/null
+perl -0pi -e 's/^### F2 · Two\n.*?(?=^## )//sm' $Q
+has "a removed last finding's number isn't reused" "F3 · Three" "$(dz --finding Three 2>/dev/null)"
+
+# -s / -e with no timeline and no finding: W403 names the heading.
+dz --finding off >/dev/null
+DZ_ADD_SECTIONS=no; perl -0pi -e 's/^## Timeline\n//m' $Q
+has "-e: W403 with the heading" "W403" "$(print x | dz -e nowhere 2>&1)"
+DZ_ADD_SECTIONS=yes

@@ -12,10 +12,25 @@
 # A table under '## Findings' (the exam template) gets a row per finding; its columns are
 # found by name (#, Finding, Host, Evidence, Status) and kept up to date.
 # The active finding is ~/boxes/<box>/.finding (just its number), read, never sourced.
+#
+# Lines inside fenced code blocks (pasted output, a '# comment') are masked while dz looks
+# for headings and entries, so a '#' line in a code block never ends a finding.
+typeset -g _dz_pl_fence='
+  sub dzmask {
+    my $f = "";
+    join "", map {
+      if ($f eq "") { $f = $1 if /^[ \t]*(`{3,}|~{3,})/; $_ }
+      elsif (/^[ \t]*(`{3,}|~{3,})[ \t]*$/ && substr($1, 0, 1) eq substr($f, 0, 1) && length($1) >= length($f)) { $f = ""; $_ }
+      else { "\x01$_" }
+    } split /^/m, $_[0];
+  }
+  sub dzunmask { $_[0] =~ s/^\x01//mgr }
+'
 
 # Findings in note $1: reply=("<nr>\t<host>\t<status>\t<evidence count>\t<title>" ...).
 _dz_findings() {
-  local out=$(perl -0777 -ne '
+  local out=$(perl -0777 -ne "$_dz_pl_fence" -e '
+    $_ = dzmask($_);
     if (/^## Findings[ \t]*\n(.*?)(?=^## |\z)/sm) {
       my $sec = $1;
       while ($sec =~ /^### F(\d+) · ([^\n]*?)[ \t]*\n(.*?)(?=^\#{1,3} |\z)/smg) {
@@ -24,7 +39,7 @@ _dz_findings() {
         my ($s) = $b =~ /\*\*Status:\*\*[ \t]*(\w+)/;
         $s = lc $s if defined $s;
         my $c = () = $b =~ /^- \d{4}-\d\d-\d\d \d\d:\d\d · /mg;
-        print join("\t", $n, $h // "", $s // "open", $c, $t), "\n";
+        print join("\t", $n, $h // "", $s // "open", $c, dzunmask($t)), "\n";
       }
     }' $1)
   reply=(${(f)out})
@@ -52,7 +67,8 @@ _dz_finding_active() {
 # _dz_finding_new <note> <nr> <title> <host>: a row in the Findings table (when there is
 # one before the first finding) and the '### F<nr> · <title>' heading at the end.
 _dz_finding_new() {
-  N=$2 TITLE=$3 HOST=$4 perl -0777 -pi -e '
+  N=$2 TITLE=$3 HOST=$4 perl -0777 -pi -e "$_dz_pl_fence" -e '
+    $_ = dzmask($_);
     s{(^## Findings[ \t]*\n)(.*?)(?=^## |\z)}{
       my ($head, $body) = ($1, $2);
       my ($pre, $rest) = $body =~ /\A(.*?)(^### .*)?\z/sm;
@@ -75,6 +91,7 @@ _dz_finding_new() {
       $head . "\n" . ($body eq "" ? "" : "$body\n\n")
         . "### F$ENV{N} · $ENV{TITLE}\n\n**Host:** $ENV{HOST} · **Status:** open\n\n"
     }sme;
+    $_ = dzunmask($_);
   ' $1
 }
 
@@ -106,7 +123,8 @@ _dz_finding_row() {
 # Extra lines in <entry> (an embed, a code block) stay under it.
 _dz_finding_add() {
   local ts; strftime -s ts '%F %H:%M' $EPOCHSECONDS
-  N=$2 ENTRY="- $ts · $3" TODAY=${ts% *} perl -0777 -pi -e '
+  N=$2 ENTRY="- $ts · $3" TODAY=${ts% *} perl -0777 -pi -e "$_dz_pl_fence" -e '
+    $_ = dzmask($_);
     s{(^## Findings[ \t]*\n)(.*?)(?=^## |\z)}{
       my ($fh, $sec) = ($1, $2);
       $sec =~ s{(^### F$ENV{N} · [^\n]*\n)(.*?)(?=^\#{1,3} |\z)}{
@@ -119,6 +137,7 @@ _dz_finding_add() {
       $fh . $sec
     }sme;
     s/^updated: .*$/updated: $ENV{TODAY}/m;
+    $_ = dzunmask($_);
   ' $1 || return 1
   _dz_finding_row $1 $2 evidence +1
 }
@@ -126,13 +145,15 @@ _dz_finding_add() {
 # _dz_finding_status <note> <nr> <status>: the Status on the line under the heading, then
 # in the table. Fails, changing nothing, when F<nr> has no Status line under '## Findings'.
 _dz_finding_status() {
-  N=$2 S=$3 perl -0777 -pi -e '
+  N=$2 S=$3 perl -0777 -pi -e "$_dz_pl_fence" -e '
+    $_ = dzmask($_);
     our $hit = 0;
     s{(^## Findings[ \t]*\n)(.*?)(?=^## |\z)}{
       my ($fh, $sec) = ($1, $2);
       $hit = $sec =~ s{(^### F$ENV{N} · [^\n]*\n(?:(?!\#{1,3} ).*\n)*?[^\n]*\*\*Status:\*\*[ \t]*)\w+}{$1$ENV{S}}m;
       $fh . $sec
     }sme;
+    $_ = dzunmask($_);
     END { $? = $hit ? 0 : 1 }
   ' $1 || return 1
   _dz_finding_row $1 $2 status $3
@@ -151,7 +172,9 @@ _dz_evidence_place() {
     return 0
   fi
   REPLY=''
-  _dz_timeline_add -s $1 "$2"$'\n'"$3"
+  _dz_timeline_add -s $1 "$2"$'\n'"$3" && return 0
+  _dz_warn W403 "the note has no '## $DZ_TIMELINE' (add_sections = no) and no finding is active"
+  return 1
 }
 
 # dz --finding [title | <nr> | off | done [nr]]. $2 = new: the text is always a title (the menu form).
@@ -224,14 +247,17 @@ _dz_finding() {
   # New
   _dz_section_need $note Findings "$DZ_TIMELINE" Flags || return 1
   local host=${DZ_ACTIVE:-$BOX}
-  # The next number: after the highest in a heading or a table row, so a finding removed
-  # by hand never gets its number reused.
-  n=$(perl -0777 -ne '
+  # The next number: after the highest in a heading, a table row or the timeline, so a
+  # finding removed by hand never gets its number reused.
+  n=$(perl -0777 -ne "$_dz_pl_fence" -e '
+    $_ = dzmask($_);
     my $m = 0;
     if (/^## Findings[ \t]*\n(.*?)(?=^## |\z)/sm) {
       my $s = $1;
       for ($s =~ /^(?:### |\|[ \t]*)F(\d+)\b/mg) { $m = $_ if $_ > $m }
     }
+    # The timeline remembers findings removed by hand: "finding F2: ...".
+    for (/^- \d{4}-\d\d-\d\d \d\d:\d\d · finding F(\d+)\b/mg) { $m = $_ if $_ > $m }
     print $m + 1' $note)
   _dz_finding_new $note $n "$text" $host
   _dz_findings $note

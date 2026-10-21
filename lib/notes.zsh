@@ -119,11 +119,13 @@ _dz_flags_get() {
   reply=("$reply[1]" "$reply[2]")
 }
 
-# Does the Flags section of note $1 have user/root slots: a callout ('**User flag**' with
-# '> [!success]'), '- **User flag:**', or another style _dz_flags_normalize turns into one?
+# Does note $1 have user/root slots: a callout ('**User flag**' with '> [!success]') or
+# '- **User flag:**' anywhere (under any heading, like '## Vlaggen'), or another style in
+# the Flags section that _dz_flags_normalize turns into one?
 _dz_flags_slots() {
   perl -0777 -ne '
-    exit(/^## Flags[ \t]*\n(.*?)(?=^## |\z)/sm && $1 =~ /^(?:- )?\*\*User flag(?:\*\*[ \t]*$|:\*\*|\*\*:)/m ? 0 : 1)
+    exit(/^\*\*User flag\*\*[ \t]*\n> \[!success\]/m || /^- \*\*User flag:\*\*/m
+      || (/^## Flags[ \t]*\n(.*?)(?=^## |\z)/sm && $1 =~ /^(?:- )?\*\*User flag(?::\*\*|\*\*:)/m) ? 0 : 1)
   ' $1
 }
 
@@ -153,10 +155,11 @@ _dz_flags_normalize() {
 # _dz_flags_set <note> <User|Root> <flag>: into the empty callout or '- **X flag:**' line;
 # the slot that is missing is added at the top of the Flags section (and the section too).
 _dz_flags_set() {
-  _dz_section_need $1 Flags || return 1
-  K=$2 perl -0777 -ne '
+  # The slot is somewhere in the note already (any heading): fill it, add nothing.
+  if ! K=$2 perl -0777 -ne '
     exit(/^\*\*$ENV{K} flag\*\*[ \t]*\n> \[!success\]/m || /^- \*\*$ENV{K} flag:\*\*/m ? 0 : 1)
-  ' $1 ||
+  ' $1; then
+    _dz_section_need $1 Flags || return 1
     perl -0777 -pi -e '
       my $t = $_;
       my $add = join "", map {
@@ -164,6 +167,7 @@ _dz_flags_set() {
       } qw(User Root);
       s/^(## Flags[ \t]*\n)\n*/$1\n$add\n/m;
     ' $1
+  fi
   K=$2 FLAG=$3 perl -0777 -pi -e '
     s/(^\*\*$ENV{K} flag\*\*[ \t]*\n> \[!success\][^\n]*\n)>[ \t]*\n/$1> $ENV{FLAG}\n/m
       or s/^(- \*\*$ENV{K} flag:\*\*)[ \t]*$/$1 $ENV{FLAG}/m;
