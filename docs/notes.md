@@ -42,7 +42,17 @@ dropzone takes the first template it finds:
 2. `~/.config/dropzone/templates/box-note.md`: your own copy, `install.sh` puts it there once
 3. [`templates/box-note.md`](../templates/box-note.md) that ships with dropzone
 
-`dz -n <name> -ip <ip> --template <name>` picks another template for that one box, for example `--template exam` for [`templates/exam-note.md`](../templates/exam-note.md): Scope, Hosts with a *Via* column, To do, Ports with a Host column, Credentials, a Findings table, Host notes and a Flags section for flags per host. dz looks for `<name>.md`, `<name>-note.md` and `<Name>-note.md` in `~/.config/dropzone/templates/`, then next to your own `template`, then in dropzone's `templates/`. Copy the exam template into your vault and adjust it like any other template.
+dropzone ships three templates:
+
+| Template | For | Has |
+|---|---|---|
+| [`box-note.md`](../templates/box-note.md) (default) | a box | Overview (Hosts, Ports, Web, other services), Credentials, To do, 4 phases (Information Gathering, Exploitation, Post-Exploitation, Lateral Movement), Findings, Questions, Timeline, Flags, Lessons learned |
+| [`box-note-extended.md`](../templates/box-note-extended.md) | a box, all of PTES | the same with 8 phases (Pre-Engagement to Post-Engagement) and a Findings table |
+| [`exam-note.md`](../templates/exam-note.md) | an exam or AD set | Scope, Hosts with *Via*, To do, Ports with a Host column, a Findings table, Host notes and flags per host |
+
+Every phase has *Done when / Next*, a Checklist for your own checks, Notes, a Walkthrough and Results. dz fills none of that: it's your methodology. The Obsidian versions are in [examples/obsidian](../examples/obsidian/).
+
+`dz -n <name> -ip <ip> --template <name>` picks another template for that one box, like `--template box-note-extended` or `--template exam`. dz looks for `<name>.md`, `<name>-note.md` and `<Name>-note.md` in `~/.config/dropzone/templates/`, then next to your own `template`, then in dropzone's `templates/`. Copy one into your vault and adjust it like any other template.
 
 Edit your copy as much as you like: add sections, translate headings, drop what you don't use. dz finds its place by heading, so keep the ones you want it to write into:
 

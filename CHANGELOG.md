@@ -4,6 +4,9 @@ All notable changes to dropzone. Format based on [Keep a Changelog](https://keep
 
 ## [Unreleased]
 
+### Changed
+- **New note templates**: an Overview (Hosts, Ports, Web, other services), Credentials, To do, a phase per part of the work with *Done when / Next*, a Checklist for your own checks, Notes, Walkthrough and Results, then Findings, Questions, Timeline, Flags and Lessons learned. `box-note.md` has 4 phases, the new `box-note-extended.md` all 8 PTES phases (`--template box-note-extended`). Both also as Obsidian versions with callouts in `examples/obsidian/`. Your own template is never replaced.
+
 ## [1.4.0] - 2026-10-21
 
 ### Added

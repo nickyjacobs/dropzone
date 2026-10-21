@@ -6,7 +6,8 @@ dropzone writes plain Markdown, so Obsidian works out of the box. This folder is
 
 | File | What it is |
 |---|---|
-| [`Box-note.md`](Box-note.md) | a box template with Obsidian callouts, foldable flags, a To do checklist, Findings and `$TARGET_IP` placeholders |
+| [`Box-note.md`](Box-note.md) | the box template with Obsidian callouts: column help that folds open, 4 phases, foldable flags |
+| [`Box-note-extended.md`](Box-note-extended.md) | the same with all 8 PTES phases and a Findings table |
 | [`Boxes-dashboard.md`](Boxes-dashboard.md) | a Dataview table of all boxes with status, IP and last update |
 
 ## Option 1: notes in the box folder
@@ -30,6 +31,8 @@ When you already have a vault, let dropzone write into it.
    ```
 
 3. `dz -n test -ip 10.10.10.10` creates `Boxes/test.md` in your vault. `dz -o` opens it in Obsidian.
+
+Want the extended note for some boxes? Copy `Box-note-extended.md` next to it as `Templates/box-note-extended.md`; `dz -n <name> -ip <ip> --template box-note-extended` finds it there. Without a copy it uses the bundled one, in plain Markdown.
 
 Screenshots from `dz -s` stay in `~/boxes/<box>/evidence/` and get a copy in `attachments`, because Obsidian only shows images inside the vault.
 

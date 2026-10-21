@@ -55,7 +55,7 @@ dz -n jacops -ip 10.129.42.190 -h jacops.htb
 - An `/etc/hosts` line tagged `# dz:jacops` (sudo, backup in `/etc/hosts.dz.bak`). More hostnames: `-h dc01.jacops.htb,jacops.htb`; `$DOMAIN` is the first.
 - One ping (`ping = no` turns it off) and the [VPN check](#vpn-check).
 
-`--template exam` uses the exam note: Scope, Hosts with a *Via* column, Findings table, Host notes and flags per host. dz looks for `exam.md`, `exam-note.md` or `Exam-note.md` in `~/.config/dropzone/templates/`, next to your own `template`, then in dropzone's `templates/`. A name with `/` or `.md` is a path. The template only counts for a **new** box: an existing note is never replaced, and `dz -n` on an existing box only updates its IP.
+`--template box-note-extended` uses the note with all 8 PTES phases. `--template exam` uses the exam note: Scope, Hosts with a *Via* column, Findings table, Host notes and flags per host. dz looks for `exam.md`, `exam-note.md` or `Exam-note.md` in `~/.config/dropzone/templates/`, next to your own `template`, then in dropzone's `templates/`. A name with `/` or `.md` is a path. The template only counts for a **new** box: an existing note is never replaced, and `dz -n` on an existing box only updates its IP.
 
 ### Change IP
 
