@@ -292,7 +292,7 @@ With `sysreptor = yes`, `dz -s` and `dz -e` also upload to your [SysReptor](http
 
 ### Menu
 
-<p align="center"><img src="../assets/menu.gif" alt="dropzone menu: new box form, box list, Target › Switch host, Notes › Timeline entry, yes/no choice" width="85%"></p>
+<p align="center"><img src="../assets/menu.gif" alt="dropzone menu: the box list, Target › Switch host, Notes › a timeline line, a to-do and a finding in a row with the answer under the menu, the yes/no choice" width="85%"></p>
 
 `dz` opens it. The banner picks one of 10 arts each time (`art` in the config, or `DZ_ART=7 dz` once):
 
