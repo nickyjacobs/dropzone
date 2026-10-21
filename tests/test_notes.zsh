@@ -201,7 +201,7 @@ dz -n obs -ip 10.10.90.1 --template Templates/Obs.md >/dev/null
 O=~/vault/Boxes/obs.md
 dz --todo first >/dev/null; dz --finding first finding >/dev/null; dz -f $U >/dev/null
 ok  "obsidian: to-do replaces the empty bullet" test "$(sed -n '/^## To do/,/^## /p' $O | grep -c '^- \[')" = 1
-eq  "obsidian: finding in Findings" "## Findings|### F1 · first finding|## Timeline" "$(grep -E '^##' $O | grep -A1 -B1 'F1' | paste -sd'|' -)"
+eq  "obsidian: finding in Findings" "## Findings|### F1 · first finding|## Questions" "$(grep -E '^##' $O | grep -A1 -B1 'F1' | paste -sd'|' -)"
 eq  "obsidian: user flag in the callout" "$U|" "$(_dz_flags_get $O; print -r -- "$reply[1]|$reply[2]")"
 eq  "obsidian: no extra sections" "$(grep -c '^## ' $_dz_repo/examples/obsidian/Box-note.md)" "$(grep -c '^## ' $O)"
 

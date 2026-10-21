@@ -78,7 +78,7 @@ has "a .finding with junk is ignored" "none active" "$(print 'rm -rf ~' > ~/boxe
 dz -n plain -ip 10.10.20.1 --template $_dz_repo/templates/box-note.md >/dev/null
 P=~/vault/Boxes/plain.md
 dz --finding Anonymous FTP >/dev/null
-eq  "heading inside the Findings section" "## Findings|### F1 · Anonymous FTP|## Timeline" "$(grep -E '^##' $P | grep -A1 -B1 'F1' | paste -sd'|' -)"
+eq  "heading inside the Findings section" "## Findings|### F1 · Anonymous FTP|## Questions" "$(grep -E '^##' $P | grep -A1 -B1 'F1' | paste -sd'|' -)"
 has "single box: host is the box" "**Host:** plain" "$(cat $P)"
 dz --finding Second one >/dev/null
 eq  "F2 comes after F1" "### F1 · Anonymous FTP|### F2 · Second one" "$(grep '^### F' $P | paste -sd'|' -)"
