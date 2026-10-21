@@ -28,7 +28,8 @@
 | `lib/clock.zsh` | the deadline of a box (`dz --deadline`) |
 | `lib/sysreptor.zsh` | evidence to SysReptor with reptor, opt-in |
 | `lib/status.zsh` | box status, done, archive, open the note |
-| `templates/box-note.md` | the note template that ships with dropzone |
+| `templates/box-note.md` | the default note template (4 phases) |
+| `templates/box-note-extended.md` | the same with 8 phases (`--template box-note-extended`) |
 | `templates/exam-note.md` | the exam template (`dz -n ... --template exam`) |
 | `examples/obsidian/` | Obsidian template, dashboard and setup notes |
 | `tests/` | `run.zsh`, `helpers.zsh` and one `test_*.zsh` per area |

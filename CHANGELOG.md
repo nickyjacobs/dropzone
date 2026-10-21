@@ -4,6 +4,11 @@ All notable changes to dropzone. Format based on [Keep a Changelog](https://keep
 
 ## [Unreleased]
 
+## [1.4.1] - 2026-10-21
+
+### Changed
+- **New note templates**: an Overview (Hosts, Ports, Web, other services), Credentials, To do, a phase per part of the work with *Done when / Next*, a Checklist for your own checks, Notes, Walkthrough and Results, then Findings, Questions, Timeline, Flags and Lessons learned. `box-note.md` has 4 phases, the new `box-note-extended.md` all 8 PTES phases (`--template box-note-extended`). Both also as Obsidian versions with callouts in `examples/obsidian/`. Your own template is never replaced.
+
 ## [1.4.0] - 2026-10-21
 
 ### Added
@@ -136,7 +141,8 @@ First public release.
 - `examples/obsidian/`: a callout template, a Dataview dashboard and setup notes.
 - Tests, CI on Ubuntu and Kali, secret scan, link check, releases from this changelog.
 
-[Unreleased]: https://github.com/nickyjacobs/dropzone/compare/v1.4.0...HEAD
+[Unreleased]: https://github.com/nickyjacobs/dropzone/compare/v1.4.1...HEAD
+[1.4.1]: https://github.com/nickyjacobs/dropzone/compare/v1.4.0...v1.4.1
 [1.4.0]: https://github.com/nickyjacobs/dropzone/compare/v1.3.1...v1.4.0
 [1.3.1]: https://github.com/nickyjacobs/dropzone/compare/v1.3.0...v1.3.1
 [1.3.0]: https://github.com/nickyjacobs/dropzone/compare/v1.2.0...v1.3.0

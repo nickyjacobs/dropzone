@@ -1,6 +1,8 @@
 # nmap import (dz -p), dz serve, dz -cp and the VPN check. Nothing here touches the network.
 
-cp $_dz_repo/templates/box-note.md ~/vault/Templates/Box-note.md
+# A Ports table without a Proto column (the port reads 22/tcp); the bundled templates are in
+# test_templates.zsh.
+print -r -- $'---\nupdated: x\n---\n## Ports & services\n\n| Port | Service | Version | Notes |\n|---|---|---|---|\n| | | | |\n\n## Timeline\n' > ~/vault/Templates/Box-note.md
 dz -n corp -ip 10.10.10.10 >/dev/null
 dz -t dc01 -ip 10.10.10.5 >/dev/null
 N=~/vault/Boxes/corp.md S=~/boxes/corp/scans
