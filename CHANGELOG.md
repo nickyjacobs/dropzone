@@ -24,6 +24,7 @@ All notable changes to dropzone. Format based on [Keep a Changelog](https://keep
 - `dz -c 'corp\user'` printed the user without the backslash.
 - `dz -f` could add a second Flags section; flag lines in another style (`**User flag:**`) are now filled.
 - A note dz can't write (read-only vault) is reported up front (`E420`) and left untouched.
+- `cd x && cmd | dz -e` stored `cd x && cmd` as the command; now only `cmd`.
 
 ## [1.3.1] - 2026-10-20
 

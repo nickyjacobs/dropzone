@@ -417,6 +417,8 @@ _dz_evidence_cmd() {
   line=${line#*  \$ }
   [[ $line == *\|[[:space:]]#dz[[:space:]]##(-e|--evidence)* ]] || return 0
   REPLY=${line%%[[:space:]]#\|[[:space:]]#dz[[:space:]]##(-e|--evidence)*}
+  # Only the command that pipes into dz: not what ran before it on the line (cd x &&, clear;).
+  REPLY=${REPLY##*(\;|\&\&|\|\|)[[:space:]]#}
 }
 
 # <cmd> | dz -e [caption]: the output (colours stripped) to evidence/<box>_<date>_<time>_<caption>.txt

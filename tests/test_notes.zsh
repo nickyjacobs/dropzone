@@ -97,6 +97,9 @@ has "-e: output in the file" "SMB  10.10.10.1  445  DC01  signing:False" "$(cat 
 has "-e: timeline entry with the file" "· output: smb signing (evidence/${f[1]:t})" "$(cat $N)"
 has "-e: code block in the timeline, indented" $'  ````text\n  $ nxc smb 10.10.10.1 --gen-relay-list\n  SMB  10.10.10.1' "$(cat $N)"
 has "-e: says how many lines" "2 lines" "$out"
+_dz_log_preexec "clear; cd /tmp && nxc smb 10.10.10.1 | dz -e chained"
+print out | dz -e chained >/dev/null
+eq  "-e: only the command before the pipe, not what ran before it" '$ nxc smb 10.10.10.1' "$(head -1 ~/boxes/alpha/evidence/alpha_*_chained.txt)"
 _dz_log_preexec "seq 1 50 | dz -e long"
 seq 1 50 | dz -e long >/dev/null
 has "-e: long output cut in the note" "... 20 more lines in evidence/" "$(cat $N)"
