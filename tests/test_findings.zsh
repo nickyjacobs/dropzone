@@ -180,18 +180,22 @@ ok  "the copy keeps open" grep -qx '\*\*Host:\*\* r3 · \*\*Status:\*\* open' <(
 nok "a blank menu title makes nothing" _dz_finding '   ' new
 nok "no empty finding heading" grep -qE '^### F[0-9]+ · *$' $X
 
-# A note that can't be written: E420, not E413.
+# A note that can't be written: E420, not E413. Root writes anyway (the Kali container in
+# CI), so only as a normal user.
+if (( EUID )); then
 dz -n ro -ip 10.10.71.1 >/dev/null
 chmod a-w ~/vault/Boxes/ro.md
 has "read-only note: E420" "E420" "$(dz --finding X 2>&1)"
 nok "and no E413" grep -q E413 <<< "$(dz --todo x 2>&1)"
 chmod u+w ~/vault/Boxes/ro.md
+fi
 
 # Review round 4: a read-only note changes nothing, leading zeros.
 dz -n ro2 -ip 10.10.72.1 --template exam >/dev/null
 O2=~/vault/Boxes/ro2.md
 dz --finding One >/dev/null; dz --todo first >/dev/null
 cp $O2 ~/ro2.before
+if (( EUID )); then
 chmod a-w $O2
 for c in "dz --finding done 1" "dz --todo done 1" "dz --finding Two" "dz -j x" "dz -f $_dz_repo"; do
   has "read-only: '${c[1,20]}' says E420" "E420" "$(eval $c 2>&1)"
@@ -199,6 +203,7 @@ done
 has "read-only: -e says E420" "E420" "$(print x | dz -e cap 2>&1)"
 chmod u+w $O2
 ok  "read-only: the note is unchanged" cmp -s $O2 ~/ro2.before
+fi
 has "--finding 01 is F1" "active: F1" "$(dz --finding 01)"
 
 # Review round 5: a code block with '#' lines inside a finding; numbers never reused.
