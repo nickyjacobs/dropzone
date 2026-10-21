@@ -40,12 +40,12 @@ eq  "target submenu" "Change IP|Switch host|Add host|Deadline" "${(j:|:)_dz_item
 eq  "Switch host is off with only the main host" 1 "$_dz_off[2]"
 has "submenu has a title" "Target · box1" "$(_dz_draw 1)"
 _dz_set_sub notes
-eq  "notes submenu" "Open note|Timeline entry|Add flag|Creds" "${(j:|:)_dz_items}"
-eq  "Creds is off with creds = no" 1 "$_dz_off[4]"
+eq  "notes submenu" "Open note|Timeline entry|Add flag|To do|Finding|Creds" "${(j:|:)_dz_items}"
+eq  "Creds is off with creds = no" 1 "$_dz_off[6]"
 DZ_CREDS=yes; _dz_set_sub notes
-eq  "and on with creds = yes" 0 "$_dz_off[4]"
+eq  "and on with creds = yes" 0 "$_dz_off[6]"
 DZ_NOTE_MODE=off; _dz_set_sub notes
-eq  "notes = off: the note items are off" "1 1 1 0" "$_dz_off"
+eq  "notes = off: the note items are off" "1 1 1 1 1 0" "$_dz_off"
 DZ_CREDS=no; _dz_set_main
 eq  "notes = off and creds = no: Notes › is off" 1 "$_dz_off[4]"
 DZ_NOTE_MODE=vault DZ_CREDS=no

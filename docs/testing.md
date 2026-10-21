@@ -17,6 +17,7 @@ What the automatic tests cover, and what can only be confirmed by hand on a real
 | Boxes, hosts, notes, flags, creds, deadline, config, errors | everything | – |
 | `dz -s` | file names, vault copy, embed, which tool on X11 and Wayland, the grim/slurp and spectacle arguments | the screenshot tool itself |
 | `dz -e` | file, command from the log, code block | – |
+| To-dos, findings, `dz -i <host>` | adding, ticking off, numbering, evidence under a finding, the Findings table, `add_sections = no`, special characters | – |
 | `dz -cp` | values, secrets not printed | the real clipboard (`xclip`, `wl-copy`) |
 | `dz serve` | commands, bind address, refusals, `--via` | `python3 -m http.server`, `impacket-smbserver`, ligolo |
 | VPN check | the logic for tun0, other routes and pivots | `ip route` on a real VPN |
@@ -64,6 +65,10 @@ Status: **open** (not tested by hand yet) or the date it was confirmed.
 | `cmd 2>&1 \| dz -e`: a real tool's output (colours, progress bars) reads well in the note | 1.2.0 | open |
 | `notes = vault`: screenshots show in Obsidian, `dz -o` opens the note | 1.0.0 | open |
 | `--template exam` in Obsidian: tables, Host notes headings, flag list, timeline code blocks render well | 1.2.0 | open |
+| `dz --todo` in Obsidian: the checkboxes render, ticking one off in Obsidian shows in `dz --todo` | 1.4.0 | open |
+| `dz --finding` + `dz -s` / `dz -e` in Obsidian: the Findings table stays intact, screenshots and code blocks show under the finding | 1.4.0 | open |
+| `dz -i` and `dz -i <host>` on a real exam box: the Next block and the host view read well | 1.4.0 | open |
+| The menu: *Notes › To do* and *Notes › Finding* | 1.4.0 | open |
 | `sysreptor = yes`: a screenshot and a `dz -e` output arrive in the project's notes, under the box | 1.2.0 | open |
 
 ### Updates

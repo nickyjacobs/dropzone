@@ -117,7 +117,7 @@ _dz_creds_valid() {
   all[$1]=${(pj:\t:)c}
   ( umask 077; print -rl -- $all > $f )
   _dz_creds_valid_note "$c[1]" "$c[2]" "${(j:, :)v}"
-  print "• cred #$1 ($c[1]) valid on: ${(j:, :)v}"
+  print -r -- "• cred #$1 ($c[1]) valid on: ${(j:, :)v}"
 }
 
 # dz -c --export: every user, password and NT hash of the box in loot/, one per line and
@@ -175,7 +175,7 @@ _dz_creds() {
   if [[ $1 == <1-> ]]; then                              # make active
     local -a all=("${(@f)$(<$f 2>/dev/null)}")
     [[ -s $f ]] && (( $1 <= $#all )) || { _dz_err E502 "no cred #$1"; return 1 }
-    _dz_creds_export $1 && print "• active: $TARGET_USER (#$1)"
+    _dz_creds_export $1 && print -r -- "• active: $TARGET_USER (#$1)"
     return 0
   fi
 
@@ -204,11 +204,11 @@ _dz_creds() {
   local -i n=$#all
   _dz_creds_export $n
   _dz_creds_note "${src:--}" "$u" "$s"
-  if [[ -n $NT_HASH ]]; then print "• cred #$n stored: $u (NT hash) → \$TARGET_USER, \$NT_HASH"
-  elif [[ -n $SSH_KEY ]]; then print "• cred #$n stored: $u (SSH key) → \$TARGET_USER, \$SSH_KEY"
-  elif [[ -n $KRB5CCNAME ]]; then print "• cred #$n stored: $u (ticket) → \$TARGET_USER, \$KRB5CCNAME"
-  else print "• cred #$n stored: $u → \$TARGET_USER, \$PASSWORD"
+  if [[ -n $NT_HASH ]]; then print -r -- "• cred #$n stored: $u (NT hash) → \$TARGET_USER, \$NT_HASH"
+  elif [[ -n $SSH_KEY ]]; then print -r -- "• cred #$n stored: $u (SSH key) → \$TARGET_USER, \$SSH_KEY"
+  elif [[ -n $KRB5CCNAME ]]; then print -r -- "• cred #$n stored: $u (ticket) → \$TARGET_USER, \$KRB5CCNAME"
+  else print -r -- "• cred #$n stored: $u → \$TARGET_USER, \$PASSWORD"
   fi
-  [[ -n $CRED_DOMAIN ]] && print "  domain: $CRED_DOMAIN → \$CRED_DOMAIN"
+  [[ -n $CRED_DOMAIN ]] && print -r -- "  domain: $CRED_DOMAIN → \$CRED_DOMAIN"
   [[ -z $valid ]] || _dz_creds_valid $n $valid
 }

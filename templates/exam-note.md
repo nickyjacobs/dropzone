@@ -22,6 +22,10 @@ tags: [box, exam]
 |---|---|---|---|---|---|---|
 | {{name}} | {{ip}} | {{hosts}} | | | | |
 
+## To do
+
+- [ ] 
+
 ## Ports & services
 
 | Port | Service | Version | Host | Notes |

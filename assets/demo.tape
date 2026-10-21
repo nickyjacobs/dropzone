@@ -26,11 +26,15 @@ Type "dz -f 3f9a1c0e8b7d6a5f4e3d2c1b0a998877" Sleep 300ms Enter
 Sleep 1.5s
 Type "dz -t dc01 -ip 10.129.42.191 -h dc01.jacops.htb" Sleep 300ms Enter
 Sleep 2s
+Type "dz --todo try the backup creds on winrm" Sleep 300ms Enter
+Sleep 1.5s
+Type "dz --finding SMB signing disabled" Sleep 300ms Enter
+Sleep 2s
 Type "nxc smb $TARGETS | dz -e smb signing" Sleep 300ms Enter
 Sleep 2s
-Type "clear; dz -v" Sleep 300ms Enter
-Sleep 2.5s
-Type "clear; sed -n '/^## Timeline/,/^## Lessons/p' notes.md" Sleep 300ms Enter
+Type "clear; dz -i" Sleep 300ms Enter
+Sleep 4s
+Type "clear; sed -n '/^## Findings/,/^## Timeline/p' notes.md" Sleep 300ms Enter
 Sleep 4.5s
 Type "clear; dz" Sleep 300ms Enter
 Sleep 4s

@@ -62,8 +62,12 @@ vault =
 vault_folder = Boxes
 attachments = Boxes/attachments
 
-# Heading of the timeline section, filled by dz -j, dz -f and dz -s
+# Heading of the timeline section, filled by dz -j, dz -f, dz -s and dz -e
 timeline = Timeline
+
+# Add a Timeline, Flags, To do or Findings section when your note doesn't have one (yes / no).
+# no: dz leaves your layout alone and tells you which heading is missing
+add_sections = yes
 
 # Flags to find in a box with more hosts, dz -f counts them (14 on the CPTS exam), 0 = no count
 flag_goal = 0

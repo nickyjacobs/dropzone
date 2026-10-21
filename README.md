@@ -17,7 +17,7 @@
 </p>
 
 <p align="center">
-  <img src="assets/demo.gif" alt="dropzone demo: a new box, timeline, flag, a second host, nxc output as evidence, the note and the menu" width="85%">
+  <img src="assets/demo.gif" alt="dropzone demo: a new box, timeline, flag, a second host, a to-do, a finding with nxc output as evidence, dz -i, the note and the menu" width="85%">
 </p>
 
 ## Why dropzone
@@ -38,17 +38,15 @@ Post it in [Discussions](https://github.com/nickyjacobs/dropzone/discussions), o
 
 ## Features
 
-- **Box in one command**: `dz -n jacops -ip 10.129.42.190 -h jacops.htb` makes the folder, the note, the `/etc/hosts` line and loads `$TARGET_IP`, `$DOMAIN` and `$ATTACKER_IP` in your shell.
-- **Your note writes itself**: a timeline with `dz -j`, screenshots with `dz -s`, command output with `cmd | dz -e`, flags with `dz -f`, creds with `dz -c`, and a new IP changes everywhere in the note.
-- **Notes your way**: plain Markdown in the box folder, or in your Obsidian vault. `dz -g` searches the notes of every box.
-- **More hosts per box** for AD sets and pivots: `dz -t dc01 -ip ...` gives `$DC01_IP`, `$TARGETS` and a hosts line, `dz -t dc01` makes it the target.
-- **Exam-ready**: `--template exam`, flags per host with a count, hosts behind a pivot (`--via`), a `--deadline` in your prompt, creds per host with an export for spraying, and evidence to SysReptor if you want.
-- **Your nmap output in the note**: `dz -p` fills the ports table from your own scan; dropzone never scans.
-- **Less typing**: `dz serve` prints download commands with your IP, `dz -cp` copies an IP or a cred, and a warning appears when your VPN is down.
-- **Every terminal knows the box**: new shells load the last box, your prompt shows it, and each command is logged per box.
-- **Interactive menu** with `dz` (target and note submenus), short options for everything else, tab completion.
-- **Clear errors**: every error has a code, like `dz [E201] no box loaded`, and `dz --explain E201` tells you why and what to do.
-- **Safe**: files are read, never run, `/etc/hosts` is backed up, removed boxes go to the trash.
+- **Box in one command**: `dz -n jacops -ip 10.129.42.190 -h jacops.htb` makes the folder, the note and the `/etc/hosts` line, and loads `$TARGET_IP`, `$DOMAIN` and `$ATTACKER_IP` in your shell.
+- **See what's next**: your own to-dos per host (`dz --todo`), and `dz -i` shows the open ones, the active finding and the last thing you did. `dz -i dc01` shows one host with its to-dos, findings and the creds that work there.
+- **Evidence per finding**: `dz --finding SMB signing disabled`, and every screenshot (`dz -s`) and command output (`cmd | dz -e`) lands under it until you stop.
+- **Your note keeps itself**: timeline (`dz -j`), flags (`dz -f`), creds (`dz -c`), ports from your nmap output (`dz -p`), and a new IP changes everywhere. Plain Markdown, or straight into your Obsidian vault without touching your layout.
+- **AD sets and pivots**: `dz -t dc01 -ip ...` gives `$DC01_IP` and `$TARGETS`, `--via` marks hosts behind a pivot.
+- **Exam-ready**: an exam template, flags counted per host, a `--deadline` in your prompt, creds for spraying, evidence to SysReptor if you want.
+- **Less typing**: `dz serve` prints download commands with your IP, `dz -cp` copies an IP or a cred, `dz -g` searches every note, and you get a warning when the VPN is down.
+- **Menu, completion, clear errors**: `dz` opens a menu, tab completion knows everything, and every error has a code that `dz --explain` explains.
+- **Safe**: files are read, never run; `/etc/hosts` is backed up; removed boxes go to the trash.
 
 ## Quick start
 
@@ -72,17 +70,15 @@ dz -n jacops -ip 10.129.42.190 -h jacops.htb
 dz                                       # interactive menu
 dz -n jacops -ip 10.129.42.190           # new box
 dz -ip 10.129.42.201                     # box was reset: new IP everywhere
-dz -h dc01.jacops.htb,jacops.htb         # hostnames for an AD box
 dz -t dc01 -ip 10.129.42.191             # another host in the box: $DC01_IP
 dz -p                                    # open ports from your nmap output into the note
-dz serve ~/tools 8000                    # HTTP server + download commands with your IP
-dz -cp dc01                              # copy a host's IP to the clipboard
-dz -j found an NFS share with backups    # line in the note's timeline
-dz -s showmount output                   # screenshot, embedded in the note
-nxc smb $TARGETS 2>&1 | dz -e smb hosts  # command output as evidence in the note
+dz -j found an NFS share with backups    # line in the timeline
+dz --todo try the backup creds on winrm  # what to try next
+dz --finding NFS share world-readable    # start a finding
+dz -s showmount output                   # screenshot, under the finding
+nxc smb $TARGETS 2>&1 | dz -e smb hosts  # command output, under the finding
+dz -i                                    # the box and what's next
 dz -f 3f9a...e1                          # flag into the note
-dz -g kerberoast                         # search the notes of every box
-dz -v                                    # all boxes with status
 dz -a jacops                             # done: archive it
 dz --help                                # everything else
 ```
@@ -94,6 +90,7 @@ dz -n cpts -ip 10.129.5.10 --template exam --deadline 10d
 dz -t web01 -ip 172.16.5.15                    # the pivot
 dz -t ms01 -ip 172.16.5.10 --via web01         # a host behind it
 dz serve ~/tools --via web01                   # ligolo-ng listener + download commands
+dz -i ms01                                     # its to-dos, findings and working creds
 dz -f ms01 3f9a...e1                           # flag 3/14
 ```
 
@@ -133,7 +130,7 @@ iface = tun0
 
 [notes]
 notes = folder
-timeline = Timeline
+add_sections = yes
 ```
 
 `dz --config` opens it, `dz --config show` prints what is in use. Every setting: **[docs/config.md](docs/config.md)**.
@@ -161,7 +158,7 @@ Pulls the new version and shows what changed. Your config, templates, boxes and 
 
 ## Exam use
 
-OSCP bans tools that exploit or scan on their own. dropzone only does admin: folders, notes, screenshots, variables and hosts entries. It never scans, exploits or connects to a target; the only packet it sends is one ping after `-n` or `-ip` (`ping = no` turns it off). `dz serve` starts a file server for you and prints the commands, you run them. The SysReptor upload is off by default; check your exam's rules before you turn it on.
+OSCP bans tools that exploit or scan on their own. dropzone only does admin: folders, notes, to-dos, findings, screenshots, variables and hosts entries. It never suggests what to attack. It never scans, exploits or connects to a target; the only packet it sends is one ping after `-n` or `-ip` (`ping = no` turns it off). `dz serve` starts a file server for you and prints the commands, you run them. The SysReptor upload is off by default; check your exam's rules before you turn it on.
 
 ## Contributing
 

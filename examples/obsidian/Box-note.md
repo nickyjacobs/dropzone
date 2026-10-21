@@ -21,6 +21,10 @@ tags: [box]
 |---|---|---|---|---|
 | {{name}} | $TARGET_IP | {{hosts}} | | |
 
+## To do
+
+- [ ] 
+
 ## Ports & services
 
 | Port | Service | Version | Notes |
@@ -47,6 +51,8 @@ nmap -p- --min-rate 2000 -oA ~/boxes/{{name}}/scans/all $TARGET_IP
 > ```
 
 ## Privilege escalation
+
+## Findings
 
 ## Timeline
 

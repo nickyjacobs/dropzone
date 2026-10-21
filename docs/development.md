@@ -20,7 +20,11 @@
 | `lib/tools.zsh` | `dz serve` and `dz -cp` |
 | `lib/hosts.zsh` | more hosts in a box (`dz -t`) |
 | `lib/ui.zsh` | the block layout of `--help`, `dz -i` and `dz --config show/check` |
-| `lib/notes.zsh` | flags, timeline, screenshots and command output in the note, search (`dz -f`, `-j`, `-s`, `-e`, `-g`) |
+| `scripts/` | `release.sh` and `errors-doc.zsh` (makes `docs/errors.md`) |
+| `assets/` | banner, GIFs and the VHS tapes they're made from |
+| `lib/notes.zsh` | flags, timeline, screenshots and command output in the note, search (`dz -f`, `-j`, `-s`, `-e`, `-g`); `_dz_section_ensure` adds a missing section (`add_sections`) |
+| `lib/todo.zsh` | to-dos in the note (`dz --todo`) |
+| `lib/findings.zsh` | findings, and where `dz -s` / `dz -e` put their evidence (`dz --finding`) |
 | `lib/clock.zsh` | the deadline of a box (`dz --deadline`) |
 | `lib/sysreptor.zsh` | evidence to SysReptor with reptor, opt-in |
 | `lib/status.zsh` | box status, done, archive, open the note |

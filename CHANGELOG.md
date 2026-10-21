@@ -4,6 +4,21 @@ All notable changes to dropzone. Format based on [Keep a Changelog](https://keep
 
 ## [Unreleased]
 
+### Added
+- **To-dos** (`dz --todo <text>`): your own checklist in the note's `## To do` section, tagged with the active host in a box with more hosts. `dz --todo` lists the open ones, `--todo --all` the done ones too, `dz --todo done <nr>` ticks one off (ticking it in Obsidian works as well). dz never suggests to-dos itself.
+- **Findings** (`dz --finding <title>`): a `### F1 · <title>` heading under `## Findings` with its host and status. While a finding is active, `dz -s` and `dz -e` put their evidence under it and the timeline points to it. A Findings table (the exam template) gets a row with the evidence count and status. `dz --finding` lists them, `--finding <nr>` switches, `--finding off` stops, `--finding done [nr]` closes one.
+- **What's next in `dz -i`**: a *Next* block with the open to-dos, the active finding and the last timeline lines.
+- **One host** (`dz -i <host>`): its IP, hostnames, pivot, flags, to-dos, findings and the creds that work there (user and number, never the secret).
+- `add_sections = no` in the config: dz never adds a Timeline, Flags, To do or Findings section to your note, it tells you which heading is missing (`E413`, `W403`).
+- Menu: *Notes ›* has *To do* and *Finding*.
+- The templates (`box-note.md`, `exam-note.md`, the Obsidian example) have a `## To do` section; the box templates also `## Findings`.
+
+### Fixed
+- `dz -c 'corp\user'` printed the user without the backslash (`corpuser`); the stored cred was right.
+- `dz -f root <flag>` on a note with a `## Flags` section but no user/root lines added a second Flags section.
+- `dz -f` on a note with flag lines in another style (`**User flag:**`, `- **User flag**:`), filled or empty, turns them into dz's lines instead of adding a second Flags section.
+- A note dz can't write (a read-only vault) is reported up front (`E420`, or `W405` for a side timeline line) and left unchanged, instead of half-changed with a misleading error.
+
 ## [1.3.1] - 2026-10-20
 
 ### Fixed

@@ -5,14 +5,61 @@
 #   dz -j <text>               timestamped line in the timeline section
 #   dz -s [caption]            screenshot to evidence/, embedded in the timeline
 #   <cmd> | dz -e [caption]    command output to evidence/, with the command, in the timeline
+#                              (both go under the active finding instead, see findings.zsh)
 #   dz -g <term> [--all]       search the notes of every box (--all: the archive too)
 #
 # The timeline section is '## <timeline>' (config, default Timeline); dz adds it before
-# '## Flags' when the note doesn't have one yet. Flags work in two layouts:
+# '## Flags' when the note doesn't have one yet (not with 'add_sections = no'). Flags work in two layouts:
 #   - **User flag:** <flag>                    (the template that ships with dropzone)
 #   **User flag** + '> [!success]- Flag' + '> <flag>'   (Obsidian callout, see examples/)
 # A box with more hosts (dz -t), or a note without those slots, keeps a list instead: '- <date> <time> · <host> · <flag>',
 # with a count against 'flag_goal' from the config. It is never marked done by a flag.
+
+# _dz_section_ensure <note> <heading> [before...]: add '## <heading>' when the note doesn't
+# have it, right before the first of the [before] headings it does have, else at the end.
+# With 'add_sections = no' dz never adds a section: it fails, and the caller reports it.
+# Also ends the note with a newline, so a heading on the last line can be written under.
+# Only writes the note when something changes. Status 1 = missing (add_sections = no),
+# 2 = the note can't be written (see _dz_note_writable).
+_dz_section_ensure() {
+  local note=$1 head=$2 st; shift 2
+  _dz_note_writable $note || return 2
+  # 0 = there, 3 = there but no newline at the end, 1 = missing.
+  HEAD=$head perl -0777 -ne 'exit(/^## \Q$ENV{HEAD}\E[ \t]*$/m ? (/\n\z/ ? 0 : 3) : 1)' $note
+  st=$?
+  (( st == 0 )) && return 0
+  (( st == 3 )) && { print >> $note; return }
+  _dz_on DZ_ADD_SECTIONS || return 1
+  HEAD=$head BEFORE=${(pj:\n:)@} perl -0777 -pi -e '
+    $_ .= "\n" unless /\n\z/;
+    my $done = 0;
+    for my $b (grep { length } split /\n/, $ENV{BEFORE}) {
+      $done = s/^(## \Q$b\E[ \t]*)$/## $ENV{HEAD}\n\n$1/m and last;
+    }
+    $_ .= "\n## $ENV{HEAD}\n\n" unless $done;
+  ' $note
+}
+
+# Can dz change note $1? perl edits in place through a new file in the same folder, so the
+# folder must be writable too.
+_dz_note_writable() { [[ -r $1 && -w $1 && -w ${1:h} ]] }
+
+# _dz_note_write_need <note>: _dz_note_writable, or E420. Every command that changes the
+# note checks this first, so nothing half happens.
+_dz_note_write_need() {
+  _dz_note_writable $1 || { _dz_err E420 "can't write the note $1"; return 1 }
+}
+
+# _dz_section_need <note> <heading> [before...]: _dz_section_ensure, with E413 or E420.
+_dz_section_need() {
+  _dz_section_ensure "$@"
+  case $? in
+    0) return 0 ;;
+    1) _dz_err E413 "the note has no '## $2' section (add_sections = no)" ;;
+    *) _dz_err E420 "can't write the note $1" ;;
+  esac
+  return 1
+}
 
 # Note of the loaded box in $REPLY, or fail with a message.
 _dz_note_need() {
@@ -21,16 +68,24 @@ _dz_note_need() {
   [[ -f $REPLY ]] || { _dz_err E402 "no note for $BOX ($REPLY)"; return 1 }
 }
 
-# _dz_timeline_add <note> <text>: '- <date> <time> · <text>' at the end of the timeline
-# section. Extra lines in <text> (an embed) stay under the entry.
+# _dz_timeline_add [-s] <note> <text>: '- <date> <time> · <text>' at the end of the timeline
+# section. Extra lines in <text> (an embed) stay under the entry. No timeline section and
+# add_sections = no: a warning and success, because the command itself worked. With -s
+# (strict) no warning but status 2 (missing) or 3 (can't write), for a caller whose whole
+# job is this line.
 _dz_timeline_add() {
+  local strict='' st
+  [[ $1 == -s ]] && { strict=1; shift }
   local ts; strftime -s ts '%F %H:%M' $EPOCHSECONDS
+  _dz_section_ensure $1 "$DZ_TIMELINE" Flags; st=$?
+  if (( st )); then
+    [[ -n $strict ]] && return $(( st + 1 ))
+    (( st == 2 )) && { _dz_warn W405 "can't write the note $1, timeline line not written: ${2%%$'\n'*}"; return 0 }
+    _dz_warn W403 "the note has no '## $DZ_TIMELINE' (add_sections = no), line not written: ${2%%$'\n'*}"
+    return 0
+  fi
   HEAD=$DZ_TIMELINE ENTRY="- $ts · $2" TODAY=${ts% *} perl -0777 -pi -e '
     my $h = quotemeta $ENV{HEAD};
-    unless (/^## $h[ \t]*$/m) {
-      s/^(## Flags[ \t]*)$/## $ENV{HEAD}\n\n$1/m
-        or do { $_ .= "\n" unless /\n\z/; $_ .= "\n## $ENV{HEAD}\n\n" };
-    }
     s{(^## $h[ \t]*\n)(.*?)(?=^## |\z)}{
       my ($head, $body) = ($1, $2);
       $body =~ s/^-[ \t]*\n//mg;               # empty template bullet
@@ -64,14 +119,56 @@ _dz_flags_get() {
   reply=("$reply[1]" "$reply[2]")
 }
 
-# _dz_flags_set <note> <User|Root> <flag>: into the empty callout; adds the Flags
-# section when the note has none.
-_dz_flags_set() {
-  K=$2 FLAG=$3 perl -0777 -pi -e '
-    unless (/^\*\*User flag\*\*/m || /^- \*\*User flag:\*\*/m) {
-      $_ .= "\n" unless /\n\z/;
-      $_ .= "\n## Flags\n\n- **User flag:** \n- **Root flag:** \n";
+# Does note $1 have user/root slots: a callout ('**User flag**' with '> [!success]') or
+# '- **User flag:**' anywhere (under any heading, like '## Vlaggen'), or another style in
+# the Flags section that _dz_flags_normalize turns into one?
+_dz_flags_slots() {
+  perl -0777 -ne '
+    exit(/^\*\*User flag\*\*[ \t]*\n> \[!success\]/m || /^- \*\*User flag:\*\*/m
+      || (/^## Flags[ \t]*\n(.*?)(?=^## |\z)/sm && $1 =~ /^(?:- )?\*\*User flag(?::\*\*|\*\*:)/m) ? 0 : 1)
+  ' $1
+}
+
+# User/root lines in the Flags section in another style ('**User flag:** x',
+# '- **User flag**: x') become dz's '- **User flag:** x', filled or empty. Only writes
+# when there is such a line.
+_dz_flags_normalize() {
+  local re='^(?:- )?\*\*(User|Root) flag(?::\*\*|\*\*:)'
+  RE=$re perl -0777 -ne '
+    my $other = 0;
+    if (/^## Flags[ \t]*\n(.*?)(?=^## |\z)/sm) {
+      my $sec = $1;
+      # Whole lines only (the pattern has its own group), minus the ones already in dz style.
+      $other = grep { !/^- \*\*(?:User|Root) flag:\*\*/ }
+        $sec =~ /^((?:- )?\*\*(?:User|Root) flag(?::\*\*|\*\*:)[^\n]*)/mg;
     }
+    exit($other ? 0 : 1)
+  ' $1 || return 0
+  RE=$re perl -0777 -pi -e '
+    s{(^## Flags[ \t]*\n)(.*?)(?=^## |\z)}{
+      my ($h, $b) = ($1, $2);
+      $b =~ s/(?:$ENV{RE})[ \t]*/- **$1 flag:** /mg;
+      "$h$b"
+    }sme' $1
+}
+
+# _dz_flags_set <note> <User|Root> <flag>: into the empty callout or '- **X flag:**' line;
+# the slot that is missing is added at the top of the Flags section (and the section too).
+_dz_flags_set() {
+  # The slot is somewhere in the note already (any heading): fill it, add nothing.
+  if ! K=$2 perl -0777 -ne '
+    exit(/^\*\*$ENV{K} flag\*\*[ \t]*\n> \[!success\]/m || /^- \*\*$ENV{K} flag:\*\*/m ? 0 : 1)
+  ' $1; then
+    _dz_section_need $1 Flags || return 1
+    perl -0777 -pi -e '
+      my $t = $_;
+      my $add = join "", map {
+        $t =~ /^\*\*$_ flag\*\*[ \t]*\n> \[!success\]/m || $t =~ /^- \*\*$_ flag:\*\*/m ? "" : "- **$_ flag:** \n"
+      } qw(User Root);
+      s/^(## Flags[ \t]*\n)\n*/$1\n$add\n/m;
+    ' $1
+  fi
+  K=$2 FLAG=$3 perl -0777 -pi -e '
     s/(^\*\*$ENV{K} flag\*\*[ \t]*\n> \[!success\][^\n]*\n)>[ \t]*\n/$1> $ENV{FLAG}\n/m
       or s/^(- \*\*$ENV{K} flag:\*\*)[ \t]*$/$1 $ENV{FLAG}/m;
   ' $1
@@ -91,8 +188,8 @@ _dz_flags_list() {
 # the note has none).
 _dz_flags_add() {
   local ts; strftime -s ts '%F %H:%M' $EPOCHSECONDS
+  _dz_section_need $1 Flags || return 1
   ENTRY="- $ts · $2 · $3" perl -0777 -pi -e '
-    unless (/^## Flags[ \t]*$/m) { $_ .= "\n" unless /\n\z/; $_ .= "\n## Flags\n\n" }
     s{(^## Flags[ \t]*\n)(.*?)(?=^## |\z)}{
       my ($head, $body) = ($1, $2);
       $body =~ s/\s+\z//;
@@ -111,6 +208,10 @@ _dz_flag() {
   _dz_note_need || return 1; note=$REPLY
   _dz_box_read $DZ_ROOT/$BOX 2>/dev/null
   local -a extra=("${_dz_bh[@]}")
+  if [[ -n $flag ]]; then
+    _dz_note_write_need $note || return 1
+    _dz_flags_normalize $note
+  fi
   _dz_flags_get $note
   local user=$reply[1] root=$reply[2]
   _dz_flags_list $note
@@ -132,12 +233,12 @@ _dz_flag() {
     { _dz_err E405 "that flag is already in the note"; return 1 }
   # A box with more hosts, or a note without user/root slots (the exam template): flags
   # per host, the active one when you don't name it.
-  [[ -z $kind ]] && { (( $#extra )) || ! grep -qE '^(- )?\*\*User flag' $note } && kind=${DZ_ACTIVE:-$BOX}
+  [[ -z $kind ]] && { (( $#extra )) || ! _dz_flags_slots $note } && kind=${DZ_ACTIVE:-$BOX}
   if [[ -n $kind && $kind != (user|root) ]]; then
     [[ $kind == $BOX || -n ${(M)extra:#$kind *} ]] ||
       { _dz_err E407 "no host '$kind' in $BOX (dz -t lists them), or use user / root"; return 1 }
     [[ $flag =~ '^[0-9a-f]{32}$' ]] || _dz_warn W401 "'$flag' is not the usual HTB flag (32 hex), stored anyway"
-    _dz_flags_add $note $kind $flag
+    _dz_flags_add $note $kind $flag || return 1
     _dz_flags_list $note
     [[ -n ${(M)reply:#$kind ${(b)flag}} ]] || { _dz_err E408 "couldn't place the flag in $note"; return 1 }
     (( have++ ))
@@ -159,7 +260,7 @@ _dz_flag() {
   [[ -n $cur ]] && { _dz_err E406 "$BOX already has a $kind flag ($cur). Change it in the note."; return 1 }
   [[ $flag =~ '^[0-9a-f]{32}$' ]] || _dz_warn W401 "'$flag' is not the usual HTB flag (32 hex), stored anyway"
 
-  _dz_flags_set $note ${(C)kind} $flag
+  _dz_flags_set $note ${(C)kind} $flag || return 1
   _dz_flags_get $note
   [[ $reply[idx] == $flag ]] ||
     { _dz_err E408 "couldn't place the flag in $note (Flags section changed?)"; return 1 }
@@ -181,7 +282,14 @@ _dz_journal() {
     [[ -n $out ]] && print -r -- $out || print "no timeline entries for $BOX yet"
     return 0
   fi
-  _dz_timeline_add $note "${1//$'\n'/ }" && print "• added to the timeline of $BOX"
+  _dz_note_write_need $note || return 1
+  _dz_timeline_add -s $note "${1//$'\n'/ }"
+  case $? in
+    0) ;;
+    2) _dz_err E413 "the note has no '## $DZ_TIMELINE' section (add_sections = no)"; return 1 ;;
+    *) _dz_err E420 "can't write the note $note"; return 1 ;;
+  esac
+  print "• added to the timeline of $BOX"
 }
 
 # Is screenshot tool $1 installed? grim needs slurp to select the region.
@@ -220,7 +328,8 @@ _dz_shot_take() {
   esac 2>/dev/null
 }
 
-# dz -s [caption]: screenshot to evidence/, a copy in the vault, embedded in the timeline.
+# dz -s [caption]: screenshot to evidence/, a copy in the vault, embedded in the timeline
+# (or under the active finding, see findings.zsh).
 _dz_shot() {
   emulate -L zsh -o extended_glob
   local caption=${1//$'\n'/ } note='' tool
@@ -228,6 +337,7 @@ _dz_shot() {
     [[ -n $BOX ]] || { _dz_err E201 "no box loaded"; return 1 }
   else
     _dz_note_need || return 1; note=$REPLY
+    _dz_note_write_need $note || return 1
   fi
   [[ -n $DISPLAY || -n $WAYLAND_DISPLAY ]] || { _dz_err E410 "no desktop session for a screenshot"; return 1 }
   _dz_shot_tool || return 1; tool=$REPLY
@@ -255,8 +365,11 @@ _dz_shot() {
     print "• screenshot: ${ev/#$HOME/~}/$name"
     return 0
   fi
-  _dz_timeline_add $note "screenshot${caption:+: $caption}"$'\n'"  $embed"
-  print "• screenshot: ${ev/#$HOME/~}/$name (in the note too)"
+  if _dz_evidence_place $note "screenshot${caption:+: $caption}" "  $embed"; then
+    print "• screenshot: ${ev/#$HOME/~}/$name (${REPLY:+under $REPLY }in the note too)"
+  else
+    print "• screenshot: ${ev/#$HOME/~}/$name (not in the note)"
+  fi
   _dz_reptor file $ev/$name
 }
 
@@ -310,11 +423,12 @@ _dz_evidence_cmd() {
 # with the command on top, and the first lines as a code block in the timeline.
 _dz_evidence() {
   emulate -L zsh -o extended_glob
-  local caption=${1//$'\n'/ } note='' out cmd
+  local caption=${1//$'\n'/ } note='' out cmd fnd=''
   if [[ $DZ_NOTE_MODE == off ]]; then
     [[ -n $BOX ]] || { _dz_err E201 "no box loaded"; return 1 }
   else
     _dz_note_need || return 1; note=$REPLY
+    _dz_note_write_need $note || return 1
   fi
   [[ -t 0 ]] && { _dz_err E411 "pipe a command into it: nxc smb \$TARGET | dz -e smb signing"; return 1 }
   out=$(perl -pe 's/\e\[[0-9;?]*[ -\/]*[@-~]//g; s/\e\][^\a]*\a//g; s/\r//g')
@@ -337,11 +451,15 @@ _dz_evidence() {
   block+=$'\n'"\`\`\`\`"
   if [[ -n $note ]]; then
     local -a bl=("${(@f)block}"); bl=("  "${^bl})
-    _dz_timeline_add $note "output${caption:+: $caption} (evidence/$name)"$'\n'"${(F)bl}"
-    print "• output: ${ev/#$HOME/~}/$name ($#lines lines, in the note too)"
+    if _dz_evidence_place $note "output${caption:+: $caption} (evidence/$name)" "${(F)bl}"; then
+      fnd=$REPLY
+      print "• output: ${ev/#$HOME/~}/$name ($#lines lines, ${fnd:+under $fnd }in the note too)"
+    else
+      print "• output: ${ev/#$HOME/~}/$name ($#lines lines, not in the note)"
+    fi
   else
     print "• output: ${ev/#$HOME/~}/$name ($#lines lines)"
   fi
-  _dz_reptor note "**${caption:-output}**"$'\n\n'"\`\`\`"$'\n'"${cmd:+\$ $cmd}"$'\n'"$out"$'\n'"\`\`\`"
+  _dz_reptor note "**${fnd:+$fnd · }${caption:-output}**"$'\n\n'"\`\`\`"$'\n'"${cmd:+\$ $cmd}"$'\n'"$out"$'\n'"\`\`\`"
   return 0
 }
