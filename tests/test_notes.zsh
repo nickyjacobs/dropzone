@@ -97,6 +97,9 @@ has "-e: output in the file" "SMB  10.10.10.1  445  DC01  signing:False" "$(cat 
 has "-e: timeline entry with the file" "· output: smb signing (evidence/${f[1]:t})" "$(cat $N)"
 has "-e: code block in the timeline, indented" $'  ````text\n  $ nxc smb 10.10.10.1 --gen-relay-list\n  SMB  10.10.10.1' "$(cat $N)"
 has "-e: says how many lines" "2 lines" "$out"
+_dz_log_preexec "clear; cd /tmp && nxc smb 10.10.10.1 | dz -e chained"
+print out | dz -e chained >/dev/null
+eq  "-e: only the command before the pipe, not what ran before it" '$ nxc smb 10.10.10.1' "$(head -1 ~/boxes/alpha/evidence/alpha_*_chained.txt)"
 _dz_log_preexec "seq 1 50 | dz -e long"
 seq 1 50 | dz -e long >/dev/null
 has "-e: long output cut in the note" "... 20 more lines in evidence/" "$(cat $N)"
@@ -174,3 +177,73 @@ has "-g: says where else to look" "--all also searches the archive" "$(dz -g ker
 nok "-g --all: no archive hint" grep -q 'also searches' <<< "$(dz -g kerberoast --all)"
 nok "-g without a term fails" dz -g
 DZ_NOTE_MODE=off; nok "-g with notes = off fails" dz -g smb; DZ_NOTE_MODE=vault
+
+# A Flags section without user/root slots: the slots go into it, no second Flags section.
+dz -n slots -ip 10.10.80.1 >/dev/null
+S=~/vault/Boxes/slots.md
+print -r -- $'---\nupdated: x\n---\n## Flags\n\nsome text\n\n## After' > $S
+dz -f root $R >/dev/null
+eq  "one Flags section" 1 "$(grep -c '^## Flags' $S)"
+eq  "root flag in its slot" "$R" "$(_dz_flags_get $S; print -r -- $reply[2])"
+ok  "the slots are inside the section" test "$(sed -n '/^## Flags/,/^## After/p' $S | grep -c 'flag:')" = 2
+
+# add_sections = no: no Flags section is added, the note stays as it is.
+print -r -- $'---\nupdated: x\n---\nbody' > $S
+DZ_ADD_SECTIONS=no
+nok "add_sections = no: -f fails without Flags" dz -f root $R
+has "and says which heading" "'## Flags'" "$(dz -f root $R 2>&1)"
+eq  "the note is untouched" $'---\nupdated: x\n---\nbody' "$(cat $S)"
+DZ_ADD_SECTIONS=yes
+
+# The Obsidian example template: to-dos, findings and flags all land in their sections.
+cp $_dz_repo/examples/obsidian/Box-note.md ~/vault/Templates/Obs.md
+dz -n obs -ip 10.10.90.1 --template Templates/Obs.md >/dev/null
+O=~/vault/Boxes/obs.md
+dz --todo first >/dev/null; dz --finding first finding >/dev/null; dz -f $U >/dev/null
+ok  "obsidian: to-do replaces the empty bullet" test "$(sed -n '/^## To do/,/^## /p' $O | grep -c '^- \[')" = 1
+eq  "obsidian: finding in Findings" "## Findings|### F1 · first finding|## Timeline" "$(grep -E '^##' $O | grep -A1 -B1 'F1' | paste -sd'|' -)"
+eq  "obsidian: user flag in the callout" "$U|" "$(_dz_flags_get $O; print -r -- "$reply[1]|$reply[2]")"
+eq  "obsidian: no extra sections" "$(grep -c '^## ' $_dz_repo/examples/obsidian/Box-note.md)" "$(grep -c '^## ' $O)"
+
+# Review round 2: a slot style dz doesn't write into gets the known slots, the flag is stored.
+dz -l slots >/dev/null
+print -r -- $'---\nupdated: x\n---\n## Flags\n\n- **User flag**: \n- **Root flag**: \n' > $S
+ok  "'- **User flag**: ' style: the flag is stored" dz -f user $U
+eq  "and readable" "$U" "$(_dz_flags_get $S; print -r -- $reply[1])"
+
+# A section that is there: the note isn't rewritten.
+print -r -- $'---\nupdated: x\n---\n## Timeline\n\n## Flags\n' > $S
+i1=$(ls -i $S | awk '{print $1}')
+_dz_section_ensure $S Timeline Flags
+eq  "ensure on a present section leaves the file alone" "$i1" "$(ls -i $S | awk '{print $1}')"
+
+# Review round 3: other slot styles become dz's slots, no duplicates.
+for style in '**%s flag:** ' '- **%s flag**: ' '**%s flag**: '; do
+  printf -- "---\nupdated: x\n---\n## Flags\n\n$style\n$style\n" User Root > $S
+  dz -f user $U >/dev/null
+  eq  "style '$style': one User and one Root line" 2 "$(sed -n '/^## Flags/,$p' $S | grep -c 'flag')"
+  eq  "style '$style': flag stored" "$U" "$(_dz_flags_get $S; print -r -- $reply[1])"
+done
+dz -l slots >/dev/null
+print -r -- $'---\nupdated: x\n---\n## Flags\n\n- **User flag:** \n- **Root flag:** \n' > $S
+i1=$(ls -i $S | awk '{print $1}'); _dz_flags_normalize $S
+eq  "normalize leaves dz-style lines alone (no rewrite)" "$i1" "$(ls -i $S | awk '{print $1}')"
+
+# Review round 4: a filled line in another style, and only one of the two lines.
+printf -- "---\nupdated: x\n---\n## Flags\n\n**User flag:** $U\n**Root flag:** \n" > $S
+dz -f $R >/dev/null
+eq  "filled other-style user flag is read, root stored" "$U|$R" "$(_dz_flags_get $S; print -r -- "$reply[1]|$reply[2]")"
+printf -- "---\nupdated: x\n---\n## Flags\n\n**User flag:** \n" > $S
+dz -f $U >/dev/null; dz -f $R >/dev/null
+eq  "only a user line: root slot added when needed" "$U|$R" "$(_dz_flags_get $S; print -r -- "$reply[1]|$reply[2]")"
+print -r -- $'---\nupdated: x\n---\n## Proof\n\n**User flag:** \n\n## Flags\n' > $S
+dz -f $U >/dev/null
+eq  "a stray flag line outside Flags: single box keeps a host list" 1 "$(grep -c "· slots · $U" $S)"
+
+# Review round 5: slots under another heading work, like before 1.4.0.
+dz -l slots >/dev/null
+print -r -- $'---\nupdated: x\nstatus: active\n---\n## Vlaggen\n\n- **User flag:** \n- **Root flag:** \n' > $S
+dz -f $U >/dev/null; dz -f $R >/dev/null
+eq  "slots under '## Vlaggen' are filled" "$U|$R" "$(_dz_flags_get $S; print -r -- "$reply[1]|$reply[2]")"
+nok "no Flags section added" grep -q '^## Flags' $S
+eq  "and the root flag marks it done" done "$(_dz_status slots)"

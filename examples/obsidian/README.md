@@ -6,7 +6,7 @@ dropzone writes plain Markdown, so Obsidian works out of the box. This folder is
 
 | File | What it is |
 |---|---|
-| [`Box-note.md`](Box-note.md) | a box template with Obsidian callouts, foldable flags and `$TARGET_IP` placeholders |
+| [`Box-note.md`](Box-note.md) | a box template with Obsidian callouts, foldable flags, a To do checklist, Findings and `$TARGET_IP` placeholders |
 | [`Boxes-dashboard.md`](Boxes-dashboard.md) | a Dataview table of all boxes with status, IP and last update |
 
 ## Option 1: notes in the box folder
@@ -35,7 +35,7 @@ Screenshots from `dz -s` stay in `~/boxes/<box>/evidence/` and get a copy in `at
 
 ## An exam note
 
-dropzone ships an exam template too ([`templates/exam-note.md`](../../templates/exam-note.md)): Scope, Hosts with a *Via* column, Findings, Host notes and flags per host. Copy it next to your box template as `Templates/Exam-note.md`, and `dz -n <name> -ip <ip> --template exam` finds it there. Without a copy, `--template exam` uses the bundled one.
+dropzone ships an exam template too ([`templates/exam-note.md`](../../templates/exam-note.md)): Scope, Hosts with a *Via* column, To do, a Findings table, Host notes and flags per host. Copy it next to your box template as `Templates/Exam-note.md`, and `dz -n <name> -ip <ip> --template exam` finds it there. Without a copy, `--template exam` uses the bundled one.
 
 ## Where the vault lives
 
@@ -47,4 +47,6 @@ dropzone only needs the vault as a folder it can write to. It doesn't matter how
 
 ## Templates and updates
 
-Your template lives in your vault, so `dz --update` never touches it. The `## Timeline` and `## Flags` sections are what `dz -j`, `dz -s`, `dz -e` and `dz -f` write into; keep their headings, or set `timeline = <your heading>` in the config.
+Your template lives in your vault, so `dz --update` never touches it. dz writes into sections by heading (`## To do`, `## Findings`, `## Timeline`, `## Flags` and the tables): keep the ones you use, or set `timeline = <your heading>`. With `add_sections = no` dz never adds a section to your note, see [notes.md](../../docs/notes.md#templates).
+
+`dz --todo` writes plain `- [ ]` checkboxes, so ticking one off in Obsidian is the same as `dz --todo done <nr>`.

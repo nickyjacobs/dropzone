@@ -65,7 +65,8 @@ folders = scans loot exploits evidence
 | `vault` | empty | your vault, for `notes = vault` |
 | `vault_folder` | `Boxes` | note folder inside the vault |
 | `attachments` | `Boxes/attachments` | folder inside the vault for screenshot copies, one subfolder per box |
-| `timeline` | `Timeline` | heading of the timeline section (`## Timeline`), filled by `dz -j`, `-f` and `-s` |
+| `timeline` | `Timeline` | heading of the timeline section (`## Timeline`), filled by `dz -j`, `-s`, `-e`, `-f` and others |
+| `add_sections` | `yes` | add a missing Timeline, Flags, To do or Findings section to the note; `no` leaves your layout alone and names the missing heading |
 | `flag_goal` | `0` | flags to find in a box with more hosts; `dz -f` counts against it (`14` for the CPTS exam), `0` = no count |
 | `screenshot` | `auto` | tool for `dz -s`: `auto` (first found, Wayland tools first on Wayland), `xfce4-screenshooter`, `flameshot`, `gnome-screenshot`, `spectacle`, `grim` (with `slurp`) or `import` |
 
@@ -152,10 +153,12 @@ Check what is in use with `dz --config show`.
 | `~/.config/dropzone/templates/box-note.md` | your note template, `install.sh` copies it once |
 | `~/.config/dropzone/current` | last loaded box |
 | `~/.cache/dz-art-last` | last banner art, so the next start shows another one |
-| `~/boxes/<box>/.dropzone` | name, IP and hostnames of the box; read, never run |
+| `~/boxes/<box>/.dropzone` | name, IP, hostnames and extra hosts of the box; read, never run |
+| `~/boxes/<box>/.via`, `.deadline`, `.finding`, `.creds-current` | pivots, the deadline, the active finding and the active cred |
 | `~/boxes/<box>/creds` | creds, with `creds = yes` (chmod 600) |
-| `~/boxes/<box>/evidence/` | screenshots from `dz -s` |
+| `~/boxes/<box>/loot/users.txt`, `passwords.txt`, `hashes.txt` | from `dz -c --export` |
+| `~/boxes/<box>/evidence/` | screenshots from `dz -s`, output from `dz -e` |
 | `~/boxes/<box>/notes.md` | the box note, with `notes = folder` |
 | `<vault>/Boxes/attachments/<box>/` | copies of screenshots, with `notes = vault` |
-| `~/boxes/<box>/logs/` | `commands.log`, and recordings when `output = yes` |
+| `~/boxes/<box>/logs/` | `commands.log`, recordings when `output = yes`, `sysreptor.log` |
 | `/etc/hosts.dz.bak` | `/etc/hosts` as it was before dropzone last changed it |

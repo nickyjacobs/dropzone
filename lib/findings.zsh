@@ -1,0 +1,299 @@
+# findings: findings with their evidence, in the note's '## Findings' section.
+#
+#   dz --finding <title>       new finding F<n> on the active host, and make it the active one
+#   dz --finding               list them (▶ = active)
+#   dz --finding <nr>          make F<nr> active (2 or F2)
+#   dz --finding off           no active finding: evidence goes to the timeline again
+#   dz --finding done [nr]     mark it done (the active one without a number)
+#
+# Every finding is a '### F<n> · <title>' heading under '## Findings', with a line
+# '**Host:** <host> · **Status:** open' under it. While a finding is active, dz -s and dz -e
+# put their evidence under its heading and the timeline gets a short line that points to it.
+# A table under '## Findings' (the exam template) gets a row per finding; its columns are
+# found by name (#, Finding, Host, Evidence, Status) and kept up to date.
+# The active finding is ~/boxes/<box>/.finding (just its number), read, never sourced.
+#
+# Lines inside fenced code blocks (pasted output, a '# comment') are masked while dz looks
+# for headings and entries, so a '#' line in a code block never ends a finding.
+typeset -g _dz_pl_fence='
+  # A fence opens on a line with at most 3 spaces, maybe a list marker, then 3+ backticks
+  # (with no backtick after them: \`\`\`id\`\`\` is inline code) or 3+ tildes. It closes on the
+  # same character, at least as long. A fence that never closes masks nothing.
+  sub dzmask {
+    my @l = split /^/m, $_[0];
+    my ($f, $start, @out) = ("", 0);
+    for my $i (0 .. $#l) {
+      my $x = $l[$i];
+      if ($f eq "") {
+        if ($x =~ /^ {0,3}(?:[-*+]|\d+[.)])?[ \t]*(`{3,})([^`]*)$/ || $x =~ /^ {0,3}(?:[-*+]|\d+[.)])?[ \t]*(~{3,})/) {
+          ($f, $start) = ($1, $i);
+        }
+        push @out, $x;
+      } elsif ($x =~ /^[ \t]*(?:[-*+][ \t]+)?(`{3,}|~{3,})[ \t]*$/ && substr($1, 0, 1) eq substr($f, 0, 1) && length($1) >= length($f)) {
+        $f = ""; push @out, $x;
+      } else { push @out, "\x01$x" }
+    }
+    @out[$start .. $#out] = @l[$start .. $#l] if $f ne "";
+    join "", @out;
+  }
+  sub dzunmask { $_[0] =~ s/^\x01//mgr }
+'
+
+# Findings in note $1: reply=("<nr>\t<host>\t<status>\t<evidence count>\t<title>" ...).
+_dz_findings() {
+  local out=$(perl -0777 -ne "$_dz_pl_fence" -e '
+    $_ = dzmask($_);
+    if (/^## Findings[ \t]*\n(.*?)(?=^## |\z)/sm) {
+      my $sec = $1;
+      while ($sec =~ /^### F(\d+) · ([^\n]*?)[ \t]*\n(.*?)(?=^\#{1,3} |\z)/smg) {
+        my ($n, $t, $b) = ($1, $2, $3);
+        my ($h) = $b =~ /\*\*Host:\*\*[ \t]*([^\s·]+)/;
+        my ($s) = $b =~ /\*\*Status:\*\*[ \t]*(\w+)/;
+        $s = lc $s if defined $s;
+        my $c = () = $b =~ /^- \d{4}-\d\d-\d\d \d\d:\d\d · /mg;
+        print join("\t", $n, $h // "", $s // "open", $c, dzunmask($t)), "\n";
+      }
+    }' $1)
+  reply=(${(f)out})
+}
+
+# The active finding of the loaded box in $REPLY (its number); reply holds every finding
+# (_dz_findings). Fails when there is none, or when its heading is gone from note $1: then
+# the .finding file goes too, with a warning. $2 = peek: only look, change nothing.
+_dz_finding_active() {
+  local f=$DZ_ROOT/$BOX/.finding n
+  REPLY=''
+  [[ -f $f ]] || return 1
+  n=$(<$f)
+  [[ $n == <1-> ]] || { [[ -n $2 ]] || rm -f $f; return 1 }
+  _dz_findings $1
+  if [[ -z ${(M)reply:#$n$'\t'*} ]]; then
+    [[ -n $2 ]] && return 1
+    rm -f $f
+    _dz_warn W404 "F$n isn't in the note anymore, evidence goes to the timeline"
+    return 1
+  fi
+  REPLY=$n
+}
+
+# _dz_finding_new <note> <nr> <title> <host>: a row in the Findings table (when there is
+# one before the first finding) and the '### F<nr> · <title>' heading at the end.
+_dz_finding_new() {
+  N=$2 TITLE=$3 HOST=$4 perl -0777 -pi -e "$_dz_pl_fence" -e '
+    $_ = dzmask($_);
+    s{(^## Findings[ \t]*\n)(.*?)(?=^## |\z)}{
+      my ($head, $body) = ($1, $2);
+      my ($pre, $rest) = $body =~ /\A(.*?)(^### .*)?\z/sm;
+      $rest //= "";
+      (my $t = $ENV{TITLE}) =~ s/\|/\\|/g;
+      $pre =~ s{(\|[^\n]*\|)[ \t]*\n(\|[ :-]*-[ |:-]*\|?[ \t]*\n)((?:\|[^\n]*\n)*)}{
+        my ($th, $sep, $rows) = ($1, $2, $3);
+        my @c = map { s/^\s+|\s+$//gr } grep { length } split /(?<!\\)\|/, $th;
+        if (grep { /^(finding|title|issue)$/i } @c) {
+          my @v = map {
+            /^(#|nr|no|id)$/i ? "F$ENV{N}" : /^(finding|title|issue)$/i ? $t : /^host/i ? $ENV{HOST}
+              : /^status/i ? "open" : /^evidence/i ? "0" : ""
+          } @c;
+          $rows =~ s/^\|(?:\s*\|)+\s*\n//mg;
+          "$th\n$sep$rows|" . join("|", map { length ? " $_ " : " " } @v) . "|\n"
+        } else { "$th\n$sep$rows" }
+      }e;
+      $body = $pre . $rest;
+      $body =~ s/\A\s+//; $body =~ s/\s+\z//;
+      $head . "\n" . ($body eq "" ? "" : "$body\n\n")
+        . "### F$ENV{N} · $ENV{TITLE}\n\n**Host:** $ENV{HOST} · **Status:** open\n\n"
+    }sme;
+    $_ = dzunmask($_);
+  ' $1
+}
+
+# _dz_finding_row <note> <nr> <status|evidence> <value>: that cell in the Findings table
+# row of F<nr>. Value '+1' adds one to a number. Without a table or column: nothing.
+_dz_finding_row() {
+  N=$2 COL=$3 VAL=$4 perl -0777 -pi -e '
+    s{(^## Findings[ \t]*\n(?:(?!\#{1,3} ).*\n)*?)(\|[^\n]*)\n(\|[ :-]*-[ |:-]*\|?[ \t]*\n)((?:\|[^\n]*\n)*)}{
+      my ($pre, $th, $sep, $rows) = ($1, $2, $3, $4);
+      my @h = map { s/^\s+|\s+$//gr } split /(?<!\\)\|/, $th;
+      my ($in) = grep { $h[$_] =~ /^(#|nr|no|id)$/i } 0..$#h;
+      my ($ic) = grep { $h[$_] =~ /^\Q$ENV{COL}\E/i } 0..$#h;
+      if (defined $in && defined $ic) {
+        $rows = join "", map {
+          my @c = split /(?<!\\)\|/, $_, -1;
+          if ((($c[$in] // "") =~ s/^\s+|\s+$//gr) eq "F$ENV{N}") {
+            my $old = ($c[$ic] // "") =~ s/^\s+|\s+$//gr;
+            # +1 counts: an empty or numeric cell. Text of your own (a link) stays.
+            my $new = $ENV{VAL} ne "+1" ? $ENV{VAL} : $old eq "" ? 1 : $old =~ /^\d+$/ ? $old + 1 : undef;
+            $c[$ic] = " $new " if defined $new;
+            join("|", @c)
+          } else { $_ }
+        } split /^/m, $rows;
+      }
+      "$pre$th\n$sep$rows"
+    }me' $1
+}
+
+# _dz_finding_add <note> <nr> <entry>: '- <date> <time> · <entry>' at the end of F<nr>.
+# Extra lines in <entry> (an embed, a code block) stay under it.
+_dz_finding_add() {
+  local ts; strftime -s ts '%F %H:%M' $EPOCHSECONDS
+  N=$2 ENTRY="- $ts · $3" TODAY=${ts% *} perl -0777 -pi -e "$_dz_pl_fence" -e '
+    $_ = dzmask($_);
+    s{(^## Findings[ \t]*\n)(.*?)(?=^## |\z)}{
+      my ($fh, $sec) = ($1, $2);
+      $sec =~ s{(^### F$ENV{N} · [^\n]*\n)(.*?)(?=^\#{1,3} |\z)}{
+        my ($head, $body) = ($1, $2);
+        $body =~ s/\A\s+//; $body =~ s/\s+\z//;
+        # Right under an earlier entry, otherwise after a blank line (the Host line).
+        my $sep = $body eq "" ? "" : $body =~ /^- \d{4}-\d\d-\d\d /m ? "$body\n" : "$body\n\n";
+        $head . "\n" . $sep . "$ENV{ENTRY}\n\n"
+      }sme;
+      $fh . $sec
+    }sme;
+    s/^updated: .*$/updated: $ENV{TODAY}/m;
+    $_ = dzunmask($_);
+  ' $1 || return 1
+  _dz_finding_row $1 $2 evidence +1
+}
+
+# _dz_finding_status <note> <nr> <status>: the Status on the line under the heading, then
+# in the table. Fails, changing nothing, when F<nr> has no Status line under '## Findings'.
+_dz_finding_status() {
+  N=$2 S=$3 perl -0777 -pi -e "$_dz_pl_fence" -e '
+    $_ = dzmask($_);
+    our $hit = 0;
+    s{(^## Findings[ \t]*\n)(.*?)(?=^## |\z)}{
+      my ($fh, $sec) = ($1, $2);
+      $hit = $sec =~ s{(^### F$ENV{N} · [^\n]*\n(?:(?!\#{1,3} ).*\n)*?[^\n]*\*\*Status:\*\*[ \t]*)\w+}{$1$ENV{S}}m;
+      $fh . $sec
+    }sme;
+    $_ = dzunmask($_);
+    END { $? = $hit ? 0 : 1 }
+  ' $1 || return 1
+  _dz_finding_row $1 $2 status $3
+}
+
+# _dz_evidence_place <note> <label> <body>: under the active finding, with a short line in
+# the timeline, or straight into the timeline. $REPLY = 'F<n>' when it went to a finding.
+# Fails when it went nowhere (no timeline section and add_sections = no).
+_dz_evidence_place() {
+  local n
+  if _dz_finding_active $1; then
+    n=$REPLY
+    _dz_finding_add $1 $n "$2"$'\n'"$3" || return 1
+    _dz_timeline_add $1 "$2 → F$n"
+    REPLY=F$n
+    return 0
+  fi
+  REPLY=''
+  _dz_timeline_add -s $1 "$2"$'\n'"$3" && return 0
+  _dz_warn W403 "the note has no '## $DZ_TIMELINE' (add_sections = no) and no finding is active"
+  return 1
+}
+
+# dz --finding [title | <nr> | off | done [nr]]. $2 = new: the text is always a title (the menu form).
+_dz_finding() {
+  emulate -L zsh -o extended_glob
+  local text=${${${1//$'\n'/ }##[[:space:]]#}%%[[:space:]]#} new=$2 note l n f=$DZ_ROOT/$BOX/.finding
+  local -a w
+  _dz_note_need || return 1; note=$REPLY
+  local cur=''
+  if _dz_finding_active $note; then cur=$REPLY; else _dz_findings $note; fi
+  local -a all=("${reply[@]}")
+
+  # List
+  if [[ -z $text && -z $new ]]; then
+    # A block like dz -i: a row per finding, '▶' = the active one.
+    _dz_ui
+    local state='none active'; [[ -n $cur ]] && state="F$cur active"
+    _dz_rule; _dz_head Findings "$BOX · $state"
+    if (( ! $#all )); then
+      print "    no findings yet"
+      _dz_rule
+      print -r -- "${_ud}    dz --finding <title> starts one${_ur}"
+      return 0
+    fi
+    local mark row hw=0
+    for l in $all; do w=("${(@ps:\t:)l}"); (( $#w[2] > hw )) && hw=$#w[2]; done
+    for l in $all; do
+      w=("${(@ps:\t:)l}")
+      [[ $w[1] == $cur ]] && mark=▶ || mark=' '
+      printf -v row '%-4s %-*s  %-4s  %2d evidence  %s' F$w[1] $hw "${w[2]:--}" $w[3] $w[4] "$w[5]"
+      _dz_row "$mark" "$row" 1
+    done
+    _dz_rule
+    if [[ -n $cur ]]; then print -r -- "${_ud}    dz -s and dz -e go under F$cur · dz --finding off stops that${_ur}"
+    else print -r -- "${_ud}    dz --finding <nr> picks one${_ur}"
+    fi
+    return 0
+  fi
+
+  [[ -n $new && -z $text ]] && { print "• no title, no finding"; return 1 }
+  _dz_note_write_need $note || return 1
+  local lc=${(L)text}
+  [[ -n $new ]] && lc=''     # the menu form: always a new finding
+  # Stop
+  if [[ $lc == off ]]; then
+    rm -f $f
+    print -r -- "• no active finding${cur:+ (was F$cur)}, evidence goes to the timeline"
+    return 0
+  fi
+
+  # Done, or make one active: 'done [nr]', '<nr>', 'F<nr>'.
+  if [[ $lc == (done([[:space:]]##(f|)<1->|)|(f|)<1->) ]]; then
+    local mode=pick
+    [[ $lc == done* ]] && { mode=done; lc=${lc#done} }
+    n=${${lc//[[:space:]]/}#f}
+    [[ -n $n ]] && n=$(( 10#$n ))
+    [[ -z $n ]] && { n=$cur; [[ -n $n ]] || { _dz_err E417 "no active finding, give its number: dz --finding done <nr>"; return 1 } }
+    local hit=${(M)all:#$n$'\t'*}
+    [[ -n $hit ]] || { _dz_err E417 "no finding F$n in $BOX (dz --finding lists them)"; return 1 }
+    w=("${(@ps:\t:)hit}")
+    if [[ $mode == pick ]]; then
+      if [[ $w[3] == done ]]; then
+        _dz_finding_status $note $n open ||
+          { _dz_err E419 "couldn't set F$n to open: no '**Status:**' line under its heading"; return 1 }
+        print $n > $f
+        _dz_timeline_add $note "finding F$n open again: $w[5]"
+        print -r -- "• active: F$n · $w[5] (was done, open again)"
+      else
+        print $n > $f
+        print -r -- "• active: F$n · $w[5] (dz -s and dz -e go under it)"
+      fi
+      return 0
+    fi
+    [[ $w[3] == done ]] && { print -r -- "• F$n is already done"; return 0 }
+    _dz_finding_status $note $n done ||
+      { _dz_err E419 "couldn't set F$n to done: no '**Status:**' line under its heading"; return 1 }
+    [[ $n == $cur ]] && rm -f $f
+    _dz_timeline_add $note "finding F$n done: $w[5]"
+    if [[ $n == $cur ]]; then print -r -- "• F$n done: $w[5] (no active finding now)"
+    else print -r -- "• F$n done: $w[5]"
+    fi
+    return 0
+  fi
+
+  # New. One word that starts with '-' is an option typed by mistake (dz --finding -s).
+  [[ $text == -[^[:space:]]# ]] &&
+    { _dz_err E421 "'$text' looks like an option, not a title: one action per call (dz --finding <title>, then dz -s)"; return 1 }
+  _dz_section_need $note Findings "$DZ_TIMELINE" Flags || return 1
+  local host=${DZ_ACTIVE:-$BOX}
+  # The next number: after the highest in a heading, a table row or the timeline, so a
+  # finding removed by hand never gets its number reused.
+  n=$(perl -0777 -ne "$_dz_pl_fence" -e '
+    $_ = dzmask($_);
+    my $m = 0;
+    if (/^## Findings[ \t]*\n(.*?)(?=^## |\z)/sm) {
+      my $s = $1;
+      for ($s =~ /^(?:### |\|[ \t]*)F(\d+)\b/mg) { $m = $_ if $_ > $m }
+    }
+    # The timeline remembers findings removed by hand: "finding F2: ...".
+    for (/^- \d{4}-\d\d-\d\d \d\d:\d\d · finding F(\d+)\b/mg) { $m = $_ if $_ > $m }
+    print $m + 1' $note)
+  _dz_finding_new $note $n "$text" $host
+  _dz_findings $note
+  [[ -n ${(M)reply:#$n$'\t'*} ]] || { _dz_err E418 "couldn't add the finding to $note"; return 1 }
+  print $n > $f
+  _dz_timeline_add $note "finding F$n: $text ($host)"
+  print -r -- "• F$n · $text ($host)"
+  print "  dz -s and dz -e go under it now · dz --finding off stops that"
+}

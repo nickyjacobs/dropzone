@@ -4,6 +4,28 @@ All notable changes to dropzone. Format based on [Keep a Changelog](https://keep
 
 ## [Unreleased]
 
+## [1.4.0] - 2026-10-21
+
+### Added
+- **To-dos** (`dz --todo <text>`): your own checklist per host in `## To do`. `dz --todo` lists them, `dz --todo done <nr>` ticks one off (ticking it in Obsidian works too). dz never suggests to-dos.
+- **Findings** (`dz --finding <title>`): while a finding is active, `dz -s` and `dz -e` put their evidence under it. The exam template's Findings table gets a row with the evidence count and status. `--finding [nr|off|done]` switches, stops or closes one.
+- **What's next**: `dz -i` shows the open to-dos, the active finding and the last timeline lines. `dz -i <host>` shows one host with its flags, to-dos, findings and the creds that work there (never the secret).
+- `add_sections = no`: dz never adds a section to your note and names the missing heading instead.
+- *To do* and *Finding* in the menu (*Notes ›*); `## To do` and `## Findings` in the templates.
+- Error codes E413 to E421 and W403 to W405.
+
+### Changed
+- **The menu stays open** until you quit, with dz's answer under the menu. Actions that need the terminal (sudo, an editor) show their output first; Enter brings the menu back.
+- Menu forms ask in words ("What did you find") and say how to go back.
+- `dz --todo` and `dz --finding` print a block, like `dz -i`.
+- `docs/commands.md` is grouped by task and shorter.
+
+### Fixed
+- `dz -c 'corp\user'` printed the user without the backslash.
+- `dz -f` could add a second Flags section; flag lines in another style (`**User flag:**`) are now filled.
+- A note dz can't write (read-only vault) is reported up front (`E420`) and left untouched.
+- `cd x && cmd | dz -e` stored `cd x && cmd` as the command; now only `cmd`.
+
 ## [1.3.1] - 2026-10-20
 
 ### Fixed
@@ -114,7 +136,8 @@ First public release.
 - `examples/obsidian/`: a callout template, a Dataview dashboard and setup notes.
 - Tests, CI on Ubuntu and Kali, secret scan, link check, releases from this changelog.
 
-[Unreleased]: https://github.com/nickyjacobs/dropzone/compare/v1.3.1...HEAD
+[Unreleased]: https://github.com/nickyjacobs/dropzone/compare/v1.4.0...HEAD
+[1.4.0]: https://github.com/nickyjacobs/dropzone/compare/v1.3.1...v1.4.0
 [1.3.1]: https://github.com/nickyjacobs/dropzone/compare/v1.3.0...v1.3.1
 [1.3.0]: https://github.com/nickyjacobs/dropzone/compare/v1.2.0...v1.3.0
 [1.2.0]: https://github.com/nickyjacobs/dropzone/compare/v1.1.5...v1.2.0

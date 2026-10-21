@@ -2,7 +2,7 @@
 
 [README](../README.md) · [Guide](guide.md) · [Commands](commands.md) · **Notes** · [Config](config.md) · [Errors](errors.md) · [Testing](testing.md) · [Development](development.md)
 
-Every box gets a note: one Markdown file for what you find, your timeline, screenshots, command output, creds and flags. dropzone creates it from a template with `dz -n` and keeps writing into it with `dz -j`, `dz -s`, `dz -e`, `dz -f`, `dz -t` and `dz -c`.
+Every box gets a note: one Markdown file for what you find, your to-dos, findings, timeline, screenshots, command output, creds and flags. dropzone creates it from a template with `dz -n` and keeps writing into it while you work.
 
 - [Where the note goes](#where-the-note-goes)
 - [Templates](#templates)
@@ -22,6 +22,8 @@ Set with `notes` in the config (`dz --config`):
 
 `folder` needs nothing: plain Markdown that reads fine in any editor, renders on GitHub and works in Obsidian when you open `~/boxes` as a vault. Archived boxes take their note along to `~/boxes/_archive/<box>/`.
 
+Everything dz writes works in both: to-dos are GitHub-style checkboxes (`- [ ]`), findings are headings with a status line, tables are plain Markdown tables, and screenshots are relative links (`evidence/<file>.png`). Only `notes = vault` uses Obsidian's `![[...]]` embeds, and only the [Obsidian example template](../examples/obsidian/) uses callouts.
+
 ## Templates
 
 A new note is a copy of the template with these placeholders filled in:
@@ -40,19 +42,35 @@ dropzone takes the first template it finds:
 2. `~/.config/dropzone/templates/box-note.md`: your own copy, `install.sh` puts it there once
 3. [`templates/box-note.md`](../templates/box-note.md) that ships with dropzone
 
-`dz -n <name> -ip <ip> --template <name>` picks another template for that one box, for example `--template exam` for [`templates/exam-note.md`](../templates/exam-note.md): Scope, Hosts with a *Via* column, Ports with a Host column, Credentials, Findings, Host notes and a Flags section for flags per host. dz looks for `<name>.md`, `<name>-note.md` and `<Name>-note.md` in `~/.config/dropzone/templates/`, then next to your own `template`, then in dropzone's `templates/`. Copy the exam template into your vault and adjust it like any other template.
+`dz -n <name> -ip <ip> --template <name>` picks another template for that one box, for example `--template exam` for [`templates/exam-note.md`](../templates/exam-note.md): Scope, Hosts with a *Via* column, To do, Ports with a Host column, Credentials, a Findings table, Host notes and a Flags section for flags per host. dz looks for `<name>.md`, `<name>-note.md` and `<Name>-note.md` in `~/.config/dropzone/templates/`, then next to your own `template`, then in dropzone's `templates/`. Copy the exam template into your vault and adjust it like any other template.
 
-Edit your copy as much as you like: add sections, translate headings, drop what you don't use. Keep `## Timeline` and the flag lines if you want `dz -j`, `dz -s` and `dz -f` to write into them (or set `timeline` to your own heading). `status:` in the frontmatter is what `dz -v` shows.
+Edit your copy as much as you like: add sections, translate headings, drop what you don't use. dz finds its place by heading, so keep the ones you want it to write into:
+
+| Heading | Filled by |
+|---|---|
+| `## Hosts` (a table) | `dz -t` |
+| `## To do` | `dz --todo` |
+| `## Ports` (a table) | `dz -p` |
+| `## Credentials` (a table) | `dz -c` |
+| `## Findings` | `dz --finding`, and `dz -s` / `dz -e` while a finding is active |
+| `## Timeline` (config `timeline`) | `dz -j`, `dz -s`, `dz -e` and most other commands |
+| `## Flags` | `dz -f` |
+
+A missing Timeline, Flags, To do or Findings section is added when dz needs it. With `add_sections = no` in the config it never touches your layout: it tells you which heading is missing (`E413`, or `W403` for a timeline line). Tables are matched by column name, so your own columns and order work. `status:` in the frontmatter is what `dz -v` shows.
 
 ## What dropzone writes into the note
 
 | Command | Where in the note |
 |---|---|
 | `dz -n` / `dz -ip` | the IP everywhere (exact match), `updated:` |
-| `dz -j <text>` | `- <date> <time> · <text>` at the end of `## Timeline`; the section is added before `## Flags` when it's missing |
+| `dz -j <text>` | `- <date> <time> · <text>` at the end of `## Timeline` |
 | `dz -s [caption]` | a timeline line with the screenshot embedded under it |
 | `cmd \| dz -e [caption]` | a timeline line with the first 30 lines of output as a code block under it |
-| `dz -f <flag>` | `- **User flag:** <flag>` / `- **Root flag:** <flag>`, or an Obsidian callout (see below); a `## Flags` section is added when it's missing |
+| `dz -s` / `dz -e` with an active finding | the same under the finding's heading, and a short timeline line `→ F1` |
+| `dz --todo <text>` | `- [ ] <host> · <text>` at the end of `## To do`; `--todo done <nr>` makes it `- [x]` and adds a timeline line |
+| `dz --finding <title>` | `### F1 · <title>` with `**Host:** <host> · **Status:** open` at the end of `## Findings`, a row in a Findings table (columns #, Finding, Host, Evidence, Status), and a timeline line |
+| `dz --finding done` | `**Status:** done`, also in the table |
+| `dz -f <flag>` | `- **User flag:** <flag>` / `- **Root flag:** <flag>`, or an Obsidian callout (see below) |
 | `dz -f [host] <flag>` on a box with more hosts, or a note without user/root slots | `- <date> <time> · <host> · <flag>` at the end of `## Flags`, and a timeline line with the count |
 | `dz -c user:secret` | a row in the first table under `## Credentials` |
 | `dz -c <nr> --valid <hosts>` | the *Valid on* column of that cred's row |

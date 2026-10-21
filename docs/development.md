@@ -20,7 +20,11 @@
 | `lib/tools.zsh` | `dz serve` and `dz -cp` |
 | `lib/hosts.zsh` | more hosts in a box (`dz -t`) |
 | `lib/ui.zsh` | the block layout of `--help`, `dz -i` and `dz --config show/check` |
-| `lib/notes.zsh` | flags, timeline, screenshots and command output in the note, search (`dz -f`, `-j`, `-s`, `-e`, `-g`) |
+| `scripts/` | `release.sh` and `errors-doc.zsh` (makes `docs/errors.md`) |
+| `assets/` | banner, GIFs and the VHS tapes they're made from |
+| `lib/notes.zsh` | flags, timeline, screenshots and command output in the note, search (`dz -f`, `-j`, `-s`, `-e`, `-g`); `_dz_section_ensure` adds a missing section (`add_sections`) |
+| `lib/todo.zsh` | to-dos in the note (`dz --todo`) |
+| `lib/findings.zsh` | findings, and where `dz -s` / `dz -e` put their evidence (`dz --finding`) |
 | `lib/clock.zsh` | the deadline of a box (`dz --deadline`) |
 | `lib/sysreptor.zsh` | evidence to SysReptor with reptor, opt-in |
 | `lib/status.zsh` | box status, done, archive, open the note |
@@ -37,7 +41,7 @@ Conventions:
 - Files dropzone writes are read, never sourced: the config, `.dropzone` and `creds`. Validate what you read.
 - Box names always go through `_dz_valid_name`, IPs through `_dz_valid_ip`, hostnames through `_dz_valid_host`.
 - Errors to stderr with a code: `_dz_err E201 "no box loaded"` (stops: `return 1` after it), `_dz_warn W202 "..."` (carries on). Output to stdout. Colour only through `_dz_color`.
-- Overviews you read (help, info, config) use the blocks from `lib/ui.zsh` (`_dz_rule`, `_dz_head`, `_dz_row`); lists you scan or pipe (`dz -v`, `dz -t`, `dz -c`) stay one line per item.
+- Overviews you read (help, info, config) use the blocks from `lib/ui.zsh` (`_dz_rule`, `_dz_head`, `_dz_row`); lists you scan or pipe (`dz -v`, `dz -t`, `dz -c`) stay one line per item. `dz --todo` and `dz --finding` are short overviews you read, so they use the blocks too, with one row per item.
 - All text is English.
 - Nothing personal in defaults: everything about the user's setup comes from their config.
 - User files live outside the repo (`~/.config/dropzone/`, `~/boxes/`, the vault), so an update can never touch them. Never write into `$_dz_repo` at runtime.
