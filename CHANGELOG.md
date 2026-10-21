@@ -4,6 +4,8 @@ All notable changes to dropzone. Format based on [Keep a Changelog](https://keep
 
 ## [Unreleased]
 
+## [1.4.0] - 2026-10-21
+
 ### Added
 - **To-dos** (`dz --todo <text>`): your own checklist per host in `## To do`. `dz --todo` lists them, `dz --todo done <nr>` ticks one off (ticking it in Obsidian works too). dz never suggests to-dos.
 - **Findings** (`dz --finding <title>`): while a finding is active, `dz -s` and `dz -e` put their evidence under it. The exam template's Findings table gets a row with the evidence count and status. `--finding [nr|off|done]` switches, stops or closes one.
@@ -133,7 +135,8 @@ First public release.
 - `examples/obsidian/`: a callout template, a Dataview dashboard and setup notes.
 - Tests, CI on Ubuntu and Kali, secret scan, link check, releases from this changelog.
 
-[Unreleased]: https://github.com/nickyjacobs/dropzone/compare/v1.3.1...HEAD
+[Unreleased]: https://github.com/nickyjacobs/dropzone/compare/v1.4.0...HEAD
+[1.4.0]: https://github.com/nickyjacobs/dropzone/compare/v1.3.1...v1.4.0
 [1.3.1]: https://github.com/nickyjacobs/dropzone/compare/v1.3.0...v1.3.1
 [1.3.0]: https://github.com/nickyjacobs/dropzone/compare/v1.2.0...v1.3.0
 [1.2.0]: https://github.com/nickyjacobs/dropzone/compare/v1.1.5...v1.2.0
