@@ -199,7 +199,7 @@ In the note each finding is a heading with a status line, and its evidence below
 ```
 
 - The timeline gets a short line that points to it: `screenshot: relay setup → F1`.
-- A table under `## Findings` (the exam template) gets a row: `#`, `Finding`, `Host`, `Evidence` (counted) and `Status` are found by name. Severity and the rest are yours.
+- A table under `## Findings` (the exam template) gets a row: `#`, `Finding`, `Host`, `Evidence` (counted, unless you put your own text there) and `Status` are found by name. Severity and the rest are yours.
 - Removed a finding's heading by hand? dz warns (`W404`) and evidence goes to the timeline. A number is never reused. The active one is in `~/boxes/<box>/.finding`.
 
 ### Search

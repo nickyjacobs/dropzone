@@ -16,13 +16,25 @@
 # Lines inside fenced code blocks (pasted output, a '# comment') are masked while dz looks
 # for headings and entries, so a '#' line in a code block never ends a finding.
 typeset -g _dz_pl_fence='
+  # A fence opens on a line with at most 3 spaces, maybe a list marker, then 3+ backticks
+  # (with no backtick after them: \`\`\`id\`\`\` is inline code) or 3+ tildes. It closes on the
+  # same character, at least as long. A fence that never closes masks nothing.
   sub dzmask {
-    my $f = "";
-    join "", map {
-      if ($f eq "") { $f = $1 if /^[ \t]*(`{3,}|~{3,})/; $_ }
-      elsif (/^[ \t]*(`{3,}|~{3,})[ \t]*$/ && substr($1, 0, 1) eq substr($f, 0, 1) && length($1) >= length($f)) { $f = ""; $_ }
-      else { "\x01$_" }
-    } split /^/m, $_[0];
+    my @l = split /^/m, $_[0];
+    my ($f, $start, @out) = ("", 0);
+    for my $i (0 .. $#l) {
+      my $x = $l[$i];
+      if ($f eq "") {
+        if ($x =~ /^ {0,3}(?:[-*+]|\d+[.)])?[ \t]*(`{3,})([^`]*)$/ || $x =~ /^ {0,3}(?:[-*+]|\d+[.)])?[ \t]*(~{3,})/) {
+          ($f, $start) = ($1, $i);
+        }
+        push @out, $x;
+      } elsif ($x =~ /^[ \t]*(?:[-*+][ \t]+)?(`{3,}|~{3,})[ \t]*$/ && substr($1, 0, 1) eq substr($f, 0, 1) && length($1) >= length($f)) {
+        $f = ""; push @out, $x;
+      } else { push @out, "\x01$x" }
+    }
+    @out[$start .. $#out] = @l[$start .. $#l] if $f ne "";
+    join "", @out;
   }
   sub dzunmask { $_[0] =~ s/^\x01//mgr }
 '
@@ -109,8 +121,9 @@ _dz_finding_row() {
           my @c = split /(?<!\\)\|/, $_, -1;
           if ((($c[$in] // "") =~ s/^\s+|\s+$//gr) eq "F$ENV{N}") {
             my $old = ($c[$ic] // "") =~ s/^\s+|\s+$//gr;
-            my $new = $ENV{VAL} eq "+1" ? ($old =~ /^\d+$/ ? $old + 1 : 1) : $ENV{VAL};
-            $c[$ic] = " $new ";
+            # +1 counts: an empty or numeric cell. Text of your own (a link) stays.
+            my $new = $ENV{VAL} ne "+1" ? $ENV{VAL} : $old eq "" ? 1 : $old =~ /^\d+$/ ? $old + 1 : undef;
+            $c[$ic] = " $new " if defined $new;
             join("|", @c)
           } else { $_ }
         } split /^/m, $rows;

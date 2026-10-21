@@ -219,3 +219,22 @@ dz --finding off >/dev/null
 DZ_ADD_SECTIONS=no; perl -0pi -e 's/^## Timeline\n//m' $Q
 has "-e: W403 with the heading" "W403" "$(print x | dz -e nowhere 2>&1)"
 DZ_ADD_SECTIONS=yes
+
+# Review round 6: fences in a list item, inline triple backticks, an Evidence cell of your own.
+dz -n r6 -ip 10.10.74.1 --template $_dz_repo/templates/box-note.md >/dev/null
+W=~/vault/Boxes/r6.md
+dz --finding One >/dev/null
+perl -0pi -e 's/(\*\*Status:\*\* open\n)/$1\nRepro:\n\n- ```bash\n  smbclient -L x -N\n  ```\n\n```id``` returned uid=0\n/' $W
+print 'Sharename' | dz -e shares >/dev/null
+has "list-item fence: evidence under F1, before the timeline" "output: shares" "$(sed -n '/^### F1/,/^## Timeline/p' $W)"
+dz --finding Two >/dev/null
+eq  "inline backticks: F2 lands before the timeline" "### F2 · Two|## Timeline" "$(grep -E '^(### F2|## Timeline)' $W | paste -sd'|' -)"
+perl -0pi -e 's/\*\*Status:\*\* open\n\n(?=- )/**Status:** open\n\n```\nnever closed\n/' $W
+dz --finding 2 >/dev/null; print x | dz -e unclosed >/dev/null
+has "an unclosed fence masks nothing" "output: unclosed" "$(sed -n '/^### F2/,/^## Timeline/p' $W)"
+dz -n r6b -ip 10.10.74.2 --template exam >/dev/null
+E=~/vault/Boxes/r6b.md
+dz --finding Kerberoast >/dev/null
+perl -pi -e 's/^\| F1 \| Kerberoast \| r6b \| \| 0 \| open \|$/| F1 | Kerberoast | r6b | High | [[kerb.png]] | open |/' $E
+print hash | dz -e roast >/dev/null
+ok  "an Evidence cell with your own text stays" grep -qF '| F1 | Kerberoast | r6b | High | [[kerb.png]] | open |' $E
