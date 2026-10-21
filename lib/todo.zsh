@@ -67,11 +67,10 @@ _dz_todo() {
   [[ -n $new && -z $text ]] && { print "• no text, no to-do"; return 1 }
   if [[ -z $new ]] && [[ -z $text || ${(L)text} == --all ]]; then
     _dz_todo_items $note "$hosts"
-    local -i open=0 done=0 hw=0
+    local -i open=0 done=0
     for l in $reply; do
       w=("${(@ps:\t:)l}")
       if [[ $w[2] == x ]]; then (( done++ )); else (( open++ )); fi
-      (( $#w[3] > hw )) && hw=$#w[3]
     done
     # A block like dz -i: a row per to-do, '✓' for a done one (--all).
     _dz_ui
@@ -88,7 +87,7 @@ _dz_todo() {
       w=("${(@ps:\t:)l}")
       [[ $w[2] == x ]] && { [[ -n $text ]] || continue; mark=✓ } || mark=' '   # --all
       printf -v row '%-4s %s' "#$w[1]" "${w[3]:+$w[3] · }$w[4]"
-      print -r -- "    ${_uk}${mark}${_ur} $row"
+      _dz_row "$mark" "$row" 1
     done
     _dz_rule
     print -r -- "${_ud}    dz --todo done <nr> ticks one off${_ur}"

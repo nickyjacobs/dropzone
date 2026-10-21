@@ -89,7 +89,7 @@ _dz_draw() {
     rule=${(l:52::─:)${:-}}
     _dz_sp $#_dz_title
     buf+=$REPLY$'\e[1;38;5;118m'$_dz_title$'\e[0m\e[K\n'$fm$'\e[38;5;28m'$rule$'\e[0m\e[K\n'
-    line='Enter on an empty field: back to the menu'
+    line=${_dz_fhint:-'Enter on an empty field: back to the menu'}
     _dz_sp $#line
     buf+=$REPLY$'\e[38;5;246m'$line$'\e[0m\e[K\n'
     _dz_formrow=$(( ${#logo} + 10 ))
@@ -133,19 +133,20 @@ _dz_draw() {
     done
     (( last < $#_dz_items )) && buf+=$mp$'  \e[38;5;246m  ↓ '$(( $#_dz_items - last ))$' more\e[0m\e[K\n'
     # What the last action said, under the menu (errors red, warnings orange).
-    if (( $#_dz_msg )); then
+    # What the last action said, under the menu: stderr first (an error red, a warning
+    # orange), then stdout in green. At most 4 lines.
+    local m; local -a msg=() mcol=()
+    for m in $_dz_msgerr; do msg+=$m; [[ $m == *'[E'<->']'* ]] && mcol+=196 || mcol+=214; done
+    for m in $_dz_msg; do msg+=$m; mcol+=118; done
+    if (( $#msg )); then
       buf+=$'\e[K\n'
-      local m; local -i mw=$(( COLUMNS - 4 ))
-      for m in "${(@)_dz_msg[1,4]}"; do
-        case $m in
-          'dz ['*) col=196 ;;
-          '• ['*)  col=214 ;;
-          *)       col=118 ;;
-        esac
+      local -i mw=$(( COLUMNS - 4 ))
+      for (( i = 1; i <= $#msg && i <= 4; i++ )); do
+        m=$msg[i]
         _dz_sp $(( ${#m} > mw ? mw : ${#m} ))
-        buf+=$REPLY$'\e[38;5;'$col'm'${m[1,mw]}$'\e[0m\e[K\n'
+        buf+=$REPLY$'\e[38;5;'$mcol[i]'m'${m[1,mw]}$'\e[0m\e[K\n'
       done
-      (( $#_dz_msg > 4 )) && { _dz_sp 20; buf+=$REPLY$'\e[38;5;246m(+'$(( $#_dz_msg - 4 ))$' more lines)\e[0m\e[K\n' }
+      (( $#msg > 4 )) && { _dz_sp 20; buf+=$REPLY$'\e[38;5;246m(+'$(( $#msg - 4 ))$' more lines)\e[0m\e[K\n' }
     fi
     [[ $_dz_mode == main ]] && line='↑↓ move · Enter open · 1-9 jump · q quit' ||
       line='↑↓ move · Enter open · 1-9 jump · q back'
@@ -294,14 +295,14 @@ _dz_menu_sub() {
   local cur
   case $_dz_purpose:$_dz_sel in
     target:1)
-      _dz_mode=form _dz_title="New IP for $BOX"
+      _dz_mode=form _dz_fhint='' _dz_title="New IP for $BOX"
       _dz_draw $f
       _dz_box_read $DZ_ROOT/$BOX && ip=$reply[2]       # the main host, not the active one
       cur=$ip
       _dz_ask ip 'New IP' && [[ -n $ip && $ip != $cur ]] && { action=ip; return 0 } ;;
     target:2) _dz_set_hosts; return 1 ;;
     target:3)
-      _dz_mode=form _dz_title="Add a host to $BOX (like dc01)"
+      _dz_mode=form _dz_fhint='An empty host name goes back (hostnames are optional)' _dz_title="Add a host to $BOX (like dc01)"
       _dz_draw $f
       name='' ip='' host=''
       _dz_ask name 'Host name' && [[ -n $name ]] &&
@@ -309,33 +310,33 @@ _dz_menu_sub() {
         _dz_ask host 'Hostnames (opt.)' && { action=addhost; return 0 } ;;
     target:4)
       _dz_clock_read $BOX && { _dz_clock_text $reply[1] $reply[2]; cur=$REPLY } || cur='none yet'
-      _dz_mode=form _dz_title="Deadline for $BOX: $cur"
+      _dz_mode=form _dz_fhint='' _dz_title="Deadline for $BOX: $cur"
       _dz_draw $f
       text=''
       _dz_ask text '10d, date or none' && [[ -n $text ]] && { action=deadline; return 0 } ;;
     notes:1) action=open; return 0 ;;
     notes:2)
-      _dz_mode=form _dz_title="Timeline entry for $BOX"
+      _dz_mode=form _dz_fhint='' _dz_title="Timeline entry for $BOX"
       _dz_draw $f
       text=''
       _dz_ask text 'What happened' && [[ -n $text ]] && { action=journal; return 0 } ;;
     notes:3)
-      _dz_mode=form _dz_title="Flag for ${DZ_ACTIVE:-$BOX}"
+      _dz_mode=form _dz_fhint='' _dz_title="Flag for ${DZ_ACTIVE:-$BOX}"
       _dz_draw $f
       text=''
       _dz_ask text 'Flag' && [[ -n $text ]] && { action=flag; return 0 } ;;
     notes:4)
-      _dz_mode=form _dz_title="New to-do for ${DZ_ACTIVE:-$BOX}"
+      _dz_mode=form _dz_fhint='' _dz_title="New to-do for ${DZ_ACTIVE:-$BOX}"
       _dz_draw $f
       text=''
       _dz_ask text 'What to try next' && [[ -n $text ]] && { action=todo; return 0 } ;;
     notes:5)
-      _dz_mode=form _dz_title="New finding on ${DZ_ACTIVE:-$BOX} (-s and -e go under it)"
+      _dz_mode=form _dz_fhint='' _dz_title="New finding on ${DZ_ACTIVE:-$BOX} (-s and -e go under it)"
       _dz_draw $f
       text=''
       _dz_ask text 'What did you find' && [[ -n $text ]] && { action=finding; return 0 } ;;
     notes:6)
-      _dz_mode=form _dz_title="Creds for $BOX (the secret doesn't show)"
+      _dz_mode=form _dz_fhint='An empty user goes back' _dz_title="Creds for $BOX (the secret doesn't show)"
       _dz_draw $f
       name='' secret=''
       _dz_ask name 'User' && [[ -n $name ]] &&
@@ -345,6 +346,23 @@ _dz_menu_sub() {
   return 1
 }
 
+# _dz_menu_screen on|off: the menu's own screen (alternate screen, no echo, keys one by
+# one), or back to your terminal. Tracks the state in _dz_alt, so leaving twice can't
+# move the cursor back over what an action printed.
+_dz_menu_screen() {
+  if [[ $1 == on ]]; then
+    (( _dz_alt )) && return 0
+    stty -echo -icanon
+    print -n $'\e[?1049h\e[?25l\e[2J'
+    _dz_alt=1
+  else
+    (( _dz_alt )) || return 0
+    print -n $'\e[0m\e[?25h\e[?1049l'
+    stty $stty_save
+    _dz_alt=0
+  fi
+}
+
 # The interactive menu (dz without arguments).
 _dz_menu() {
   emulate -L zsh
@@ -352,8 +370,11 @@ _dz_menu() {
 
   local -i f=0 tick=0
   local key rest action='' name ip host text secret
-  local -a _dz_items _dz_boxnames _dz_reveal _dz_off _dz_msg
-  local back_purpose back_sel out
+  local -a _dz_items _dz_boxnames _dz_reveal _dz_off _dz_msg _dz_msgerr
+  local back_purpose back_sel _dz_fhint
+  local -i _dz_alt=0
+  # One file per menu session for what an action prints (stdout, then stderr).
+  local out=$(mktemp 2>/dev/null) err=$(mktemp 2>/dev/null)
   local stty_save=$(stty -g)
   local _dz_mode _dz_title _dz_tun _dz_purpose conf rmnote
   local -i _dz_sel=1 _dz_formrow _dz_fpad c pick last=0
@@ -378,8 +399,7 @@ _dz_menu() {
   _dz_tun=$(_dz_attacker_ip)
   _dz_set_main
 
-  stty -echo -icanon
-  print -n $'\e[?1049h\e[?25l\e[2J'
+  _dz_menu_screen on
   {
    # The menu stays open: after an action it comes back, until you quit.
    while true; do
@@ -396,7 +416,7 @@ _dz_menu() {
         $'\e[A'|$'\eOA') (( _dz_sel = _dz_sel > 1 ? _dz_sel - 1 : $#_dz_items )) ;;
         $'\e[B'|$'\eOB') (( _dz_sel = _dz_sel < $#_dz_items ? _dz_sel + 1 : 1 )) ;;
         q|$'\e')
-          _dz_msg=()
+          _dz_msg=() _dz_msgerr=()
           case $_dz_mode:$_dz_purpose in
             boxes:host)   _dz_set_sub target 2; continue ;;
             boxes:delete) _dz_sel=6; _dz_set_main; continue ;;
@@ -406,6 +426,7 @@ _dz_menu() {
           esac
           break ;;
         [1-9]|$'\n'|$'\r'|' ')
+          _dz_msg=() _dz_msgerr=()     # the answer belongs to the last action only
           if [[ $key == [1-9] ]]; then
             (( key <= $#_dz_items )) || continue
             _dz_sel=$key
@@ -416,7 +437,7 @@ _dz_menu() {
             name=$_dz_boxnames[_dz_sel]
             [[ $_dz_purpose == load ]] && { action=load; break }
             [[ $_dz_purpose == host ]] && { action=host; break }
-            _dz_mode=form _dz_title="Remove box $name (goes to the trash)"
+            _dz_mode=form _dz_fhint='Esc: back to the menu' _dz_title="Remove box $name (goes to the trash)"
             _dz_draw $f
             conf='' rmnote=''
             _dz_choose conf 'Sure?' n && [[ $conf == y ]] &&
@@ -430,7 +451,7 @@ _dz_menu() {
           fi
           case $_dz_sel in
             1)
-              _dz_mode=form _dz_title='New box'
+              _dz_mode=form _dz_fhint='An empty box name goes back (hostnames are optional)' _dz_title='New box'
               _dz_draw $f
               name='' ip='' host=''
               _dz_ask name 'Box name' && [[ -n $name ]] &&
@@ -442,7 +463,7 @@ _dz_menu() {
             3) _dz_set_sub target ;;
             4) _dz_set_sub notes ;;
             5)
-              _dz_mode=form _dz_title="Mark $BOX done (status: done)"
+              _dz_mode=form _dz_fhint='Esc: back to the menu' _dz_title="Mark $BOX done (status: done)"
               _dz_draw $f
               conf=''
               _dz_choose conf 'Archive it too?' n && { [[ $conf == y ]] && action=archive || action=done; break }
@@ -460,38 +481,33 @@ _dz_menu() {
     [[ $_dz_purpose == (notes|target) ]] && back_purpose=$_dz_purpose
     [[ $_dz_purpose == host ]] && back_purpose=target back_sel=2
 
-    if [[ $action == (new|ip|addhost|load|rm|open|archive) ]]; then
+    if [[ $action == (new|ip|addhost|load|rm|open|archive) || -z $out || -z $err ]]; then
       # These may ask for sudo (/etc/hosts), a confirmation or open an editor: they get
       # the normal screen, then Enter brings the menu back.
-      print -n $'\e[0m\e[?25h\e[?1049l'
-      stty $stty_save
+      _dz_menu_screen off
       _dz_menu_do
       print -rn -- $'\n\e[38;5;246mEnter: back to the menu · q: quit\e[0m '
       read -s -k 1 key; print
       [[ $key == [qQ] ]] && break
-      stty -echo -icanon
-      print -n $'\e[?1049h\e[?25l\e[2J'
-      _dz_msg=()
+      _dz_menu_screen on
+      _dz_msg=() _dz_msgerr=()
       _dz_tun=$(_dz_attacker_ip)
       _dz_sel=1; _dz_set_main
       continue
     fi
     # The rest runs right here; what it prints shows under the menu.
-    out=$(mktemp) || out=''
-    if [[ -n $out ]]; then
-      _dz_menu_do > $out 2>&1
-      _dz_msg=("${(@f)$(<$out)}"); rm -f $out
-    else
-      _dz_menu_do >/dev/null 2>&1; _dz_msg=('done (no temp file for its output)')
-    fi
-    _dz_msg=(${_dz_msg:#})
+    # (Without temp files the action took the branch above, on the normal screen.)
+    _dz_menu_do > $out 2> $err
+    _dz_msg=("${(@f)$(<$out)}")
+    _dz_msgerr=("${(@f)$(<$err)}")
+    _dz_msg=(${_dz_msg:#}) _dz_msgerr=(${_dz_msgerr:#})
     if [[ -n $back_purpose && -n $BOX ]]; then _dz_set_sub $back_purpose $back_sel
     else _dz_sel=1; _dz_set_main
     fi
    done
   } always {
-    print -n $'\e[0m\e[?25h\e[?1049l'
-    stty $stty_save
+    _dz_menu_screen off
+    rm -f $out $err
   }
 }
 

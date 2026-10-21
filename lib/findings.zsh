@@ -218,7 +218,7 @@ _dz_finding() {
       w=("${(@ps:\t:)l}")
       [[ $w[1] == $cur ]] && mark=▶ || mark=' '
       printf -v row '%-4s %-*s  %-4s  %2d evidence  %s' F$w[1] $hw "${w[2]:--}" $w[3] $w[4] "$w[5]"
-      print -r -- "  ${_ug}${mark}${_ur} $row"
+      _dz_row "$mark" "$row" 1
     done
     _dz_rule
     if [[ -n $cur ]]; then print -r -- "${_ud}    dz -s and dz -e go under F$cur · dz --finding off stops that${_ur}"
