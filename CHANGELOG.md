@@ -5,24 +5,23 @@ All notable changes to dropzone. Format based on [Keep a Changelog](https://keep
 ## [Unreleased]
 
 ### Added
-- **To-dos** (`dz --todo <text>`): your own checklist in the note's `## To do` section, tagged with the active host in a box with more hosts. `dz --todo` lists the open ones, `--todo --all` the done ones too, `dz --todo done <nr>` ticks one off (ticking it in Obsidian works as well). dz never suggests to-dos itself.
-- **Findings** (`dz --finding <title>`): a `### F1 · <title>` heading under `## Findings` with its host and status. While a finding is active, `dz -s` and `dz -e` put their evidence under it and the timeline points to it. A Findings table (the exam template) gets a row with the evidence count and status. `dz --finding` lists them, `--finding <nr>` switches, `--finding off` stops, `--finding done [nr]` closes one.
-- **What's next in `dz -i`**: a *Next* block with the open to-dos, the active finding and the last timeline lines.
-- **One host** (`dz -i <host>`): its IP, hostnames, pivot, flags, to-dos, findings and the creds that work there (user and number, never the secret).
-- `add_sections = no` in the config: dz never adds a Timeline, Flags, To do or Findings section to your note, it tells you which heading is missing (`E413`, `W403`).
-- Menu: *Notes ›* has *To do* and *Finding*.
-- `dz --todo` and `dz --finding` show their list as a block, like `dz -i`.
-- A to-do or finding title that is just an option (`dz --finding -s`) is refused (`E421`).
-- The templates (`box-note.md`, `exam-note.md`, the Obsidian example) have a `## To do` section; the box templates also `## Findings`.
+- **To-dos** (`dz --todo <text>`): your own checklist per host in `## To do`. `dz --todo` lists them, `dz --todo done <nr>` ticks one off (ticking it in Obsidian works too). dz never suggests to-dos.
+- **Findings** (`dz --finding <title>`): while a finding is active, `dz -s` and `dz -e` put their evidence under it. The exam template's Findings table gets a row with the evidence count and status. `--finding [nr|off|done]` switches, stops or closes one.
+- **What's next**: `dz -i` shows the open to-dos, the active finding and the last timeline lines. `dz -i <host>` shows one host with its flags, to-dos, findings and the creds that work there (never the secret).
+- `add_sections = no`: dz never adds a section to your note and names the missing heading instead.
+- *To do* and *Finding* in the menu (*Notes ›*); `## To do` and `## Findings` in the templates.
+- Error codes E413 to E421 and W403 to W405.
 
 ### Changed
-- **The menu stays open** after an action until you quit: you're back in the submenu you came from, with dz's answer under the menu. Actions that may need the terminal (sudo for `/etc/hosts`, an editor) show their output first, then Enter brings the menu back. Forms ask in words ("What to try next", "What did you find") and say that an empty field goes back.
+- **The menu stays open** until you quit, with dz's answer under the menu. Actions that need the terminal (sudo, an editor) show their output first; Enter brings the menu back.
+- Menu forms ask in words ("What did you find") and say how to go back.
+- `dz --todo` and `dz --finding` print a block, like `dz -i`.
+- `docs/commands.md` is grouped by task and shorter.
 
 ### Fixed
-- `dz -c 'corp\user'` printed the user without the backslash (`corpuser`); the stored cred was right.
-- `dz -f root <flag>` on a note with a `## Flags` section but no user/root lines added a second Flags section.
-- `dz -f` on a note with flag lines in another style (`**User flag:**`, `- **User flag**:`), filled or empty, turns them into dz's lines instead of adding a second Flags section.
-- A note dz can't write (a read-only vault) is reported up front (`E420`, or `W405` for a side timeline line) and left unchanged, instead of half-changed with a misleading error.
+- `dz -c 'corp\user'` printed the user without the backslash.
+- `dz -f` could add a second Flags section; flag lines in another style (`**User flag:**`) are now filled.
+- A note dz can't write (read-only vault) is reported up front (`E420`) and left untouched.
 
 ## [1.3.1] - 2026-10-20
 
