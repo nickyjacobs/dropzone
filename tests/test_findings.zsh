@@ -164,3 +164,25 @@ nok "done without a Status line fails" dz --finding done
 has "with E419" "E419" "$(dz --finding done 2>&1)"
 has "the menu form makes '2' a title" "· 2 (rev)" "$(_dz_finding 2 new)"
 has "and 'off' too" "· off (rev)" "$(_dz_finding off new)"
+
+# Review round 3.
+dz -n r3 -ip 10.10.70.1 --template exam >/dev/null
+X=~/vault/Boxes/r3.md
+dz --finding One >/dev/null; dz --finding Two >/dev/null; dz --finding 1 >/dev/null
+perl -0pi -e 's/(### F2 · Two\n\n)\*\*Host:\*\*[^\n]*\n/$1/' $X
+nok "done without a Status line fails" dz --finding done 2
+ok  "and the table row is untouched" grep -q '^| F2 | Two | r3 | | 0 | open |$' $X
+eq  "the active finding stays" 1 "$(<~/boxes/r3/.finding)"
+perl -pi -e 's/^(\*\*Host:\*\* r3 · \*\*Status:\*\*) open/$1 Done/' $X
+has "Done by hand reads as done" "already done" "$(dz --finding done 1)"
+has "a copy of a heading outside Findings is left alone" "F3 done" "$(print -r -- $'\n## Notes\n\n### F3 · Copy\n\n**Host:** r3 · **Status:** open\n' >> $X; dz --finding Three >/dev/null; dz --finding done 3; true)"
+ok  "the copy keeps open" grep -qx '\*\*Host:\*\* r3 · \*\*Status:\*\* open' <(sed -n '/^## Notes/,$p' $X)
+nok "a blank menu title makes nothing" _dz_finding '   ' new
+nok "no empty finding heading" grep -qE '^### F[0-9]+ · *$' $X
+
+# A note that can't be written: E420, not E413.
+dz -n ro -ip 10.10.71.1 >/dev/null
+chmod a-w ~/vault/Boxes/ro.md
+has "read-only note: E420" "E420" "$(dz --finding X 2>&1)"
+nok "and no E413" grep -q E413 <<< "$(dz --todo x 2>&1)"
+chmod u+w ~/vault/Boxes/ro.md

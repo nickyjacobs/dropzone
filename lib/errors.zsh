@@ -165,6 +165,9 @@ _dz_def E418 "couldn't add the finding" \
 _dz_def E419 "couldn't change the finding's status" \
   "dz changes the status on the '**Host:** <host> · **Status:** open' line under the finding's heading, and that line isn't there (removed or reworded by hand)." \
   "Put the line back under the heading: '**Host:** dc01 · **Status:** open', then run the command again."
+_dz_def E420 "can't write the note" \
+  "dz can't read or change the note file, or can't make a new file in its folder (perl edits in place through a temporary file). Often a vault on a read-only mount, or files owned by another user." \
+  "Check the path in the message: 'ls -l' on the note and its folder. Fix the mount or the owner, then run the command again."
 _dz_def W401 "unusual flag format" \
   "HTB flags are 32 hex characters; this one isn't. It's stored anyway, because other platforms use other formats." \
   "Nothing, if it's right. Otherwise fix it in the note."

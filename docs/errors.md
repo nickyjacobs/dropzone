@@ -78,6 +78,7 @@ dz [E201] no box loaded
 | [E417](#e417) | no such finding |
 | [E418](#e418) | couldn't add the finding |
 | [E419](#e419) | couldn't change the finding's status |
+| [E420](#e420) | can't write the note |
 | [W401](#w401) | unusual flag format |
 | [W402](#w402) | terminal recording didn't start |
 | [W403](#w403) | no timeline section |
@@ -448,6 +449,13 @@ dz [E201] no box loaded
 **Error.** dz changes the status on the `**Host:** <host> · **Status:** open` line under the finding's heading, and that line isn't there (removed or reworded by hand).
 
 **What to do:** Put the line back under the heading: `**Host:** dc01 · **Status:** open`, then run the command again.
+
+<a id="e420"></a>
+### E420 · can't write the note
+
+**Error.** dz can't read or change the note file, or can't make a new file in its folder (perl edits in place through a temporary file). Often a vault on a read-only mount, or files owned by another user.
+
+**What to do:** Check the path in the message: `ls -l` on the note and its folder. Fix the mount or the owner, then run the command again.
 
 <a id="w401"></a>
 ### W401 · unusual flag format

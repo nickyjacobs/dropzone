@@ -22,6 +22,7 @@ _dz_findings() {
         my ($n, $t, $b) = ($1, $2, $3);
         my ($h) = $b =~ /\*\*Host:\*\*[ \t]*([^\s·]+)/;
         my ($s) = $b =~ /\*\*Status:\*\*[ \t]*(\w+)/;
+        $s = lc $s if defined $s;
         my $c = () = $b =~ /^- \d{4}-\d\d-\d\d \d\d:\d\d · /mg;
         print join("\t", $n, $h // "", $s // "open", $c, $t), "\n";
       }
@@ -106,24 +107,34 @@ _dz_finding_row() {
 _dz_finding_add() {
   local ts; strftime -s ts '%F %H:%M' $EPOCHSECONDS
   N=$2 ENTRY="- $ts · $3" TODAY=${ts% *} perl -0777 -pi -e '
-    s{(^### F$ENV{N} · [^\n]*\n)(.*?)(?=^\#{1,3} |\z)}{
-      my ($head, $body) = ($1, $2);
-      $body =~ s/\A\s+//; $body =~ s/\s+\z//;
-      # Right under an earlier entry, otherwise after a blank line (the Host line).
-      my $sep = $body eq "" ? "" : $body =~ /^- \d{4}-\d\d-\d\d /m ? "$body\n" : "$body\n\n";
-      $head . "\n" . $sep . "$ENV{ENTRY}\n\n"
+    s{(^## Findings[ \t]*\n)(.*?)(?=^## |\z)}{
+      my ($fh, $sec) = ($1, $2);
+      $sec =~ s{(^### F$ENV{N} · [^\n]*\n)(.*?)(?=^\#{1,3} |\z)}{
+        my ($head, $body) = ($1, $2);
+        $body =~ s/\A\s+//; $body =~ s/\s+\z//;
+        # Right under an earlier entry, otherwise after a blank line (the Host line).
+        my $sep = $body eq "" ? "" : $body =~ /^- \d{4}-\d\d-\d\d /m ? "$body\n" : "$body\n\n";
+        $head . "\n" . $sep . "$ENV{ENTRY}\n\n"
+      }sme;
+      $fh . $sec
     }sme;
     s/^updated: .*$/updated: $ENV{TODAY}/m;
   ' $1
   _dz_finding_row $1 $2 evidence +1
 }
 
-# _dz_finding_status <note> <nr> <status>: the Status on the line under the heading, and
-# in the table.
+# _dz_finding_status <note> <nr> <status>: the Status on the line under the heading, then
+# in the table. Fails, changing nothing, when F<nr> has no Status line under '## Findings'.
 _dz_finding_status() {
   N=$2 S=$3 perl -0777 -pi -e '
-    s{(^### F$ENV{N} · [^\n]*\n(?:(?!\#{1,3} ).*\n)*?[^\n]*\*\*Status:\*\*[ \t]*)\w+}{$1$ENV{S}}m
-  ' $1
+    our $hit = 0;
+    s{(^## Findings[ \t]*\n)(.*?)(?=^## |\z)}{
+      my ($fh, $sec) = ($1, $2);
+      $hit = $sec =~ s{(^### F$ENV{N} · [^\n]*\n(?:(?!\#{1,3} ).*\n)*?[^\n]*\*\*Status:\*\*[ \t]*)\w+}{$1$ENV{S}}m;
+      $fh . $sec
+    }sme;
+    END { $? = $hit ? 0 : 1 }
+  ' $1 || return 1
   _dz_finding_row $1 $2 status $3
 }
 
@@ -165,8 +176,9 @@ _dz_finding() {
     return 0
   fi
 
+  [[ -n $new && -z $text ]] && { print "• no title, no finding"; return 1 }
   local lc=${(L)text}
-  [[ -n $new ]] && lc=''
+  [[ -n $new ]] && lc=''     # the menu form: always a new finding
   # Stop
   if [[ $lc == off ]]; then
     rm -f $f
@@ -175,7 +187,7 @@ _dz_finding() {
   fi
 
   # Done, or make one active: 'done [nr]', '<nr>', 'F<nr>'.
-  if [[ -n $lc && $lc == (done([[:space:]]##(f|)<1->|)|(f|)<1->) ]]; then
+  if [[ $lc == (done([[:space:]]##(f|)<1->|)|(f|)<1->) ]]; then
     local mode=pick
     [[ $lc == done* ]] && { mode=done; lc=${lc#done} }
     n=${${lc//[[:space:]]/}#f}
@@ -184,23 +196,20 @@ _dz_finding() {
     [[ -n $hit ]] || { _dz_err E417 "no finding F$n in $BOX (dz --finding lists them)"; return 1 }
     w=("${(@ps:\t:)hit}")
     if [[ $mode == pick ]]; then
-      print $n > $f
       if [[ $w[3] == done ]]; then
-        _dz_finding_status $note $n open
-        _dz_findings $note
-        [[ -n ${(M)reply:#$n$'\t'[^$'\t']#$'\t'open$'\t'*} ]] ||
-          { rm -f $f; _dz_err E419 "couldn't set F$n to open: no '**Status:**' line under its heading"; return 1 }
+        _dz_finding_status $note $n open ||
+          { _dz_err E419 "couldn't set F$n to open: no '**Status:**' line under its heading"; return 1 }
+        print $n > $f
         _dz_timeline_add $note "finding F$n open again: $w[5]"
         print -r -- "• active: F$n · $w[5] (was done, open again)"
       else
+        print $n > $f
         print -r -- "• active: F$n · $w[5] (dz -s and dz -e go under it)"
       fi
       return 0
     fi
     [[ $w[3] == done ]] && { print -r -- "• F$n is already done"; return 0 }
-    _dz_finding_status $note $n done
-    _dz_findings $note
-    [[ -n ${(M)reply:#$n$'\t'[^$'\t']#$'\t'done$'\t'*} ]] ||
+    _dz_finding_status $note $n done ||
       { _dz_err E419 "couldn't set F$n to done: no '**Status:**' line under its heading"; return 1 }
     [[ $n == $cur ]] && rm -f $f
     _dz_timeline_add $note "finding F$n done: $w[5]"
@@ -211,8 +220,7 @@ _dz_finding() {
   fi
 
   # New
-  _dz_section_ensure $note Findings "$DZ_TIMELINE" Flags ||
-    { _dz_err E413 "the note has no '## Findings' section (add_sections = no)"; return 1 }
+  _dz_section_need $note Findings "$DZ_TIMELINE" Flags || return 1
   local host=${DZ_ACTIVE:-$BOX}
   # The next number: after the highest in a heading or a table row, so a finding removed
   # by hand never gets its number reused.

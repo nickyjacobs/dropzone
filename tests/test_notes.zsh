@@ -213,3 +213,11 @@ print -r -- $'---\nupdated: x\n---\n## Timeline\n\n## Flags\n' > $S
 i1=$(ls -i $S | awk '{print $1}')
 _dz_section_ensure $S Timeline Flags
 eq  "ensure on a present section leaves the file alone" "$i1" "$(ls -i $S | awk '{print $1}')"
+
+# Review round 3: other slot styles become dz's slots, no duplicates.
+for style in '**%s flag:** ' '- **%s flag**: ' '**%s flag**: '; do
+  printf -- "---\nupdated: x\n---\n## Flags\n\n$style\n$style\n" User Root > $S
+  dz -f user $U >/dev/null
+  eq  "style '$style': one User and one Root line" 2 "$(sed -n '/^## Flags/,$p' $S | grep -c 'flag')"
+  eq  "style '$style': flag stored" "$U" "$(_dz_flags_get $S; print -r -- $reply[1])"
+done

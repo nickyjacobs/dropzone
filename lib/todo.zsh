@@ -64,7 +64,8 @@ _dz_todo() {
   local -i extra=$#_dz_bh
 
   # List
-  if [[ -z $new ]] && [[ -z $text || $text == --all ]]; then
+  [[ -n $new && -z $text ]] && { print "• no text, no to-do"; return 1 }
+  if [[ -z $new ]] && [[ -z $text || ${(L)text} == --all ]]; then
     _dz_todo_items $note "$hosts"
     local -i open=0 done=0 hw=0
     for l in $reply; do
@@ -80,7 +81,7 @@ _dz_todo() {
     local mark
     for l in $reply; do
       w=("${(@ps:\t:)l}")
-      [[ $w[2] == x ]] && { [[ -n $text ]] || continue; mark=✓ } || mark=' '
+      [[ $w[2] == x ]] && { [[ -n $text ]] || continue; mark=✓ } || mark=' '   # --all
       if (( hw )); then printf '%s %3d  %-*s  %s\n' $mark $w[1] $hw "$w[3]" "$w[4]"
       else printf '%s %3d  %s\n' $mark $w[1] "$w[4]"
       fi
@@ -107,8 +108,7 @@ _dz_todo() {
   fi
 
   # Add
-  _dz_section_ensure $note $_dz_todo_head "$DZ_TIMELINE" Flags ||
-    { _dz_err E413 "the note has no '## $_dz_todo_head' section (add_sections = no)"; return 1 }
+  _dz_section_need $note $_dz_todo_head "$DZ_TIMELINE" Flags || return 1
   local host=''
   (( extra )) && host=${DZ_ACTIVE:-$BOX}
   _dz_todo_items $note "$hosts"; local -i before=$#reply

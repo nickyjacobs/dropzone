@@ -115,3 +115,8 @@ dz --todo one >/dev/null
 has "DONE 1 ticks off" "done: one" "$(dz --todo DONE 1)"
 has "the menu form adds 'done 3' as text" "to-do #2: done 3" "$(_dz_todo 'done 3' new)"
 has "Next block knows every host's tag" "#1  web01 · x" "$(dz -n eps -ip 10.10.41.1 >/dev/null; dz -t dc01 -ip 10.10.41.2 >/dev/null; dz -t web01 -ip 10.10.41.3 >/dev/null; dz -t web01 >/dev/null; dz --todo x >/dev/null; dz -i)"
+
+# Review round 3.
+nok "a blank menu to-do adds nothing" _dz_todo '   ' new
+nok "no blank checkbox" grep -qx -- '- \[ \] *' $D
+has "--ALL lists" "open" "$(dz --todo --ALL)"
