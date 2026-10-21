@@ -77,7 +77,8 @@ cp $G ~/gamma.before
 DZ_ADD_SECTIONS=no
 nok "add_sections = no: --todo fails without the section" dz --todo x
 has "and names the heading" "'## To do'" "$(dz --todo x 2>&1)"
-has "-j warns instead of adding a timeline" "W403" "$(dz -j x 2>&1)"
+has "-j: E413 instead of adding a timeline" "E413" "$(dz -j x 2>&1)"
+has "a timeline line on the side: W403" "W403" "$(dz --deadline 10d 2>&1; dz --deadline none >/dev/null 2>&1)"
 ok  "the note is untouched" cmp -s $G ~/gamma.before
 print -r -- $'\n## To do\n' >> $G
 ok  "with the heading it works" dz --todo x
@@ -90,3 +91,19 @@ has "--config show lists it" "add_sections" "$(_dz_config_load 2>/dev/null; dz -
 DZ_NOTE_MODE=off; nok "--todo with notes = off fails" dz --todo x; DZ_NOTE_MODE=vault
 dz -x >/dev/null
 nok "--todo without a box fails" dz --todo x
+
+# Review fixes: spaces around the text, a heading on the last line, the timeline warning.
+dz -n delta -ip 10.10.40.1 >/dev/null
+D=~/vault/Boxes/delta.md
+dz --todo first >/dev/null
+has "leading spaces: 'done 1' still ticks off" "done: first" "$(dz --todo '  done 1 ')"
+has "only spaces: lists, adds nothing" "no open to-dos" "$(dz --todo '   ')"
+nok "only spaces: no blank to-do" grep -qx -- '- \[ \] *' $D
+print -rn -- $'---\nupdated: x\n---\n## To do' > $D
+has "a To do heading on the last line works" "to-do #1" "$(dz --todo last line)"
+DZ_ADD_SECTIONS=no
+print -r -- $'---\nupdated: x\n---\nbody' > $D
+dz --deadline 10d >/dev/null 2>&1
+eq  "add_sections = no: --deadline still succeeds" 0 "$?"
+has "-j without a timeline: E413" "E413" "$(dz -j x 2>&1)"
+DZ_ADD_SECTIONS=yes; dz --deadline none >/dev/null

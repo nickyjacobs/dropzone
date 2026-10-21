@@ -15,22 +15,26 @@
 # A box with more hosts (dz -t), or a note without those slots, keeps a list instead: '- <date> <time> · <host> · <flag>',
 # with a count against 'flag_goal' from the config. It is never marked done by a flag.
 
-# _dz_note_has <note> <heading>: does the note have '## <heading>'?
-_dz_note_has() { H=$2 perl -0777 -ne 'exit(/^## \Q$ENV{H}\E[ \t]*$/m ? 0 : 1)' $1 }
-
 # _dz_section_ensure <note> <heading> [before...]: add '## <heading>' when the note doesn't
 # have it, right before the first of the [before] headings it does have, else at the end.
 # With 'add_sections = no' dz never adds a section: it fails, and the caller reports it.
+# Also ends the note with a newline, so a heading on the last line can be written under.
 _dz_section_ensure() {
-  local note=$1 head=$2; shift 2
-  _dz_note_has $note $head && return 0
-  _dz_on DZ_ADD_SECTIONS || return 1
-  HEAD=$head BEFORE=${(pj:\n:)@} perl -0777 -pi -e '
-    my $done = 0;
-    for my $b (grep { length } split /\n/, $ENV{BEFORE}) {
-      $done = s/^(## \Q$b\E[ \t]*)$/## $ENV{HEAD}\n\n$1/m and last;
+  local note=$1 head=$2 add=''; shift 2
+  _dz_on DZ_ADD_SECTIONS && add=1
+  HEAD=$head BEFORE=${(pj:\n:)@} ADD=$add perl -0777 -i -ne '
+    our $miss = !/^## \Q$ENV{HEAD}\E[ \t]*$/m;
+    $_ .= "\n" unless /\n\z/;
+    if ($miss && $ENV{ADD}) {
+      my $done = 0;
+      for my $b (grep { length } split /\n/, $ENV{BEFORE}) {
+        $done = s/^(## \Q$b\E[ \t]*)$/## $ENV{HEAD}\n\n$1/m and last;
+      }
+      $_ .= "\n## $ENV{HEAD}\n\n" unless $done;
+      $miss = 0;
     }
-    unless ($done) { $_ .= "\n" unless /\n\z/; $_ .= "\n## $ENV{HEAD}\n\n" }
+    print;
+    END { $? = $miss ? 1 : 0 }
   ' $note
 }
 
@@ -45,8 +49,10 @@ _dz_note_need() {
 # section. Extra lines in <text> (an embed) stay under the entry.
 _dz_timeline_add() {
   local ts; strftime -s ts '%F %H:%M' $EPOCHSECONDS
+  # A warning carries on: the command itself worked. _dz_tl_skip tells a caller that cares.
+  typeset -g _dz_tl_skip=0
   _dz_section_ensure $1 "$DZ_TIMELINE" Flags ||
-    { _dz_warn W403 "the note has no '## $DZ_TIMELINE' (add_sections = no), line not written: ${2%%$'\n'*}"; return 1 }
+    { _dz_warn W403 "the note has no '## $DZ_TIMELINE' (add_sections = no), line not written: ${2%%$'\n'*}"; _dz_tl_skip=1; return 0 }
   HEAD=$DZ_TIMELINE ENTRY="- $ts · $2" TODAY=${ts% *} perl -0777 -pi -e '
     my $h = quotemeta $ENV{HEAD};
     s{(^## $h[ \t]*\n)(.*?)(?=^## |\z)}{
@@ -200,7 +206,10 @@ _dz_journal() {
     [[ -n $out ]] && print -r -- $out || print "no timeline entries for $BOX yet"
     return 0
   fi
-  _dz_timeline_add $note "${1//$'\n'/ }" && print "• added to the timeline of $BOX"
+  _dz_section_ensure $note "$DZ_TIMELINE" Flags ||
+    { _dz_err E413 "the note has no '## $DZ_TIMELINE' section (add_sections = no)"; return 1 }
+  _dz_timeline_add $note "${1//$'\n'/ }"
+  print "• added to the timeline of $BOX"
 }
 
 # Is screenshot tool $1 installed? grim needs slurp to select the region.
@@ -275,8 +284,11 @@ _dz_shot() {
     print "• screenshot: ${ev/#$HOME/~}/$name"
     return 0
   fi
-  _dz_evidence_place $note "screenshot${caption:+: $caption}" "  $embed"
-  print "• screenshot: ${ev/#$HOME/~}/$name (${REPLY:+under $REPLY }in the note too)"
+  if _dz_evidence_place $note "screenshot${caption:+: $caption}" "  $embed"; then
+    print "• screenshot: ${ev/#$HOME/~}/$name (${REPLY:+under $REPLY }in the note too)"
+  else
+    print "• screenshot: ${ev/#$HOME/~}/$name (not in the note)"
+  fi
   _dz_reptor file $ev/$name
 }
 
@@ -357,8 +369,12 @@ _dz_evidence() {
   block+=$'\n'"\`\`\`\`"
   if [[ -n $note ]]; then
     local -a bl=("${(@f)block}"); bl=("  "${^bl})
-    _dz_evidence_place $note "output${caption:+: $caption} (evidence/$name)" "${(F)bl}"; fnd=$REPLY
-    print "• output: ${ev/#$HOME/~}/$name ($#lines lines, ${fnd:+under $fnd }in the note too)"
+    if _dz_evidence_place $note "output${caption:+: $caption} (evidence/$name)" "${(F)bl}"; then
+      fnd=$REPLY
+      print "• output: ${ev/#$HOME/~}/$name ($#lines lines, ${fnd:+under $fnd }in the note too)"
+    else
+      print "• output: ${ev/#$HOME/~}/$name ($#lines lines, not in the note)"
+    fi
   else
     print "• output: ${ev/#$HOME/~}/$name ($#lines lines)"
   fi

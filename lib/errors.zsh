@@ -145,7 +145,7 @@ _dz_def E412 "no output to save" \
   "The command in front of dz -e printed nothing to stdout. Many tools print errors to stderr, which a pipe doesn't carry." \
   "Add 2>&1 to the command: 'cmd 2>&1 | dz -e caption'."
 _dz_def E413 "the note is missing a section" \
-  "'add_sections = no' in your config, so dz doesn't add a Flags, To do or Findings section to your note, and this note doesn't have the one it needs." \
+  "'add_sections = no' in your config, so dz doesn't add a Timeline, Flags, To do or Findings section to your note, and this note doesn't have the one it needs." \
   "Add the heading from the message to your note (or your template), like '## To do'. Or set 'add_sections = yes'."
 _dz_def E414 "no such to-do" \
   "There is no to-do with that number in the note. Numbers are the place in the To do section, counting the done ones too." \

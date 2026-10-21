@@ -55,8 +55,8 @@ _dz_todo_tick() {
 
 # dz --todo [text | --all | done <nr>]
 _dz_todo() {
-  emulate -L zsh
-  local text=${${1//$'\n'/ }##[[:space:]]#} note l
+  emulate -L zsh -o extended_glob
+  local text=${${${1//$'\n'/ }##[[:space:]]#}%%[[:space:]]#} note l
   local -a w
   _dz_note_need || return 1; note=$REPLY
   _dz_box_read $DZ_ROOT/$BOX 2>/dev/null

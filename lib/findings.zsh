@@ -29,16 +29,18 @@ _dz_findings() {
   reply=(${(f)out})
 }
 
-# The active finding of the loaded box in $REPLY (its number). Fails when there is none,
-# or when its heading is gone from note $1 (then the .finding file goes too).
+# The active finding of the loaded box in $REPLY (its number); reply holds every finding
+# (_dz_findings). Fails when there is none, or when its heading is gone from note $1: then
+# the .finding file goes too, with a warning. $2 = peek: only look, change nothing.
 _dz_finding_active() {
   local f=$DZ_ROOT/$BOX/.finding n
   REPLY=''
   [[ -f $f ]] || return 1
   n=$(<$f)
-  [[ $n == <1-> ]] || { rm -f $f; return 1 }
+  [[ $n == <1-> ]] || { [[ -n $2 ]] || rm -f $f; return 1 }
   _dz_findings $1
   if [[ -z ${(M)reply:#$n$'\t'*} ]]; then
+    [[ -n $2 ]] && return 1
     rm -f $f
     _dz_warn W404 "F$n isn't in the note anymore, evidence goes to the timeline"
     return 1
@@ -138,6 +140,7 @@ _dz_evidence_place() {
   fi
   REPLY=''
   _dz_timeline_add $1 "$2"$'\n'"$3"
+  (( ! _dz_tl_skip ))
 }
 
 # dz --finding [title | <nr> | off | done [nr]]
@@ -146,8 +149,8 @@ _dz_finding() {
   local text=${${${1//$'\n'/ }##[[:space:]]#}%%[[:space:]]#} note l n f=$DZ_ROOT/$BOX/.finding
   local -a w
   _dz_note_need || return 1; note=$REPLY
-  local cur=''; _dz_finding_active $note && cur=$REPLY
-  _dz_findings $note
+  local cur=''
+  if _dz_finding_active $note; then cur=$REPLY; else _dz_findings $note; fi
   local -a all=("${reply[@]}")
 
   # List
@@ -162,15 +165,15 @@ _dz_finding() {
     return 0
   fi
 
+  local lc=${(L)text}
   # Stop
-  if [[ $text == off ]]; then
+  if [[ $lc == off ]]; then
     rm -f $f
     print -r -- "• no active finding${cur:+ (was F$cur)}, evidence goes to the timeline"
     return 0
   fi
 
   # Done, or make one active: 'done [nr]', '<nr>', 'F<nr>'.
-  local lc=${(L)text}
   if [[ $lc == (done([[:space:]]##(f|)<1->|)|(f|)<1->) ]]; then
     local mode=pick
     [[ $lc == done* ]] && { mode=done; lc=${lc#done} }
@@ -181,7 +184,13 @@ _dz_finding() {
     w=("${(@ps:\t:)hit}")
     if [[ $mode == pick ]]; then
       print $n > $f
-      print -r -- "• active: F$n · $w[5] (dz -s and dz -e go under it)"
+      if [[ $w[3] == done ]]; then
+        _dz_finding_status $note $n open
+        _dz_timeline_add $note "finding F$n open again: $w[5]"
+        print -r -- "• active: F$n · $w[5] (was done, open again)"
+      else
+        print -r -- "• active: F$n · $w[5] (dz -s and dz -e go under it)"
+      fi
       return 0
     fi
     [[ $w[3] == done ]] && { print -r -- "• F$n is already done"; return 0 }

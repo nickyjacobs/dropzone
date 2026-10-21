@@ -130,3 +130,28 @@ commands[reptor]=reptor; DZ_SYSREPTOR=yes
 print 'out' | dz -e asrep >/dev/null; sleep 1
 has "sysreptor: the finding in the caption" "**F3 · asrep**" "$(cat ~/reptor.calls)"
 unset 'commands[reptor]'; unfunction reptor; DZ_SYSREPTOR=no
+
+# Review fixes.
+dz -n rev -ip 10.10.50.1 --template $_dz_repo/templates/box-note.md >/dev/null
+V=~/vault/Boxes/rev.md
+dz --finding One >/dev/null
+perl -pi -e 's/^### F1 · One/### F1 renamed/' $V
+dz -i >/dev/null 2>&1
+ok  "dz -i doesn't clear a stale finding" test -f ~/boxes/rev/.finding
+has "the next -s still warns" "W404" "$(dz -s x 2>&1)"
+perl -pi -e 's/^### F1 renamed/### F1 · One/' $V
+dz --finding done 1 >/dev/null
+has "picking a done finding opens it again" "open again" "$(dz --finding 1)"
+ok  "status open in the note" grep -qx '\*\*Host:\*\* rev · \*\*Status:\*\* open' $V
+has "OFF in capitals stops it" "no active finding" "$(dz --finding OFF)"
+nok "and isn't a finding" grep -q '### F2 · OFF' $V
+DZ_ADD_SECTIONS=no
+perl -0pi -e 's/## Timeline\n//' $V
+has "-s without a timeline says not in the note" "not in the note" "$(dz -s y 2>/dev/null)"
+has "-e without a timeline says not in the note" "not in the note" "$(print z | dz -e z 2>/dev/null)"
+DZ_ADD_SECTIONS=yes
+
+# dz -i <main host> counts the user and root slots.
+dz -n single -ip 10.10.60.1 --template $_dz_repo/templates/box-note.md >/dev/null
+dz -f 0123456789abcdef0123456789abcdef >/dev/null
+has "-i <box>: user flag counted" "flags      1" "$(dz -i single)"

@@ -149,8 +149,7 @@ _dz_info_next() {
   _dz_todo_items $note "$BOX ${_dz_bh%% *}"
   for l in $reply; do w=("${(@ps:\t:)l}"); [[ $w[2] == x ]] || todo+=("$w[1]"$'\t'"${w[3]:+$w[3] · }$w[4]"); done
   local fnd=''
-  if _dz_finding_active $note 2>/dev/null; then
-    _dz_findings $note
+  if _dz_finding_active $note peek; then
     local hit=${(M)reply:#$REPLY$'\t'*}
     w=("${(@ps:\t:)hit}")
     fnd="F$w[1] · $w[5]${w[2]:+ ($w[2])}"
@@ -192,7 +191,10 @@ _dz_info_host() {
   if [[ -f $note ]]; then
     _dz_flags_list $note
     w=(${(M)reply:#$h *})
-    (( $#w )) && _dz_row flags "$#w" 10
+    local -i nf=$#w
+    # The user and root slots belong to the main host.
+    [[ $h == $BOX ]] && { _dz_flags_get $note; [[ -n $reply[1] ]] && (( nf++ )); [[ -n $reply[2] ]] && (( nf++ )) }
+    (( nf )) && _dz_row flags "$nf" 10
     _dz_todo_items $note "$hosts"
     local -a todo=()
     # Items without a host tag belong to the main host.
@@ -379,10 +381,10 @@ _dz_comp_flag() {
   _describe -t kinds kind k
 }
 _dz_comp_todo() {
-  (( CURRENT == 2 )) && { local -a k=('done:tick a to-do off' '--all:the done ones too'); _describe -t todo todo k }
+  (( CURRENT == 1 )) && { local -a k=('done:tick a to-do off' '--all:the done ones too'); _describe -t todo todo k }
 }
 _dz_comp_finding() {
-  (( CURRENT == 2 )) && { local -a k=('off:no active finding' 'done:mark the active one done'); _describe -t finding finding k }
+  (( CURRENT == 1 )) && { local -a k=('off:no active finding' 'done:mark the active one done'); _describe -t finding finding k }
 }
 _dz_comp_all() {
   local -a b=($DZ_ROOT/*/.dropzone(Nn:h:t)) a=($DZ_ROOT/_archive/*/.dropzone(Nn:h:t))

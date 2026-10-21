@@ -402,7 +402,7 @@ dz [E201] no box loaded
 <a id="e413"></a>
 ### E413 · the note is missing a section
 
-**Error.** `add_sections = no` in your config, so dz doesn't add a Flags, To do or Findings section to your note, and this note doesn't have the one it needs.
+**Error.** `add_sections = no` in your config, so dz doesn't add a Timeline, Flags, To do or Findings section to your note, and this note doesn't have the one it needs.
 
 **What to do:** Add the heading from the message to your note (or your template), like `## To do`. Or set `add_sections = yes`.
 
