@@ -9,7 +9,7 @@ dz -n exam -ip 10.10.10.1 --template exam >/dev/null
 dz -t dc01 -ip 10.10.10.5 >/dev/null
 dz -t dc01 >/dev/null
 N=~/vault/Boxes/exam.md
-has "--finding alone without findings" "no findings in exam yet" "$(dz --finding)"
+has "--finding alone without findings" "no findings yet" "$(dz --finding)"
 out=$(dz --finding SMB signing disabled)
 has "--finding: number, title and host" "F1 · SMB signing disabled (dc01)" "$out"
 ok  "a heading under Findings" grep -qx '### F1 · SMB signing disabled' $N
@@ -72,7 +72,7 @@ ok  "and .finding goes" test ! -e ~/boxes/exam/.finding
 print 'rm -rf ~' > ~/boxes/exam/.finding
 has "a removed finding's number isn't reused" "F3 · Reuse" "$(dz --finding Reuse)"
 perl -0pi -e 's/^### F3 · .*\n//m; s/^\| F3 .*\n//m' $N
-has "a .finding with junk is ignored" "no active finding" "$(print 'rm -rf ~' > ~/boxes/exam/.finding; dz --finding)"
+has "a .finding with junk is ignored" "none active" "$(print 'rm -rf ~' > ~/boxes/exam/.finding; dz --finding)"
 
 # The bundled box template: no table, just headings.
 dz -n plain -ip 10.10.20.1 --template $_dz_repo/templates/box-note.md >/dev/null
@@ -243,3 +243,9 @@ dz --finding Kerberoast >/dev/null
 perl -pi -e 's/^\| F1 \| Kerberoast \| r6b \| \| 0 \| open \|$/| F1 | Kerberoast | r6b | High | [[kerb.png]] | open |/' $E
 print hash | dz -e roast >/dev/null
 ok  "an Evidence cell with your own text stays" grep -qF '| F1 | Kerberoast | r6b | High | [[kerb.png]] | open |' $E
+
+# An option instead of a title (dz --finding -s).
+nok "--finding -s is refused" dz --finding -s
+has "with E421" "E421" "$(dz --finding -s 2>&1)"
+nok "--todo --x is refused" dz --todo --x
+ok  "text with more words may start with -" dz --todo -k flag of nxc tried

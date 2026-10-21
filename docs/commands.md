@@ -169,7 +169,8 @@ dz --todo --all                           # the done ones too
 
 - The to-dos live in `## To do` in the note (added before the timeline when it's missing). In a box with more hosts each one is tagged with the active host.
 - The note is the list: tick one off in Obsidian, edit or delete it by hand, dz reads it fresh every time. Numbers are the place in the list, so they don't shift when you tick items off.
-- `dz -i` shows the open ones, `dz -i dc01` those of dc01.
+- `dz --todo` shows them as a block like `dz -i`; `dz -i` shows the open ones too, `dz -i dc01` those of dc01.
+- One word that starts with `-` is refused (`E421`): `dz --todo -s` is a typo, not a to-do.
 
 ### Findings
 
@@ -200,6 +201,7 @@ In the note each finding is a heading with a status line, and its evidence below
 
 - The timeline gets a short line that points to it: `screenshot: relay setup → F1`.
 - A table under `## Findings` (the exam template) gets a row: `#`, `Finding`, `Host`, `Evidence` (counted, unless you put your own text there) and `Status` are found by name. Severity and the rest are yours.
+- `dz --finding -s` is refused (`E421`): one action per call, so start the finding and then take the screenshot.
 - Removed a finding's heading by hand? dz warns (`W404`) and evidence goes to the timeline. A number is never reused. The active one is in `~/boxes/<box>/.finding`.
 
 ### Search
@@ -309,7 +311,9 @@ With `sysreptor = yes`, `dz -s` and `dz -e` also upload to your [SysReptor](http
 
 The status line shows the box, the target, the time left and your VPN IP. Items that can't work are grey (no box loaded, one host only, `notes = off`, `creds = no`).
 
-Keys: `↑` `↓` move, `Enter` opens, `1`-`9` jump, `q` / `Esc` back. Yes/no: `←` `→` or `y` / `n`, default *No*. An empty field cancels a form.
+**The menu stays open** until you quit (`q` or *Quit* in the main menu). After a to-do, finding, flag, timeline line, deadline, host switch or *Mark done*, you're back where you were and what dz said shows under the menu, so you can add the next one straight away. Actions that may need your terminal (a new box, IP or host with `/etc/hosts` and sudo, loading a box, opening or removing a note, archiving) show their output on the normal screen first; Enter brings the menu back, `q` quits.
+
+Keys: `↑` `↓` move, `Enter` opens, `1`-`9` jump (and open), `q` / `Esc` back. In a form, Enter on an empty field goes back to the menu. Yes/no: `←` `→` or `y` / `n`, default *No*.
 
 ### VPN check
 

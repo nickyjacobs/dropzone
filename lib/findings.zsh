@@ -202,13 +202,28 @@ _dz_finding() {
 
   # List
   if [[ -z $text && -z $new ]]; then
-    (( $#all )) || { print -r -- "no findings in $BOX yet"; print "  dz --finding <title> starts one"; return 0 }
+    # A block like dz -i: a row per finding, '▶' = the active one.
+    _dz_ui
+    local state='none active'; [[ -n $cur ]] && state="F$cur active"
+    _dz_rule; _dz_head Findings "$BOX · $state"
+    if (( ! $#all )); then
+      print "    no findings yet"
+      _dz_rule
+      print -r -- "${_ud}    dz --finding <title> starts one${_ur}"
+      return 0
+    fi
+    local mark row hw=0
+    for l in $all; do w=("${(@ps:\t:)l}"); (( $#w[2] > hw )) && hw=$#w[2]; done
     for l in $all; do
       w=("${(@ps:\t:)l}")
-      printf '%s %-4s %-12s %-5s %2d evidence  %s\n' "${${${w[1]:#$cur}:+ }:-▶}" F$w[1] "${w[2]:--}" $w[3] $w[4] "$w[5]"
+      [[ $w[1] == $cur ]] && mark=▶ || mark=' '
+      printf -v row '%-4s %-*s  %-4s  %2d evidence  %s' F$w[1] $hw "${w[2]:--}" $w[3] $w[4] "$w[5]"
+      print -r -- "  ${_ug}${mark}${_ur} $row"
     done
-    [[ -n $cur ]] && print "  dz -s and dz -e go under F$cur · dz --finding off stops that" ||
-      print "  no active finding · dz --finding <nr> picks one"
+    _dz_rule
+    if [[ -n $cur ]]; then print -r -- "${_ud}    dz -s and dz -e go under F$cur · dz --finding off stops that${_ur}"
+    else print -r -- "${_ud}    dz --finding <nr> picks one${_ur}"
+    fi
     return 0
   fi
 
@@ -257,7 +272,9 @@ _dz_finding() {
     return 0
   fi
 
-  # New
+  # New. One word that starts with '-' is an option typed by mistake (dz --finding -s).
+  [[ $text == -[^[:space:]]# ]] &&
+    { _dz_err E421 "'$text' looks like an option, not a title: one action per call (dz --finding <title>, then dz -s)"; return 1 }
   _dz_section_need $note Findings "$DZ_TIMELINE" Flags || return 1
   local host=${DZ_ACTIVE:-$BOX}
   # The next number: after the highest in a heading, a table row or the timeline, so a

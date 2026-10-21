@@ -79,6 +79,7 @@ dz [E201] no box loaded
 | [E418](#e418) | couldn't add the finding |
 | [E419](#e419) | couldn't change the finding's status |
 | [E420](#e420) | can't write the note |
+| [E421](#e421) | an option instead of text |
 | [W401](#w401) | unusual flag format |
 | [W402](#w402) | terminal recording didn't start |
 | [W403](#w403) | no timeline section |
@@ -457,6 +458,13 @@ dz [E201] no box loaded
 **Error.** dz can't read or change the note file, or can't make a new file in its folder (perl edits in place through a temporary file). Often a vault on a read-only mount, or files owned by another user.
 
 **What to do:** Check the path in the message: `ls -l` on the note and its folder. Fix the mount or the owner, then run the command again.
+
+<a id="e421"></a>
+### E421 · an option instead of text
+
+**Error.** --todo and --finding take the rest of the line as text, so `dz --finding -s` would make a finding called `-s`. dz does one action per call.
+
+**What to do:** Run them one after the other: `dz --finding SMB signing disabled`, then `dz -s`. Text that really starts with `-` needs a second word.
 
 <a id="w401"></a>
 ### W401 · unusual flag format

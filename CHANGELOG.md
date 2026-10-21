@@ -11,7 +11,12 @@ All notable changes to dropzone. Format based on [Keep a Changelog](https://keep
 - **One host** (`dz -i <host>`): its IP, hostnames, pivot, flags, to-dos, findings and the creds that work there (user and number, never the secret).
 - `add_sections = no` in the config: dz never adds a Timeline, Flags, To do or Findings section to your note, it tells you which heading is missing (`E413`, `W403`).
 - Menu: *Notes ›* has *To do* and *Finding*.
+- `dz --todo` and `dz --finding` show their list as a block, like `dz -i`.
+- A to-do or finding title that is just an option (`dz --finding -s`) is refused (`E421`).
 - The templates (`box-note.md`, `exam-note.md`, the Obsidian example) have a `## To do` section; the box templates also `## Findings`.
+
+### Changed
+- **The menu stays open** after an action until you quit: you're back in the submenu you came from, with dz's answer under the menu. Actions that may need the terminal (sudo for `/etc/hosts`, an editor) show their output first, then Enter brings the menu back. Forms ask in words ("What to try next", "What did you find") and say that an empty field goes back.
 
 ### Fixed
 - `dz -c 'corp\user'` printed the user without the backslash (`corpuser`); the stored cred was right.
