@@ -53,10 +53,10 @@ _dz_todo_tick() {
   ' $1
 }
 
-# dz --todo [text | --all | done <nr>]
+# dz --todo [text | --all | done <nr>]. $2 = new: the text is always a to-do (the menu form).
 _dz_todo() {
   emulate -L zsh -o extended_glob
-  local text=${${${1//$'\n'/ }##[[:space:]]#}%%[[:space:]]#} note l
+  local text=${${${1//$'\n'/ }##[[:space:]]#}%%[[:space:]]#} new=$2 note l
   local -a w
   _dz_note_need || return 1; note=$REPLY
   _dz_box_read $DZ_ROOT/$BOX 2>/dev/null
@@ -64,7 +64,7 @@ _dz_todo() {
   local -i extra=$#_dz_bh
 
   # List
-  if [[ -z $text || $text == --all ]]; then
+  if [[ -z $new ]] && [[ -z $text || $text == --all ]]; then
     _dz_todo_items $note "$hosts"
     local -i open=0 done=0 hw=0
     for l in $reply; do
@@ -90,8 +90,8 @@ _dz_todo() {
   fi
 
   # Tick off: 'done <nr>'. Other text that starts with 'done' is a to-do.
-  [[ $text == done ]] && { _dz_err E102 "--todo done needs the number of the to-do (dz --todo lists them)"; return 1 }
-  if [[ $text =~ '^done[[:space:]]+([0-9]+)$' ]]; then
+  [[ -z $new && ${(L)text} == done ]] && { _dz_err E102 "--todo done needs the number of the to-do (dz --todo lists them)"; return 1 }
+  if [[ -z $new && ${(L)text} =~ '^done[[:space:]]+([0-9]+)$' ]]; then
     local nr=$match[1] hit
     _dz_todo_items $note "$hosts"
     hit=${(M)reply:#$nr$'\t'*}

@@ -16,6 +16,7 @@ All notable changes to dropzone. Format based on [Keep a Changelog](https://keep
 ### Fixed
 - `dz -c 'corp\user'` printed the user without the backslash (`corpuser`); the stored cred was right.
 - `dz -f root <flag>` on a note with a `## Flags` section but no user/root lines added a second Flags section.
+- `dz -f` on a note whose flag lines dz can't fill (like `- **User flag**: `) now adds its own slots to the Flags section instead of a second section.
 
 ## [1.3.1] - 2026-10-20
 

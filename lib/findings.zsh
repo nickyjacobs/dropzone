@@ -129,6 +129,7 @@ _dz_finding_status() {
 
 # _dz_evidence_place <note> <label> <body>: under the active finding, with a short line in
 # the timeline, or straight into the timeline. $REPLY = 'F<n>' when it went to a finding.
+# Fails when it went nowhere (no timeline section and add_sections = no).
 _dz_evidence_place() {
   local n
   if _dz_finding_active $1; then
@@ -139,14 +140,13 @@ _dz_evidence_place() {
     return 0
   fi
   REPLY=''
-  _dz_timeline_add $1 "$2"$'\n'"$3"
-  (( ! _dz_tl_skip ))
+  _dz_timeline_add -s $1 "$2"$'\n'"$3"
 }
 
-# dz --finding [title | <nr> | off | done [nr]]
+# dz --finding [title | <nr> | off | done [nr]]. $2 = new: the text is always a title (the menu form).
 _dz_finding() {
   emulate -L zsh -o extended_glob
-  local text=${${${1//$'\n'/ }##[[:space:]]#}%%[[:space:]]#} note l n f=$DZ_ROOT/$BOX/.finding
+  local text=${${${1//$'\n'/ }##[[:space:]]#}%%[[:space:]]#} new=$2 note l n f=$DZ_ROOT/$BOX/.finding
   local -a w
   _dz_note_need || return 1; note=$REPLY
   local cur=''
@@ -154,7 +154,7 @@ _dz_finding() {
   local -a all=("${reply[@]}")
 
   # List
-  if [[ -z $text ]]; then
+  if [[ -z $text && -z $new ]]; then
     (( $#all )) || { print -r -- "no findings in $BOX yet"; print "  dz --finding <title> starts one"; return 0 }
     for l in $all; do
       w=("${(@ps:\t:)l}")
@@ -166,6 +166,7 @@ _dz_finding() {
   fi
 
   local lc=${(L)text}
+  [[ -n $new ]] && lc=''
   # Stop
   if [[ $lc == off ]]; then
     rm -f $f
@@ -174,7 +175,7 @@ _dz_finding() {
   fi
 
   # Done, or make one active: 'done [nr]', '<nr>', 'F<nr>'.
-  if [[ $lc == (done([[:space:]]##(f|)<1->|)|(f|)<1->) ]]; then
+  if [[ -n $lc && $lc == (done([[:space:]]##(f|)<1->|)|(f|)<1->) ]]; then
     local mode=pick
     [[ $lc == done* ]] && { mode=done; lc=${lc#done} }
     n=${${lc//[[:space:]]/}#f}
@@ -186,6 +187,9 @@ _dz_finding() {
       print $n > $f
       if [[ $w[3] == done ]]; then
         _dz_finding_status $note $n open
+        _dz_findings $note
+        [[ -n ${(M)reply:#$n$'\t'[^$'\t']#$'\t'open$'\t'*} ]] ||
+          { rm -f $f; _dz_err E419 "couldn't set F$n to open: no '**Status:**' line under its heading"; return 1 }
         _dz_timeline_add $note "finding F$n open again: $w[5]"
         print -r -- "• active: F$n · $w[5] (was done, open again)"
       else
@@ -195,6 +199,9 @@ _dz_finding() {
     fi
     [[ $w[3] == done ]] && { print -r -- "• F$n is already done"; return 0 }
     _dz_finding_status $note $n done
+    _dz_findings $note
+    [[ -n ${(M)reply:#$n$'\t'[^$'\t']#$'\t'done$'\t'*} ]] ||
+      { _dz_err E419 "couldn't set F$n to done: no '**Status:**' line under its heading"; return 1 }
     [[ $n == $cur ]] && rm -f $f
     _dz_timeline_add $note "finding F$n done: $w[5]"
     if [[ $n == $cur ]]; then print -r -- "• F$n done: $w[5] (no active finding now)"

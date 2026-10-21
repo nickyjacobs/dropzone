@@ -201,3 +201,15 @@ ok  "obsidian: to-do replaces the empty bullet" test "$(sed -n '/^## To do/,/^##
 eq  "obsidian: finding in Findings" "## Findings|### F1 · first finding|## Timeline" "$(grep -E '^##' $O | grep -A1 -B1 'F1' | paste -sd'|' -)"
 eq  "obsidian: user flag in the callout" "$U|" "$(_dz_flags_get $O; print -r -- "$reply[1]|$reply[2]")"
 eq  "obsidian: no extra sections" "$(grep -c '^## ' $_dz_repo/examples/obsidian/Box-note.md)" "$(grep -c '^## ' $O)"
+
+# Review round 2: a slot style dz doesn't write into gets the known slots, the flag is stored.
+dz -l slots >/dev/null
+print -r -- $'---\nupdated: x\n---\n## Flags\n\n- **User flag**: \n- **Root flag**: \n' > $S
+ok  "'- **User flag**: ' style: the flag is stored" dz -f user $U
+eq  "and readable" "$U" "$(_dz_flags_get $S; print -r -- $reply[1])"
+
+# A section that is there: the note isn't rewritten.
+print -r -- $'---\nupdated: x\n---\n## Timeline\n\n## Flags\n' > $S
+i1=$(ls -i $S | awk '{print $1}')
+_dz_section_ensure $S Timeline Flags
+eq  "ensure on a present section leaves the file alone" "$i1" "$(ls -i $S | awk '{print $1}')"

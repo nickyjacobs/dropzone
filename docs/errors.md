@@ -77,6 +77,7 @@ dz [E201] no box loaded
 | [E416](#e416) | couldn't change the to-do list |
 | [E417](#e417) | no such finding |
 | [E418](#e418) | couldn't add the finding |
+| [E419](#e419) | couldn't change the finding's status |
 | [W401](#w401) | unusual flag format |
 | [W402](#w402) | terminal recording didn't start |
 | [W403](#w403) | no timeline section |
@@ -440,6 +441,13 @@ dz [E201] no box loaded
 **Error.** dz wrote the finding but couldn't find its `### F<n> · <title>` heading back under `## Findings`.
 
 **What to do:** Check the Findings section in the note. A finding heading looks like `### F1 · SMB signing disabled`.
+
+<a id="e419"></a>
+### E419 · couldn't change the finding's status
+
+**Error.** dz changes the status on the `**Host:** <host> · **Status:** open` line under the finding's heading, and that line isn't there (removed or reworded by hand).
+
+**What to do:** Put the line back under the heading: `**Host:** dc01 · **Status:** open`, then run the command again.
 
 <a id="w401"></a>
 ### W401 · unusual flag format

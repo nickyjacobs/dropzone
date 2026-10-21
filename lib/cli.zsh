@@ -145,8 +145,8 @@ _dz_info() {
 _dz_info_next() {
   emulate -L zsh
   local note=$1 l
-  local -a w todo=() last
-  _dz_todo_items $note "$BOX ${_dz_bh%% *}"
+  local -a w todo=() last hs=($BOX ${_dz_bh%% *})
+  _dz_todo_items $note "$hs"
   for l in $reply; do w=("${(@ps:\t:)l}"); [[ $w[2] == x ]] || todo+=("$w[1]"$'\t'"${w[3]:+$w[3] · }$w[4]"); done
   local fnd=''
   if _dz_finding_active $note peek; then

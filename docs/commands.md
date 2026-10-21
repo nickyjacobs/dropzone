@@ -284,7 +284,7 @@ Also `domain`, `targets`, `user` and `hash`. Uses `wl-copy`, `xclip` or `xsel`; 
 
 ### SysReptor
 
-With `sysreptor = yes`, `dz -s` and `dz -e` also upload to your [SysReptor](https://docs.sysreptor.com/) project, as notes under a note named after the box (and the finding, when one is active). Needs [reptor](https://github.com/Syslifters/reptor): `pip install reptor`, then `reptor conf`. It runs in the background and logs to `logs/sysreptor.log`. dz only sends evidence; findings and the report stay your work in SysReptor. Secrets on a screenshot go along.
+With `sysreptor = yes`, `dz -s` and `dz -e` also upload to your [SysReptor](https://docs.sysreptor.com/) project, as notes under a note named after the box; `dz -e` output under an active finding gets its number in the title (`F1 · smb signing`). Needs [reptor](https://github.com/Syslifters/reptor): `pip install reptor`, then `reptor conf`. It runs in the background and logs to `logs/sysreptor.log`. dz only sends evidence; findings and the report stay your work in SysReptor. Secrets on a screenshot go along.
 
 ## Reference
 

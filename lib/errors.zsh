@@ -162,6 +162,9 @@ _dz_def E417 "no such finding" \
 _dz_def E418 "couldn't add the finding" \
   "dz wrote the finding but couldn't find its '### F<n> · <title>' heading back under '## Findings'." \
   "Check the Findings section in the note. A finding heading looks like '### F1 · SMB signing disabled'."
+_dz_def E419 "couldn't change the finding's status" \
+  "dz changes the status on the '**Host:** <host> · **Status:** open' line under the finding's heading, and that line isn't there (removed or reworded by hand)." \
+  "Put the line back under the heading: '**Host:** dc01 · **Status:** open', then run the command again."
 _dz_def W401 "unusual flag format" \
   "HTB flags are 32 hex characters; this one isn't. It's stored anyway, because other platforms use other formats." \
   "Nothing, if it's right. Otherwise fix it in the note."

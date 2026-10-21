@@ -155,3 +155,12 @@ DZ_ADD_SECTIONS=yes
 dz -n single -ip 10.10.60.1 --template $_dz_repo/templates/box-note.md >/dev/null
 dz -f 0123456789abcdef0123456789abcdef >/dev/null
 has "-i <box>: user flag counted" "flags      1" "$(dz -i single)"
+
+# Review round 2: done without a Status line fails; the menu form always creates.
+dz -l rev >/dev/null
+dz --finding Two >/dev/null
+perl -0pi -e 's/\*\*Host:\*\* rev · \*\*Status:\*\* open\n\n(?=- |\n*$)//; s/(### F\d+ · Two\n\n)\*\*Host:\*\*[^\n]*\n/$1/' $V
+nok "done without a Status line fails" dz --finding done
+has "with E419" "E419" "$(dz --finding done 2>&1)"
+has "the menu form makes '2' a title" "· 2 (rev)" "$(_dz_finding 2 new)"
+has "and 'off' too" "· off (rev)" "$(_dz_finding off new)"

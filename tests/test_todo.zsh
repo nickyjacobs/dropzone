@@ -107,3 +107,11 @@ dz --deadline 10d >/dev/null 2>&1
 eq  "add_sections = no: --deadline still succeeds" 0 "$?"
 has "-j without a timeline: E413" "E413" "$(dz -j x 2>&1)"
 DZ_ADD_SECTIONS=yes; dz --deadline none >/dev/null
+
+# Review round 2: keywords in any case; the menu form always adds.
+dz -l delta >/dev/null
+print -r -- $'---\nupdated: x\n---\n## To do\n\n## Timeline\n' > $D
+dz --todo one >/dev/null
+has "DONE 1 ticks off" "done: one" "$(dz --todo DONE 1)"
+has "the menu form adds 'done 3' as text" "to-do #2: done 3" "$(_dz_todo 'done 3' new)"
+has "Next block knows every host's tag" "#1  web01 · x" "$(dz -n eps -ip 10.10.41.1 >/dev/null; dz -t dc01 -ip 10.10.41.2 >/dev/null; dz -t web01 -ip 10.10.41.3 >/dev/null; dz -t web01 >/dev/null; dz --todo x >/dev/null; dz -i)"

@@ -19,22 +19,23 @@
 # have it, right before the first of the [before] headings it does have, else at the end.
 # With 'add_sections = no' dz never adds a section: it fails, and the caller reports it.
 # Also ends the note with a newline, so a heading on the last line can be written under.
+# Only writes the note when something changes.
 _dz_section_ensure() {
-  local note=$1 head=$2 add=''; shift 2
-  _dz_on DZ_ADD_SECTIONS && add=1
-  HEAD=$head BEFORE=${(pj:\n:)@} ADD=$add perl -0777 -i -ne '
-    our $miss = !/^## \Q$ENV{HEAD}\E[ \t]*$/m;
+  local note=$1 head=$2 st; shift 2
+  [[ -r $note ]] || return 1
+  # 0 = there, 3 = there but no newline at the end, 1 = missing.
+  HEAD=$head perl -0777 -ne 'exit(/^## \Q$ENV{HEAD}\E[ \t]*$/m ? (/\n\z/ ? 0 : 3) : 1)' $note
+  st=$?
+  (( st == 0 )) && return 0
+  (( st == 3 )) && { print >> $note; return }
+  _dz_on DZ_ADD_SECTIONS || return 1
+  HEAD=$head BEFORE=${(pj:\n:)@} perl -0777 -pi -e '
     $_ .= "\n" unless /\n\z/;
-    if ($miss && $ENV{ADD}) {
-      my $done = 0;
-      for my $b (grep { length } split /\n/, $ENV{BEFORE}) {
-        $done = s/^(## \Q$b\E[ \t]*)$/## $ENV{HEAD}\n\n$1/m and last;
-      }
-      $_ .= "\n## $ENV{HEAD}\n\n" unless $done;
-      $miss = 0;
+    my $done = 0;
+    for my $b (grep { length } split /\n/, $ENV{BEFORE}) {
+      $done = s/^(## \Q$b\E[ \t]*)$/## $ENV{HEAD}\n\n$1/m and last;
     }
-    print;
-    END { $? = $miss ? 1 : 0 }
+    $_ .= "\n## $ENV{HEAD}\n\n" unless $done;
   ' $note
 }
 
@@ -45,14 +46,19 @@ _dz_note_need() {
   [[ -f $REPLY ]] || { _dz_err E402 "no note for $BOX ($REPLY)"; return 1 }
 }
 
-# _dz_timeline_add <note> <text>: '- <date> <time> · <text>' at the end of the timeline
-# section. Extra lines in <text> (an embed) stay under the entry.
+# _dz_timeline_add [-s] <note> <text>: '- <date> <time> · <text>' at the end of the timeline
+# section. Extra lines in <text> (an embed) stay under the entry. No timeline section and
+# add_sections = no: a warning and success, because the command itself worked. With -s
+# (strict) no warning but status 2, for a caller whose whole job is this line.
 _dz_timeline_add() {
+  local strict=''
+  [[ $1 == -s ]] && { strict=1; shift }
   local ts; strftime -s ts '%F %H:%M' $EPOCHSECONDS
-  # A warning carries on: the command itself worked. _dz_tl_skip tells a caller that cares.
-  typeset -g _dz_tl_skip=0
-  _dz_section_ensure $1 "$DZ_TIMELINE" Flags ||
-    { _dz_warn W403 "the note has no '## $DZ_TIMELINE' (add_sections = no), line not written: ${2%%$'\n'*}"; _dz_tl_skip=1; return 0 }
+  if ! _dz_section_ensure $1 "$DZ_TIMELINE" Flags; then
+    [[ -n $strict ]] && return 2
+    _dz_warn W403 "the note has no '## $DZ_TIMELINE' (add_sections = no), line not written: ${2%%$'\n'*}"
+    return 0
+  fi
   HEAD=$DZ_TIMELINE ENTRY="- $ts · $2" TODAY=${ts% *} perl -0777 -pi -e '
     my $h = quotemeta $ENV{HEAD};
     s{(^## $h[ \t]*\n)(.*?)(?=^## |\z)}{
@@ -91,7 +97,8 @@ _dz_flags_get() {
 # _dz_flags_set <note> <User|Root> <flag>: into the empty callout; adds the Flags
 # section when the note has none.
 _dz_flags_set() {
-  if ! grep -qE '^(- )?\*\*User flag' $1; then
+  # The same slots the writer below knows: a callout, or '- **User flag:**'.
+  if ! grep -qE '^(\*\*User flag\*\*|- \*\*User flag:\*\*)' $1; then
     _dz_section_ensure $1 Flags || { _dz_err E413 "the note has no '## Flags' section (add_sections = no)"; return 1 }
     # The user and root slots go at the top of the Flags section.
     perl -0777 -pi -e 's/^(## Flags[ \t]*\n)\n*/$1\n- **User flag:** \n- **Root flag:** \n\n/m' $1
@@ -206,9 +213,8 @@ _dz_journal() {
     [[ -n $out ]] && print -r -- $out || print "no timeline entries for $BOX yet"
     return 0
   fi
-  _dz_section_ensure $note "$DZ_TIMELINE" Flags ||
+  _dz_timeline_add -s $note "${1//$'\n'/ }" ||
     { _dz_err E413 "the note has no '## $DZ_TIMELINE' section (add_sections = no)"; return 1 }
-  _dz_timeline_add $note "${1//$'\n'/ }"
   print "• added to the timeline of $BOX"
 }
 

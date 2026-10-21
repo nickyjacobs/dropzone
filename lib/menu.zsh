@@ -442,8 +442,8 @@ _dz_menu() {
     deadline) _dz_deadline "$text" ;;
     journal) _dz_journal "$text" ;;
     flag) _dz_flag '' "$text" ;;
-    todo) _dz_todo "$text" ;;
-    finding) _dz_finding "$text" ;;
+    todo) _dz_todo "$text" new ;;
+    finding) _dz_finding "$text" new ;;
     creds) _dz_creds "$name:$secret" ;;
     rm)   [[ $rmnote == y ]] && _dz_rm $name 1 yes || _dz_rm $name 1 no ;;
     open) _dz_open ;;
