@@ -17,25 +17,27 @@ What you really need to know to use dz without surprises. Every option is in [co
 - **Variables live per terminal.** `dz -l` in one terminal doesn't change a terminal that is already open. New terminals load the last box you loaded (`autoload = yes`), including the active host from `dz -t`. Run `dz -l <box>` in an old terminal to bring it up to date.
 - **One action per call.** `dz -l jacops -i` is refused ([E103](errors.md#e103)): first `dz -l jacops`, then `dz -i`. Options that only change how an action works (`-ip`, `-h`, `--via`, `--template`, `--deadline`, `-y`, `--all`) can go along.
 - **dz never touches the target.** It doesn't scan, exploit or connect, apart from one ping after `-n` / `-ip` (`ping = no` turns that off). `dz serve` and `dz -cp` only print or copy commands; you run them.
-- **Files are read, never run.** `.dropzone`, `creds`, `.via`, `.deadline` and your config are parsed line by line, so a dumped `.env` or other loot in a box folder can't run code on your Kali.
+- **Files are read, never run.** `.dropzone`, `creds`, `.via`, `.deadline`, `.finding` and your config are parsed line by line, so a dumped `.env` or other loot in a box folder can't run code on your Kali.
 
 ## Ten things that trip people up
 
 1. **`-h` has two meanings.** `-h` alone is help; `-h <host,...>` sets hostnames. `dz -n jacops -ip 10.10.10.5 -h` (nothing after it) shows the help.
 2. **`!` in a password.** zsh expands `!` in double quotes and unquoted words. Use single quotes: `dz -c 'alex:Pass!2026'`, or `dz -c alex` and type the secret at the prompt.
 3. **Secrets in your history.** A secret on the command line ends up in `~/.zsh_history`. `dz -c <user>` asks for it without echo, or start the line with a space (that also keeps it out of `commands.log`).
-4. **`-j`, `-s` and `-e` take the rest of the line.** `dz -j found creds --help` writes "found creds --help" into the timeline; it doesn't show the help. Quotes are optional.
+4. **`-j`, `-s`, `-e`, `--todo` and `--finding` take the rest of the line.** `dz -j found creds --help` writes "found creds --help" into the timeline; it doesn't show the help. Quotes are optional.
 5. **`cmd | dz -e` only gets stdout.** Errors from the tool go to stderr and aren't piped: add `2>&1`. And you don't see the output while it's piped; add `| tee /dev/tty` before `| dz -e` to watch it.
 6. **`/etc/hosts` needs sudo.** `-h` and `dz -t ... -h` ask for your sudo password. dz keeps a backup in `/etc/hosts.dz.bak` and only touches lines tagged `# dz:<box>`.
 7. **The note is never overwritten**, also not by `dz -n` on an existing box or by a new template. A changed template only counts for new boxes.
-8. **Headings are how dz finds its place.** Rename `## Timeline`, `## Flags`, `## Hosts`, `## Ports` or `## Credentials` and dz can't write there any more (or adds a new section). Keep them, or set `timeline` for your own timeline heading.
+8. **Headings are how dz finds its place.** Rename `## Timeline`, `## Flags`, `## To do`, `## Findings`, `## Hosts`, `## Ports` or `## Credentials` and dz can't write there any more (or adds a new section). Keep them, set `timeline` for your own timeline heading, or `add_sections = no` so dz never adds one ([notes.md](notes.md#templates)).
 9. **The VPN check only warns.** A `[W201]` or `[W202]` never stops a command. It's there so you notice a dead VPN before you lose an hour.
 10. **`dz -r` is a trash, `dz -a` is an archive.** Removing moves the box folder to the system trash (and the vault note only if you say so). Archiving keeps everything under `~/boxes/_archive/` and `dz -l` brings it back; `dz -r` also takes an archived box.
 
 ## Your note
 
 - One note per box: `notes = folder` puts it in the box folder, `notes = vault` in your Obsidian vault. See [notes.md](notes.md).
-- dz adds lines and fills empty slots: timeline, flags, host rows, ports, creds. Everything else in the note is yours.
+- dz adds lines and fills empty slots: timeline, flags, to-dos, findings, host rows, ports, creds. Everything else in the note is yours.
+- **To-dos are yours**: `dz --todo` writes what *you* want to try next, dz never suggests anything. `dz -i` shows the open ones, so after a break you see where you were.
+- **Findings collect evidence**: after `dz --finding <title>`, every `dz -s` and `dz -e` goes under that finding until `dz --finding off`. Forgot to stop it? Move the lines in the note; it's just Markdown.
 - The IP in the note follows `dz -ip` and `dz -t <host> -ip`, as an exact match: `10.10.10.1` leaves `10.10.10.15` alone.
 - Flags: a single box has a user and a root slot (the root flag marks it done). A box with more hosts, or a note without those slots like the exam template, keeps a list of flags per host with a count against `flag_goal`.
 
@@ -63,8 +65,12 @@ dz -t ms01 -ip 172.16.5.10 --via web01                      # a host behind it
 dz serve ~/tools --via web01                                # ligolo listener + download commands
 nxc smb 172.16.5.0/24 2>&1 | dz -e smb sweep                # output as evidence
 dz -c --export                                              # users/passwords/hashes for spraying
+dz --todo spray svc_web on ms01 winrm                       # what to try next, for later
+dz -i ms01                                                  # its to-dos, findings and working creds
+dz --finding Password reuse on ms01                         # evidence goes under F1 now
+dz -s ms01 local admin                                      # screenshot under F1
+dz --finding off                                            # back to the timeline
 dz -t ms01 && dz -f <flag>                                  # flag of ms01, 3/14
-dz -s ms01 local admin                                      # screenshot into the timeline
 dz --deadline                                               # day 6/10 · 3d22h left
 dz -g svc_sql --all                                         # seen that user on an earlier box?
 ```
