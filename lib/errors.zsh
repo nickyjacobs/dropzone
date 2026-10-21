@@ -25,7 +25,7 @@ _dz_def E102 "option needs a value" \
   "The option takes a value (a name, an IP, a file), but nothing followed it, or the next word starts with '-' and reads as another option." \
   "Put the value right after the option: 'dz -l jacops', 'dz -ip 10.10.10.5'. Quote values that contain spaces."
 _dz_def E103 "more than one action" \
-  "Every dz call does one thing: -n, -l, -v, -i, -x, -t, -p, -cp, -o, -d, -a, -f, -j, -s, -e, -g, -c or -r. Two of them in one call are refused, so nothing half happens." \
+  "Every dz call does one thing: -n, -l, -v, -i, -x, -t, -p, -cp, -o, -d, -a, -f, -j, -s, -e, -g, -c, -r, --todo or --finding. Two of them in one call are refused, so nothing half happens." \
   "Split it into two calls: 'dz -l jacops' and then 'dz -i'. Options like -ip, -h, --via and --template are not actions and can go along."
 _dz_def E104 "no action given" \
   "The call has options but none of them says what to do, for example only '-y' or '--all'." \
@@ -144,12 +144,36 @@ _dz_def E411 "nothing piped into dz -e" \
 _dz_def E412 "no output to save" \
   "The command in front of dz -e printed nothing to stdout. Many tools print errors to stderr, which a pipe doesn't carry." \
   "Add 2>&1 to the command: 'cmd 2>&1 | dz -e caption'."
+_dz_def E413 "the note is missing a section" \
+  "'add_sections = no' in your config, so dz doesn't add a Flags, To do or Findings section to your note, and this note doesn't have the one it needs." \
+  "Add the heading from the message to your note (or your template), like '## To do'. Or set 'add_sections = yes'."
+_dz_def E414 "no such to-do" \
+  "There is no to-do with that number in the note. Numbers are the place in the To do section, counting the done ones too." \
+  "'dz --todo --all' shows every to-do with its number."
+_dz_def E415 "to-do already done" \
+  "That to-do is already ticked off ('- [x]' in the note)." \
+  "Nothing to do. Untick it in the note ('- [ ]') if it isn't done after all."
+_dz_def E416 "couldn't change the to-do list" \
+  "dz wrote to the To do section but couldn't find the change back: the section has a layout dz doesn't know." \
+  "Keep the to-dos as a plain checklist under '## To do': one '- [ ] text' per line."
+_dz_def E417 "no such finding" \
+  "There is no finding with that number in the note, or you gave none and no finding is active." \
+  "'dz --finding' lists them with their numbers; 'dz --finding done 2' names one."
+_dz_def E418 "couldn't add the finding" \
+  "dz wrote the finding but couldn't find its '### F<n> · <title>' heading back under '## Findings'." \
+  "Check the Findings section in the note. A finding heading looks like '### F1 · SMB signing disabled'."
 _dz_def W401 "unusual flag format" \
   "HTB flags are 32 hex characters; this one isn't. It's stored anyway, because other platforms use other formats." \
   "Nothing, if it's right. Otherwise fix it in the note."
 _dz_def W402 "terminal recording didn't start" \
   "'output = yes' records every new terminal with script(1), and that failed (no util-linux script, or no log folder). The terminal works without a recording." \
   "Check 'script --version' (needs util-linux) or set 'output = no'."
+_dz_def W403 "no timeline section" \
+  "'add_sections = no' in your config and the note has no timeline heading ('## Timeline', or the name from 'timeline'), so the timeline line was not written. The rest of the command worked." \
+  "Add the heading to your note (or your template), or set 'add_sections = yes'."
+_dz_def W404 "active finding is gone" \
+  "The active finding's heading isn't in the note anymore (removed or renamed by hand), so evidence goes to the timeline again." \
+  "'dz --finding' lists the findings; pick one with 'dz --finding <nr>' or start a new one."
 
 # --- E5xx: creds
 _dz_def E501 "creds is off" \

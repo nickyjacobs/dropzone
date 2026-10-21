@@ -4,7 +4,7 @@
 #
 #   New box · Load box · Target › · Notes › · Mark done · Remove box · Unload box · Quit
 #   Target ›  Change IP · Switch host · Add host · Deadline
-#   Notes ›   Open note · Timeline entry · Add flag · Creds
+#   Notes ›   Open note · Timeline entry · Add flag · To do · Finding · Creds
 #   DZ_ART=3 dz   with a fixed art (1-10, see art.zsh)
 
 typeset -ga _dz_logo_small=('D R O P Z O N E')
@@ -157,10 +157,10 @@ _dz_set_sub() {
     _dz_box_read $DZ_ROOT/$BOX 2>/dev/null && (( $#_dz_bh )) || _dz_off[2]=1   # only the main host
   else
     _dz_title="Notes · $BOX"
-    _dz_items=('Open note' 'Timeline entry' 'Add flag' 'Creds')
-    _dz_off=(0 0 0 0)
-    [[ $DZ_NOTE_MODE == off ]] && _dz_off[1]=1 _dz_off[2]=1 _dz_off[3]=1
-    _dz_on DZ_CREDS || _dz_off[4]=1
+    _dz_items=('Open note' 'Timeline entry' 'Add flag' 'To do' 'Finding' 'Creds')
+    _dz_off=(0 0 0 0 0 0)
+    [[ $DZ_NOTE_MODE == off ]] && _dz_off[1,5]=(1 1 1 1 1)
+    _dz_on DZ_CREDS || _dz_off[6]=1
   fi
 }
 
@@ -306,6 +306,16 @@ _dz_menu_sub() {
       text=''
       _dz_ask text 'flag' && [[ -n $text ]] && { action=flag; return 0 } ;;
     notes:4)
+      _dz_mode=form _dz_title="To do for ${DZ_ACTIVE:-$BOX} (dz --todo lists them)"
+      _dz_draw $f
+      text=''
+      _dz_ask text 'to do' && [[ -n $text ]] && { action=todo; return 0 } ;;
+    notes:5)
+      _dz_mode=form _dz_title="New finding on ${DZ_ACTIVE:-$BOX}: -s and -e go under it"
+      _dz_draw $f
+      text=''
+      _dz_ask text 'title' && [[ -n $text ]] && { action=finding; return 0 } ;;
+    notes:6)
       _dz_mode=form _dz_title="Creds for $BOX (the secret doesn't show)"
       _dz_draw $f
       name='' secret=''
@@ -432,6 +442,8 @@ _dz_menu() {
     deadline) _dz_deadline "$text" ;;
     journal) _dz_journal "$text" ;;
     flag) _dz_flag '' "$text" ;;
+    todo) _dz_todo "$text" ;;
+    finding) _dz_finding "$text" ;;
     creds) _dz_creds "$name:$secret" ;;
     rm)   [[ $rmnote == y ]] && _dz_rm $name 1 yes || _dz_rm $name 1 no ;;
     open) _dz_open ;;

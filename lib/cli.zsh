@@ -14,7 +14,7 @@ _dz_help() {
   _dz_row "--deadline [when]" "time limit: 10d, 48h or a date, none removes it"
   _dz_row "-l <name>" "load a box (an archived one comes back)"
   _dz_row "-v [--all]" "view all boxes, --all includes the archive"
-  _dz_row "-i" "show the loaded box"
+  _dz_row "-i [host]" "the loaded box and what's next, or one host"
   _dz_row "-x" "unload the box"
   _dz_row "-d [name]" "mark a box done"
   _dz_row "-a <name>" "archive a box (done, folder to _archive/)"
@@ -31,6 +31,9 @@ _dz_help() {
   _dz_row "-j <text>" "line in the timeline, -j alone shows it"
   _dz_row "-s [caption]" "screenshot to evidence/, into the note"
   _dz_row "<cmd> | dz -e [caption]" "command output to evidence/, into the note"
+  _dz_row "--todo <text>" "your own to-do, --todo lists, --todo done <nr>"
+  _dz_row "--finding <title>" "start a finding: -s and -e go under it"
+  _dz_row "--finding [nr|off|done]" "list, switch, stop, or mark one done"
   _dz_row "-f [user|root] <flag>" "flag into the note (root = done), -f shows them"
   _dz_row "-f <host> <flag>" "flag of a host in the box (dz -t), counted"
   _dz_row "-c [user[:secret]]" "store creds (needs creds = yes), -c lists them"
@@ -54,6 +57,8 @@ _dz_help() {
   print -r -- "    ${_uk}dz -t dc01 -ip 10.129.42.191 -h dc01.jacops.htb${_ur}"
   print -r -- "    ${_uk}dz -j found an NFS share with backups${_ur}"
   print -r -- "    ${_uk}dz -s nfs share listing${_ur}"
+  print -r -- "    ${_uk}dz --todo try the backup creds on winrm${_ur}"
+  print -r -- "    ${_uk}dz --finding SMB signing disabled${_ur}"
   _dz_rule
   print -r -- "${_ud}More: https://github.com/nickyjacobs/dropzone/blob/main/docs/commands.md${_ur}"
 }
@@ -100,10 +105,13 @@ _dz_update() {
   print "• new settings? dz --config check · load the new version: exec zsh"
 }
 
+# dz -i [host]: the loaded box, its hosts and what's next (to-dos, the active finding, the
+# last timeline lines). With a host: everything about that one host.
 _dz_info() {
   emulate -L zsh
   [[ -n $BOX ]] || { _dz_err E201 "no box loaded"; return 1 }
   _dz_box_read $DZ_ROOT/$BOX || { _dz_err E207 "box '$BOX' is gone (removed or archived?), dz -x"; return 1 }
+  [[ -n $1 ]] && { _dz_info_host $1; return }
   _dz_attacker_refresh
   _dz_ui
   # reply is reused below (the clock), so keep the main host's IP.
@@ -119,13 +127,105 @@ _dz_info() {
   _dz_clock_read $BOX && { _dz_clock_text $reply[1] $reply[2]; _dz_row clock "$REPLY" 10 }
   [[ -n $DZ_RECORDING ]] && _dz_row recording "${DZ_RECORDING/#$HOME/~}" 10
   if (( $#extra )); then
-    _dz_rule; _dz_head Hosts "dz -t"
+    _dz_rule; _dz_head Hosts "dz -i <host>"
     _dz_row main "$main_ip" 10
     for l in $extra; do
       w=(${=l}); _dz_label_var $w[1]; local hv=$REPLY
       _dz_via_get $w[1]
       _dz_row "${w[1]}" "$w[2]  \$$hv${w[3]:+  ${w[3,-1]}}${REPLY:+  via $REPLY}" 10
     done
+  fi
+  [[ -f $note ]] && _dz_info_next $note
+  _dz_rule
+  return 0
+}
+
+# The Next block of dz -i: open to-dos (at most 5), the active finding, the last 3 lines
+# of the timeline. Nothing when all three are empty.
+_dz_info_next() {
+  emulate -L zsh
+  local note=$1 l
+  local -a w todo=() last
+  _dz_todo_items $note "$BOX ${_dz_bh%% *}"
+  for l in $reply; do w=("${(@ps:\t:)l}"); [[ $w[2] == x ]] || todo+=("$w[1]"$'\t'"${w[3]:+$w[3] · }$w[4]"); done
+  local fnd=''
+  if _dz_finding_active $note 2>/dev/null; then
+    _dz_findings $note
+    local hit=${(M)reply:#$REPLY$'\t'*}
+    w=("${(@ps:\t:)hit}")
+    fnd="F$w[1] · $w[5]${w[2]:+ ($w[2])}"
+  fi
+  last=("${(@f)$(_dz_timeline_show $note 3)}"); last=(${last:#})
+  (( $#todo + $#last )) || [[ -n $fnd ]] || return 0
+  _dz_rule; _dz_head Next "dz --todo · dz --finding · dz -j"
+  local -i i=0
+  local lab='to do'
+  for l in $todo; do
+    (( ++i > 5 )) && { _dz_row '' "+$(( $#todo - 5 )) more (dz --todo)" 10; break }
+    _dz_row "$lab" "#${l%%$'\t'*}  ${l#*$'\t'}" 10; lab=''
+  done
+  [[ -n $fnd ]] && _dz_row finding "$fnd" 10
+  local lab=last
+  for l in $last; do _dz_row "$lab" "${l#- }" 10; lab=''; done
+}
+
+# dz -i <host>: one host of the loaded box (the main host too). _dz_box_read has run.
+_dz_info_host() {
+  emulate -L zsh
+  local h=$1 ip hn note l
+  local -a w v hosts=($BOX ${_dz_bh%% *})
+  if [[ $h == $BOX ]]; then ip=$reply[2] hn=$reply[3]
+  elif _dz_host_line $h; then w=(${=REPLY}); ip=$w[2] hn="$w[3,-1]"
+  else _dz_err E302 "no host '$h' in $BOX (dz -t lists them)"; return 1
+  fi
+  note=$(_dz_note $BOX 2>/dev/null) || note=''
+  _dz_ui
+  local tag=$BOX
+  [[ $h == $BOX ]] && tag+=', main host'
+  [[ $h == ${DZ_ACTIVE:-$BOX} ]] && tag+=', target'
+  _dz_rule; _dz_head $h "$tag"
+  if [[ $h == $BOX ]]; then _dz_row ip "$ip" 10
+  else _dz_label_var $h; _dz_row ip "$ip  \$$REPLY" 10
+  fi
+  _dz_row hostnames "${hn:--}" 10
+  _dz_via_get $h && _dz_row via "$REPLY" 10
+  if [[ -f $note ]]; then
+    _dz_flags_list $note
+    w=(${(M)reply:#$h *})
+    (( $#w )) && _dz_row flags "$#w" 10
+    _dz_todo_items $note "$hosts"
+    local -a todo=()
+    # Items without a host tag belong to the main host.
+    for l in $reply; do
+      w=("${(@ps:\t:)l}")
+      [[ $w[2] != x && ${w[3]:-$BOX} == $h ]] && todo+=("#$w[1]  $w[4]")
+    done
+    if (( $#todo )); then
+      _dz_rule; _dz_head "To do" "dz --todo done <nr>"
+      for l in $todo; do _dz_row '' "$l" 0; done
+    fi
+    _dz_findings $note
+    local -a fnd=()
+    for l in $reply; do
+      w=("${(@ps:\t:)l}")
+      [[ $w[2] == $h ]] && fnd+=("F$w[1]  ${(r:5:)w[3]} $w[4] evidence  $w[5]")
+    done
+    if (( $#fnd )); then
+      _dz_rule; _dz_head Findings "dz --finding"
+      for l in $fnd; do _dz_row '' "$l" 0; done
+    fi
+  fi
+  # Creds that work here: only user and number, never the secret.
+  if _dz_on DZ_CREDS && [[ -s $DZ_ROOT/$BOX/creds ]]; then
+    local -a cr=() c; local -i n=0
+    for l in "${(@f)$(<$DZ_ROOT/$BOX/creds)}"; do
+      (( n++ )); c=("${(@ps:\t:)l}"); v=(${(s:,:)c[5]})
+      (( ${v[(Ie)$h]} || ${v[(Ie)$ip]} )) && cr+=("#$n  $c[1]${c[3]:+  ($c[3])}")
+    done
+    if (( $#cr )); then
+      _dz_rule; _dz_head "Creds that work here" "dz -c <nr> makes one active"
+      for l in $cr; do _dz_row '' "$l" 0; done
+    fi
   fi
   _dz_rule
   return 0
@@ -134,7 +234,7 @@ _dz_info() {
 # Parser helpers for dz: one action per call, and options that take a value.
 # They work on the locals of dz (dynamic scope).
 _dz_act() {
-  [[ -z $act || $act == $1 ]] || { _dz_err E103 "pick one action (-n, -l, -v, -i, -x, -t, -p, -cp, -o, -d, -a, -f, -j, -s, -e, -g, -c, -r)"; return 1 }
+  [[ -z $act || $act == $1 ]] || { _dz_err E103 "pick one action (-n, -l, -v, -i, -x, -t, -p, -cp, -o, -d, -a, -f, -j, -s, -e, -g, -c, -r, --todo, --finding)"; return 1 }
   act=$1
 }
 _dz_val() {
@@ -147,8 +247,9 @@ dz() {
   (( $# )) || { _dz_menu; return }
   # Tools are words: dz serve.
   [[ $1 == serve ]] && { shift; _dz_serve "$@"; return }
-  # --help anywhere wins, so you can add it to any command (not inside the text of -j / -s).
-  local -i stop=${@[(i)(-j|--journal|-s|--shot|-e|--evidence)]}
+  # --help anywhere wins, so you can add it to any command (not inside the text of -j, -s,
+  # -e, --todo or --finding).
+  local -i stop=${@[(i)(-j|--journal|-s|--shot|-e|--evidence|--todo|--finding)]}
   (( ${${@[1,stop-1]}[(I)--help]} )) && { _dz_help; return 0 }
 
   local act='' name='' ip='' host='' yes=0 note=ask all='' cred='' credsrc='' valid='' cexport='' tplname='' via='' deadline='' fkind='' text='' label='' drop='' file='' what=''
@@ -172,7 +273,7 @@ dz() {
                    [[ -n $2 ]] || { _dz_err E102 "-g needs a search term (dz -g <term>)"; return 1 }
                    text=$2; shift ;;
       -cp|--copy)  _dz_act copy || return 1; [[ -n $2 && $2 != -* ]] && { what=$2; shift } ;;
-      -i|--info)   _dz_act info || return 1 ;;
+      -i|--info)   _dz_act info || return 1; [[ -n $2 && $2 != -* ]] && { label=$2; shift } ;;
       -x|--off)    _dz_act off || return 1 ;;
       -o|--open)   _dz_act open || return 1; [[ -n $2 && $2 != -* ]] && { name=$2; shift } ;;
       -d|--done)   _dz_act done || return 1; [[ -n $2 && $2 != -* ]] && { name=$2; shift } ;;
@@ -188,6 +289,8 @@ dz() {
       -j|--journal) _dz_act journal || return 1; shift; text="$*"; break ;;
       -s|--shot)   _dz_act shot || return 1; shift; text="$*"; break ;;
       -e|--evidence) _dz_act evidence || return 1; shift; text="$*"; break ;;
+      --todo)      _dz_act todo || return 1; shift; text="$*"; break ;;
+      --finding)   _dz_act finding || return 1; shift; text="$*"; break ;;
       -c|--creds)  _dz_act creds || return 1
                    [[ -n $2 && $2 != -* ]] && { cred=$2; shift }
                    [[ -n $cred && -n $2 && $2 != -* ]] && { credsrc=$2; shift } ;;
@@ -238,7 +341,9 @@ dz() {
     journal) _dz_journal "$text" ;;
     shot) _dz_shot "$text" ;;
     evidence) _dz_evidence "$text" ;;
-    info) _dz_info ;;
+    info) _dz_info "$label" ;;
+    todo) _dz_todo "$text" ;;
+    finding) _dz_finding "$text" ;;
     target) _dz_target "$label" "$ip" "$host" "$drop" "$via" ;;
     ports) _dz_ports "$file" ;;
     grep)  _dz_grep "$text" "$all" ;;
@@ -273,6 +378,12 @@ _dz_comp_flag() {
   [[ -n $BOX ]] && _dz_box_read $DZ_ROOT/$BOX 2>/dev/null && (( $#_dz_bh )) && k+=($BOX ${_dz_bh%% *})
   _describe -t kinds kind k
 }
+_dz_comp_todo() {
+  (( CURRENT == 2 )) && { local -a k=('done:tick a to-do off' '--all:the done ones too'); _describe -t todo todo k }
+}
+_dz_comp_finding() {
+  (( CURRENT == 2 )) && { local -a k=('off:no active finding' 'done:mark the active one done'); _describe -t finding finding k }
+}
 _dz_comp_all() {
   local -a b=($DZ_ROOT/*/.dropzone(Nn:h:t)) a=($DZ_ROOT/_archive/*/.dropzone(Nn:h:t))
   _describe -t boxes box b
@@ -285,12 +396,13 @@ _dz_complete() {
     '-h[hostnames, comma separated]:hostnames:' \
     '-l[load a box]:box:_dz_comp_all' \
     '(-n -l -v -i -x -o -d -a -c)-r[remove a box]:box:_dz_comp_all' \
-    '-v[view boxes]' '--all[include the archive, with -v or -g]' '-g[search the notes of every box]:term:' '-i[show the loaded box]' '-x[unload the box]' \
+    '-v[view boxes]' '--all[include the archive, with -v or -g]' '-g[search the notes of every box]:term:' '-i[show the loaded box or a host]::host:_dz_comp_hosts' '-x[unload the box]' \
     '-t[hosts in the box]::host:_dz_comp_hosts' '--drop[remove the host, with -t]' '--via[pivot of the host, with -t]:pivot:_dz_comp_hosts' \
     '-p[nmap output into the note]::nmap output:_files -g "*.(xml|gnmap)"' \
     '-cp[copy to the clipboard]::what:_dz_comp_copy' \
     '-c[store or list creds]::user\:secret:' '--valid[hosts where the cred works, with -c]:hosts:_dz_comp_hosts' '--export[users, passwords and hashes to loot/, with -c]' \
     '-f[store or show a flag]::kind:_dz_comp_flag' '-j[add to the timeline]:*::text:' '-s[take a screenshot]:*::caption:' '-e[save piped output as evidence]:*::caption:' \
+    '--todo[add or list to-dos]:*::text:_dz_comp_todo' '--finding[start, list or pick a finding]:*::title:_dz_comp_finding' \
     '-o[open the note]::box:_dz_comp_all' '-d[mark done]::box:_dz_comp_all' '-a[archive a box]:box:_dz_comp_boxes' \
     '-y[no confirmation]' '--note[also trash the note]' '--keep-note[keep the note]' \
     '--config[edit the config]::action:(show check)' '--update[update dropzone]' '--explain[explain an error code]::code:_dz_comp_codes' '--version[version]' '--help[help]'

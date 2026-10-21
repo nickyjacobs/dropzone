@@ -15,6 +15,10 @@ tags: [box]
 |---|---|---|---|---|
 | {{name}} | {{ip}} | {{hosts}} | | |
 
+## To do
+
+- [ ] 
+
 ## Ports & services
 
 | Port | Service | Version | Notes |
@@ -32,6 +36,8 @@ tags: [box]
 ## Foothold
 
 ## Privilege escalation
+
+## Findings
 
 ## Timeline
 

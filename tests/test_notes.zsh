@@ -174,3 +174,30 @@ has "-g: says where else to look" "--all also searches the archive" "$(dz -g ker
 nok "-g --all: no archive hint" grep -q 'also searches' <<< "$(dz -g kerberoast --all)"
 nok "-g without a term fails" dz -g
 DZ_NOTE_MODE=off; nok "-g with notes = off fails" dz -g smb; DZ_NOTE_MODE=vault
+
+# A Flags section without user/root slots: the slots go into it, no second Flags section.
+dz -n slots -ip 10.10.80.1 >/dev/null
+S=~/vault/Boxes/slots.md
+print -r -- $'---\nupdated: x\n---\n## Flags\n\nsome text\n\n## After' > $S
+dz -f root $R >/dev/null
+eq  "one Flags section" 1 "$(grep -c '^## Flags' $S)"
+eq  "root flag in its slot" "$R" "$(_dz_flags_get $S; print -r -- $reply[2])"
+ok  "the slots are inside the section" test "$(sed -n '/^## Flags/,/^## After/p' $S | grep -c 'flag:')" = 2
+
+# add_sections = no: no Flags section is added, the note stays as it is.
+print -r -- $'---\nupdated: x\n---\nbody' > $S
+DZ_ADD_SECTIONS=no
+nok "add_sections = no: -f fails without Flags" dz -f root $R
+has "and says which heading" "'## Flags'" "$(dz -f root $R 2>&1)"
+eq  "the note is untouched" $'---\nupdated: x\n---\nbody' "$(cat $S)"
+DZ_ADD_SECTIONS=yes
+
+# The Obsidian example template: to-dos, findings and flags all land in their sections.
+cp $_dz_repo/examples/obsidian/Box-note.md ~/vault/Templates/Obs.md
+dz -n obs -ip 10.10.90.1 --template Templates/Obs.md >/dev/null
+O=~/vault/Boxes/obs.md
+dz --todo first >/dev/null; dz --finding first finding >/dev/null; dz -f $U >/dev/null
+ok  "obsidian: to-do replaces the empty bullet" test "$(sed -n '/^## To do/,/^## /p' $O | grep -c '^- \[')" = 1
+eq  "obsidian: finding in Findings" "## Findings|### F1 · first finding|## Timeline" "$(grep -E '^##' $O | grep -A1 -B1 'F1' | paste -sd'|' -)"
+eq  "obsidian: user flag in the callout" "$U|" "$(_dz_flags_get $O; print -r -- "$reply[1]|$reply[2]")"
+eq  "obsidian: no extra sections" "$(grep -c '^## ' $_dz_repo/examples/obsidian/Box-note.md)" "$(grep -c '^## ' $O)"

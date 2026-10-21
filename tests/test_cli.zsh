@@ -93,3 +93,21 @@ plain=$(dz -v)
 eq  "same output with ksh_arrays" "$plain" "$(setopt ksh_arrays; dz -v 2>&1)"
 eq  "same output with nounset" "$plain" "$(setopt nounset; dz -v 2>&1)"
 eq  "same output with sh_word_split" "$plain" "$(setopt sh_word_split; dz -v 2>&1)"
+
+# --todo and --finding: one action, the rest of the line is text, --help in it stays text.
+dz -n cli2 -ip 10.10.70.1 >/dev/null
+nok "--todo with another action fails" dz -v --todo x
+has "E103 names --todo and --finding" "--todo, --finding" "$(dz -v -i 2>&1)"
+has "--help in a to-do is text" "to-do #1: read the --help" "$(dz --todo read the --help)"
+has "--help before --todo is help" "Usage" "$(dz --help --todo x)"
+has "--help lists --todo" "--todo <text>" "$(dz --help)"
+has "--help lists --finding" "--finding <title>" "$(dz --help)"
+has "-i takes a host" "[+] cli2" "$(dz -i cli2)"
+
+# The new commands with the user's options set (emulate -L zsh).
+dz --todo opt test >/dev/null; dz --finding opt finding >/dev/null
+for o in ksh_arrays nounset sh_word_split; do
+  eq  "--todo the same with $o" "$(dz --todo)" "$(setopt $o; dz --todo 2>&1)"
+  eq  "--finding the same with $o" "$(dz --finding)" "$(setopt $o; dz --finding 2>&1)"
+  eq  "-i the same with $o" "$(dz -i)" "$(setopt $o; dz -i 2>&1)"
+done

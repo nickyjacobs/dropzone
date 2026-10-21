@@ -22,6 +22,7 @@ _dz_config_defaults() {
   DZ_LOG_COMMANDS=yes
   DZ_LOG_OUTPUT=no
   DZ_TIMELINE=Timeline
+  DZ_ADD_SECTIONS=yes     # add a missing Timeline, Flags, To do or Findings section to the note
   DZ_FLAG_GOAL=0          # flags to find in a box with more hosts (14 on the CPTS exam), 0 = no count
   DZ_SHOT=auto
   DZ_ATTACH=Boxes/attachments
@@ -80,7 +81,7 @@ _dz_config_load() {
         [[ $val == (auto|xfce4-screenshooter|flameshot|gnome-screenshot|spectacle|grim|import) ]] ||
           { _dz_cfg_err "screenshot must be auto, xfce4-screenshooter, flameshot, gnome-screenshot, spectacle, grim or import, not '$val'"; continue }
         DZ_SHOT=$val ;;
-      autoload|animate|ping|prompt|commands|output|creds|vpncheck|sysreptor)
+      autoload|animate|ping|prompt|commands|output|creds|vpncheck|sysreptor|add_sections)
         [[ ${(L)val} == (yes|no|true|false|on|off) ]] ||
           { _dz_cfg_err "$key must be yes or no, not '$val'"; continue }
         case $key in
@@ -128,7 +129,7 @@ _dz_config_show() {
     log commands "$DZ_LOG_COMMANDS"  log output "$DZ_LOG_OUTPUT"
     notes notes "$DZ_NOTE_MODE"  notes template "${${DZ_TEMPLATE:-$(_dz_template 2>/dev/null)}/#$HOME/~}"
     notes vault "${DZ_VAULT:--}"  notes vault_folder "$DZ_NOTES"  notes attachments "$DZ_ATTACH"
-    notes timeline "$DZ_TIMELINE"  notes flag_goal "$DZ_FLAG_GOAL"  notes screenshot "$DZ_SHOT"
+    notes timeline "$DZ_TIMELINE"  notes add_sections "$DZ_ADD_SECTIONS"  notes flag_goal "$DZ_FLAG_GOAL"  notes screenshot "$DZ_SHOT"
     creds creds "$DZ_CREDS"
     sysreptor sysreptor "$DZ_SYSREPTOR"
     menu art "${DZ_ART:-random}"  menu animate "$DZ_ANIMATE")

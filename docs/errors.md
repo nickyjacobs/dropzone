@@ -71,8 +71,16 @@ dz [E201] no box loaded
 | [E410](#e410) | no desktop for a screenshot |
 | [E411](#e411) | nothing piped into dz -e |
 | [E412](#e412) | no output to save |
+| [E413](#e413) | the note is missing a section |
+| [E414](#e414) | no such to-do |
+| [E415](#e415) | to-do already done |
+| [E416](#e416) | couldn't change the to-do list |
+| [E417](#e417) | no such finding |
+| [E418](#e418) | couldn't add the finding |
 | [W401](#w401) | unusual flag format |
 | [W402](#w402) | terminal recording didn't start |
+| [W403](#w403) | no timeline section |
+| [W404](#w404) | active finding is gone |
 | [E501](#e501) | creds is off |
 | [E502](#e502) | no such cred |
 | [E503](#e503) | invalid host for --valid |
@@ -122,7 +130,7 @@ dz [E201] no box loaded
 <a id="e103"></a>
 ### E103 · more than one action
 
-**Error.** Every dz call does one thing: -n, -l, -v, -i, -x, -t, -p, -cp, -o, -d, -a, -f, -j, -s, -e, -g, -c or -r. Two of them in one call are refused, so nothing half happens.
+**Error.** Every dz call does one thing: -n, -l, -v, -i, -x, -t, -p, -cp, -o, -d, -a, -f, -j, -s, -e, -g, -c, -r, --todo or --finding. Two of them in one call are refused, so nothing half happens.
 
 **What to do:** Split it into two calls: `dz -l jacops` and then `dz -i`. Options like -ip, -h, --via and --template are not actions and can go along.
 
@@ -391,6 +399,48 @@ dz [E201] no box loaded
 
 **What to do:** Add 2>&1 to the command: `cmd 2>&1 | dz -e caption`.
 
+<a id="e413"></a>
+### E413 · the note is missing a section
+
+**Error.** `add_sections = no` in your config, so dz doesn't add a Flags, To do or Findings section to your note, and this note doesn't have the one it needs.
+
+**What to do:** Add the heading from the message to your note (or your template), like `## To do`. Or set `add_sections = yes`.
+
+<a id="e414"></a>
+### E414 · no such to-do
+
+**Error.** There is no to-do with that number in the note. Numbers are the place in the To do section, counting the done ones too.
+
+**What to do:** `dz --todo --all` shows every to-do with its number.
+
+<a id="e415"></a>
+### E415 · to-do already done
+
+**Error.** That to-do is already ticked off (`- [x]` in the note).
+
+**What to do:** Nothing to do. Untick it in the note (`- [ ]`) if it isn't done after all.
+
+<a id="e416"></a>
+### E416 · couldn't change the to-do list
+
+**Error.** dz wrote to the To do section but couldn't find the change back: the section has a layout dz doesn't know.
+
+**What to do:** Keep the to-dos as a plain checklist under `## To do`: one `- [ ] text` per line.
+
+<a id="e417"></a>
+### E417 · no such finding
+
+**Error.** There is no finding with that number in the note, or you gave none and no finding is active.
+
+**What to do:** `dz --finding` lists them with their numbers; `dz --finding done 2` names one.
+
+<a id="e418"></a>
+### E418 · couldn't add the finding
+
+**Error.** dz wrote the finding but couldn't find its `### F<n> · <title>` heading back under `## Findings`.
+
+**What to do:** Check the Findings section in the note. A finding heading looks like `### F1 · SMB signing disabled`.
+
 <a id="w401"></a>
 ### W401 · unusual flag format
 
@@ -404,6 +454,20 @@ dz [E201] no box loaded
 **Warning.** `output = yes` records every new terminal with script(1), and that failed (no util-linux script, or no log folder). The terminal works without a recording.
 
 **What to do:** Check `script --version` (needs util-linux) or set `output = no`.
+
+<a id="w403"></a>
+### W403 · no timeline section
+
+**Warning.** `add_sections = no` in your config and the note has no timeline heading (`## Timeline`, or the name from `timeline`), so the timeline line was not written. The rest of the command worked.
+
+**What to do:** Add the heading to your note (or your template), or set `add_sections = yes`.
+
+<a id="w404"></a>
+### W404 · active finding is gone
+
+**Warning.** The active finding's heading isn't in the note anymore (removed or renamed by hand), so evidence goes to the timeline again.
+
+**What to do:** `dz --finding` lists the findings; pick one with `dz --finding <nr>` or start a new one.
 
 ## 5xx · Creds
 
