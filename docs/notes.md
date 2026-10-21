@@ -22,6 +22,8 @@ Set with `notes` in the config (`dz --config`):
 
 `folder` needs nothing: plain Markdown that reads fine in any editor, renders on GitHub and works in Obsidian when you open `~/boxes` as a vault. Archived boxes take their note along to `~/boxes/_archive/<box>/`.
 
+Everything dz writes works in both: to-dos are GitHub-style checkboxes (`- [ ]`), findings are headings with a status line, tables are plain Markdown tables, and screenshots are relative links (`evidence/<file>.png`). Only `notes = vault` uses Obsidian's `![[...]]` embeds, and only the [Obsidian example template](../examples/obsidian/) uses callouts.
+
 ## Templates
 
 A new note is a copy of the template with these placeholders filled in:

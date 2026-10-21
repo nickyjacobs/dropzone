@@ -67,26 +67,30 @@ _dz_todo() {
   [[ -n $new && -z $text ]] && { print "• no text, no to-do"; return 1 }
   if [[ -z $new ]] && [[ -z $text || ${(L)text} == --all ]]; then
     _dz_todo_items $note "$hosts"
-    local -i open=0 done=0 hw=0
+    local -i open=0 done=0
     for l in $reply; do
       w=("${(@ps:\t:)l}")
       if [[ $w[2] == x ]]; then (( done++ )); else (( open++ )); fi
-      (( $#w[3] > hw )) && hw=$#w[3]
     done
+    # A block like dz -i: a row per to-do, '✓' for a done one (--all).
+    _dz_ui
+    local count="$open open" mark row
+    (( done )) && count+=", $done done"
+    _dz_rule; _dz_head "To do" "$BOX · $count"
     if (( ! open )) && [[ -z $text || done -eq 0 ]]; then
-      print -r -- "no open to-dos for $BOX$( (( done )) && print " ($done done, dz --todo --all)")"
-      print "  dz --todo <text> adds one"
+      print -r -- "    nothing open$( (( done )) && print ", dz --todo --all shows the done ones")"
+      _dz_rule
+      print -r -- "${_ud}    dz --todo <text> adds one${_ur}"
       return 0
     fi
-    local mark
     for l in $reply; do
       w=("${(@ps:\t:)l}")
       [[ $w[2] == x ]] && { [[ -n $text ]] || continue; mark=✓ } || mark=' '   # --all
-      if (( hw )); then printf '%s %3d  %-*s  %s\n' $mark $w[1] $hw "$w[3]" "$w[4]"
-      else printf '%s %3d  %s\n' $mark $w[1] "$w[4]"
-      fi
+      printf -v row '%-4s %s' "#$w[1]" "${w[3]:+$w[3] · }$w[4]"
+      _dz_row "$mark" "$row" 1
     done
-    print "  $open open$( (( done )) && print ", $done done") · dz --todo done <nr> ticks one off"
+    _dz_rule
+    print -r -- "${_ud}    dz --todo done <nr> ticks one off${_ur}"
     return 0
   fi
 
@@ -108,7 +112,9 @@ _dz_todo() {
     return 0
   fi
 
-  # Add
+  # Add. One word that starts with '-' is an option typed by mistake.
+  [[ $text == -[^[:space:]]# ]] &&
+    { _dz_err E421 "'$text' looks like an option, not a to-do: one action per call"; return 1 }
   _dz_section_need $note $_dz_todo_head "$DZ_TIMELINE" Flags || return 1
   local host=''
   (( extra )) && host=${DZ_ACTIVE:-$BOX}

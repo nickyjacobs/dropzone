@@ -33,7 +33,7 @@ Status: **open** (not tested by hand yet) or the date it was confirmed.
 
 | Check | Since | Status |
 |---|---|---|
-| `dz -s`: region selection with the mouse, PNG in `evidence/` and in the note | 1.0.0 | open |
+| `dz -s`: region selection with the mouse, PNG in `evidence/` and in the note | 1.0.0 | 2026-10-21, Kali 2026.2 over RDP |
 | `dz -s` from a keyboard shortcut (`zsh -ic 'dz -s'`) lands in the loaded box | 1.0.0 | open |
 | `dz -c <user>`: the secret prompt shows nothing while typing | 1.0.0 | open |
 | `dz -h <host>`: sudo asks for the password, the line is in `/etc/hosts` | 1.0.0 | open |
@@ -65,10 +65,11 @@ Status: **open** (not tested by hand yet) or the date it was confirmed.
 | `cmd 2>&1 \| dz -e`: a real tool's output (colours, progress bars) reads well in the note | 1.2.0 | open |
 | `notes = vault`: screenshots show in Obsidian, `dz -o` opens the note | 1.0.0 | open |
 | `--template exam` in Obsidian: tables, Host notes headings, flag list, timeline code blocks render well | 1.2.0 | open |
-| `dz --todo` in Obsidian: the checkboxes render, ticking one off in Obsidian shows in `dz --todo` | 1.4.0 | open |
-| `dz --finding` + `dz -s` / `dz -e` in Obsidian: the Findings table stays intact, screenshots and code blocks show under the finding | 1.4.0 | open |
-| `dz -i` and `dz -i <host>` on a real exam box: the Next block and the host view read well | 1.4.0 | open |
-| The menu: *Notes › To do* and *Notes › Finding* | 1.4.0 | open |
+| `dz --todo` in Obsidian: the checkboxes render, ticking one off in Obsidian shows in `dz --todo` | 1.4.0 | 2026-10-21, Kali 2026.2, Obsidian |
+| `dz --finding` + `dz -s` / `dz -e` in Obsidian: the Findings table stays intact, screenshots and code blocks show under the finding | 1.4.0 | 2026-10-21, Kali 2026.2, Obsidian |
+| `dz -i` and `dz -i <host>` on a real exam box: the Next block and the host view read well | 1.4.0 | 2026-10-21, Kali 2026.2 (test box) |
+| The menu: *Notes › To do* and *Notes › Finding* | 1.4.0 | 2026-10-21, Kali 2026.2 over RDP |
+| The menu stays open: several to-dos in a row, the result under the menu; Load box shows its output and Enter goes back | 1.4.0 | open |
 | `sysreptor = yes`: a screenshot and a `dz -e` output arrive in the project's notes, under the box | 1.2.0 | open |
 
 ### Updates

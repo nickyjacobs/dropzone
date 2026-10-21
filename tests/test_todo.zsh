@@ -13,9 +13,9 @@ ok  "--todo: text kept as typed" grep -qF -- "- [ ] try 'admin:admin' on /login 
 has "--todo: output keeps a backslash" 'back\slash' "$(dz --todo)"
 dz --todo zz >/dev/null
 out=$(dz --todo)
-has "--todo lists the open ones" "  1  check the web root" "$out"
+has "--todo lists the open ones" "#1   check the web root" "$out"
 has "--todo counts" "3 open" "$out"
-nok "--todo: no host column in a single box" grep -q ' alpha ' <<< "$out"
+nok "--todo: no host tag in a single box" grep -qE '#[0-9]+ +alpha ·' <<< "$out"
 
 # Tick off.
 has "done <nr> ticks it off" "done: check the web root" "$(dz --todo done 1)"
@@ -23,14 +23,14 @@ ok  "done: [x] in the note" grep -qx -- '- \[x\] check the web root for backups'
 has "done: a timeline line" "· done: check the web root for backups" "$(cat $N)"
 nok "done: no longer listed" grep -q 'web root' <<< "$(dz --todo)"
 has "the count leaves out the done one" "2 open, 1 done" "$(dz --todo)"
-has "--all shows it with a tick" "✓   1  check the web root" "$(dz --todo --all)"
+has "--all shows it with a tick" "✓ #1   check the web root" "$(dz --todo --all)"
 nok "done twice fails" dz --todo done 1
 has "and says so" "already done" "$(dz --todo done 1 2>&1)"
 nok "done of an unknown number fails" dz --todo done 9
 nok "done without a number fails" dz --todo done
 dz --todo done with the nmap scan >/dev/null
 ok  "'done' with words is a to-do" grep -qx -- '- \[ \] done with the nmap scan' $N
-has "numbers stay the same after ticking off" "  4  done with the nmap scan" "$(dz --todo)"
+has "numbers stay the same after ticking off" "#4   done with the nmap scan" "$(dz --todo)"
 dz --todo done 3 >/dev/null
 ok  "done 3 ticks the third, not the third open one" grep -qx -- '- \[x\] zz' $N
 
@@ -47,7 +47,7 @@ dz -t dc01 >/dev/null
 dz --todo kerberoast >/dev/null
 ok  "the active host tags it" grep -qx -- '- \[ \] dc01 · kerberoast' $C
 out=$(dz --todo)
-has "list with a host column" "2  dc01  kerberoast" "$out"
+has "list with the host tag" "#2   dc01 · kerberoast" "$out"
 print -r -- '- [ ] web · not a host, just text' >> $C   # outside the section: ignored
 perl -0pi -e 's/(- \[ \] dc01 · kerberoast\n)/$1- [ ] smb · not a host tag\n/' $C
 has "an unknown tag stays text" "smb · not a host tag" "$(dz --todo)"
@@ -97,7 +97,7 @@ dz -n delta -ip 10.10.40.1 >/dev/null
 D=~/vault/Boxes/delta.md
 dz --todo first >/dev/null
 has "leading spaces: 'done 1' still ticks off" "done: first" "$(dz --todo '  done 1 ')"
-has "only spaces: lists, adds nothing" "no open to-dos" "$(dz --todo '   ')"
+has "only spaces: lists, adds nothing" "nothing open" "$(dz --todo '   ')"
 nok "only spaces: no blank to-do" grep -qx -- '- \[ \] *' $D
 print -rn -- $'---\nupdated: x\n---\n## To do' > $D
 has "a To do heading on the last line works" "to-do #1" "$(dz --todo last line)"

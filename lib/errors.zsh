@@ -171,6 +171,9 @@ _dz_def E420 "can't write the note" \
 _dz_def W405 "timeline line not written" \
   "The command worked, but dz couldn't write its line in the note's timeline: the note or its folder isn't writable." \
   "See E420: check the note and its folder with 'ls -l'."
+_dz_def E421 "an option instead of text" \
+  "--todo and --finding take the rest of the line as text, so 'dz --finding -s' would make a finding called '-s'. dz does one action per call." \
+  "Run them one after the other: 'dz --finding SMB signing disabled', then 'dz -s'. Text that really starts with '-' needs a second word."
 _dz_def W401 "unusual flag format" \
   "HTB flags are 32 hex characters; this one isn't. It's stored anyway, because other platforms use other formats." \
   "Nothing, if it's right. Otherwise fix it in the note."

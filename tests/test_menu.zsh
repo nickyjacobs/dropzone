@@ -81,3 +81,24 @@ for i in {1..$_dz_art_count}; do
 done
 print 'art = 10' >> ~/.config/dropzone/config
 eq  "config takes art 10 (checked against the real count)" 10 "$(_dz_config_load 2>&1; print $DZ_ART)"
+
+# The menu stays open: the last action's output under the menu, the right hint per level.
+local -a _dz_msg=('• to-do #3 (dc01): kerberoast') _dz_msgerr=('dz [E421] nope' '• [W403] no timeline')
+_dz_sel=1; _dz_set_main
+out=$(_dz_draw 1)
+has "message under the menu" "• to-do #3 (dc01): kerberoast" "$out"
+has "an error in red" $'\e[38;5;196mdz [E421] nope' "$out"
+has "a warning in orange" $'\e[38;5;214m• [W403] no timeline' "$out"
+_dz_msgerr=()
+has "main menu: q quits" "q quit" "$out"
+_dz_set_sub notes
+has "submenu: q goes back" "q back" "$(_dz_draw 1)"
+_dz_msg=(1 2 3 4 5 6)
+has "more than 4 lines: a count" "(+2 more lines)" "$(_dz_draw 1)"
+_dz_msg=()
+_dz_mode=form _dz_title='New to-do for box1'
+has "a form says how to go back" "Enter on an empty field: back to the menu" "$(_dz_draw 1)"
+_dz_fhint='An empty box name goes back (hostnames are optional)'
+has "a form with an optional field says so" "hostnames are optional" "$(_dz_draw 1)"
+_dz_fhint=''
+eq  "the menu runs actions through _dz_menu_do" 1 "$(( $+functions[_dz_menu_do] ))"
