@@ -17,7 +17,7 @@
 </p>
 
 <p align="center">
-  <img src="assets/demo.gif" alt="dropzone demo: a new box, timeline, flag, a second host, nxc output as evidence, the note and the menu" width="85%">
+  <img src="assets/demo.gif" alt="dropzone demo: a new box, timeline, flag, a second host, a to-do, a finding with nxc output as evidence, dz -i, the note and the menu" width="85%">
 </p>
 
 ## Why dropzone
