@@ -180,7 +180,7 @@ dz --finding SMB signing disabled   # F1 on the active host, now active
 dz -s relay setup                   # goes under F1
 nxc smb $TARGETS | dz -e signing    # under F1 too
 dz --finding                        # list: ▶ = active, host, status, evidence count
-dz --finding 2                      # make F2 active
+dz --finding 2                      # make F2 active (a done one opens again)
 dz --finding off                    # evidence goes to the timeline again
 dz --finding done                   # close the active one (or: done 2)
 ```
